@@ -1,0 +1,546 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Cost3D API",
+    "description": "API em migração. As páginas atuais continuam funcionando. Valores decimais são strings; datas incluem fuso. Use o token retornado pelo login no botão Authorize.",
+    "version": "v1"
+  },
+  "servers": [
+    { "url": "http://localhost", "description": "Generated server url" }
+  ],
+  "paths": {
+    "/api/v1/clientes/{id}": {
+      "get": {
+        "tags": ["api-clientes-controller"],
+        "operationId": "buscar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/Cliente" } }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      },
+      "put": {
+        "tags": ["api-clientes-controller"],
+        "operationId": "editar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Entrada" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/Cliente" } }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/clientes": {
+      "get": {
+        "tags": ["api-clientes-controller"],
+        "operationId": "listar",
+        "parameters": [
+          {
+            "name": "busca",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "" }
+          },
+          {
+            "name": "arquivados",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean", "default": false }
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 0 }
+          },
+          {
+            "name": "tamanho",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 20 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/Listagem" } }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      },
+      "post": {
+        "tags": ["api-clientes-controller"],
+        "operationId": "criar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Entrada" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/Cliente" } }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/auth/senha": {
+      "post": {
+        "tags": ["api-auth-controller"],
+        "operationId": "senha",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AlterarSenhaRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": { "200": { "description": "OK" } },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": ["api-auth-controller"],
+        "operationId": "refresh",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Renovar" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/Tokens" } }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": ["api-auth-controller"],
+        "operationId": "logout",
+        "responses": { "200": { "description": "OK" } },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["api-auth-controller"],
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Login" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/Tokens" } }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clientes/{id}/arquivo": {
+      "patch": {
+        "tags": ["api-clientes-controller"],
+        "operationId": "arquivar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Arquivo" }
+            }
+          },
+          "required": true
+        },
+        "responses": { "200": { "description": "OK" } },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/tenant": {
+      "get": {
+        "tags": ["api-tenant-controller"],
+        "operationId": "tema",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/Tema" } }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/tenant/logo": {
+      "get": {
+        "tags": ["api-tenant-controller"],
+        "operationId": "logo",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": { "schema": { "type": "string", "format": "byte" } }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/extrato": {
+      "get": {
+        "tags": ["api-extrato-controller"],
+        "operationId": "listar_1",
+        "parameters": [
+          {
+            "name": "inicio",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "fim",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "tipo",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "" }
+          },
+          {
+            "name": "direcao",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "" }
+          },
+          {
+            "name": "busca",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "" }
+          },
+          {
+            "name": "filamento",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "saldo",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean", "default": false }
+          },
+          {
+            "name": "tudo",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean", "default": false }
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 0 }
+          },
+          {
+            "name": "tamanho",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 20 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/Extrato" } }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": ["api-auth-controller"],
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/Conta" } }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Entrada": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string", "maxLength": 150, "minLength": 2 },
+          "telefone": { "type": "string", "maxLength": 150, "minLength": 0 },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "observacoes": { "type": "string", "maxLength": 500, "minLength": 0 },
+          "versao": { "type": "integer", "format": "int64", "minimum": 0 }
+        },
+        "required": ["nome"]
+      },
+      "Cliente": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "versao": { "type": "integer", "format": "int64" },
+          "nome": { "type": "string" },
+          "telefone": { "type": "string" },
+          "email": { "type": "string" },
+          "observacoes": { "type": "string" },
+          "arquivado": { "type": "boolean" }
+        }
+      },
+      "AlterarSenhaRequest": {
+        "type": "object",
+        "properties": {
+          "senhaAtual": { "type": "string", "minLength": 1 },
+          "novaSenha": { "type": "string", "maxLength": 72, "minLength": 12 },
+          "confirmarNovaSenha": { "type": "string", "minLength": 1 }
+        },
+        "required": ["confirmarNovaSenha", "novaSenha", "senhaAtual"]
+      },
+      "Renovar": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "[A-Za-z0-9_-]{43}"
+          }
+        },
+        "required": ["refreshToken"]
+      },
+      "Tokens": {
+        "type": "object",
+        "properties": {
+          "accessToken": { "type": "string" },
+          "refreshToken": { "type": "string" },
+          "tokenType": { "type": "string" },
+          "expiresIn": { "type": "integer", "format": "int64" },
+          "refreshExpiraEm": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Login": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "senha": { "type": "string", "maxLength": 72, "minLength": 0 }
+        },
+        "required": ["email", "senha"]
+      },
+      "Arquivo": {
+        "type": "object",
+        "properties": { "arquivado": { "type": "boolean" } },
+        "required": ["arquivado"]
+      },
+      "Tema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "nome": { "type": "string" },
+          "corPrimaria": { "type": "string" },
+          "corDestaque": { "type": "string" },
+          "corFundo": { "type": "string" },
+          "versao": { "type": "integer", "format": "int64" },
+          "logoUrl": { "type": "string" }
+        }
+      },
+      "Abertura": {
+        "type": "object",
+        "properties": {
+          "registros": { "type": "integer", "format": "int64" },
+          "gramas": { "type": "string" }
+        }
+      },
+      "Extrato": {
+        "type": "object",
+        "properties": {
+          "movimentacoes": {
+            "$ref": "#/components/schemas/PaginaResponseMovimentacaoResponse"
+          },
+          "resumo": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Resumo" }
+          },
+          "abertura": { "$ref": "#/components/schemas/Abertura" },
+          "pecasVendidas": { "type": "string" }
+        }
+      },
+      "MovimentacaoResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "tipo": { "type": "string" },
+          "descricao": { "type": "string" },
+          "quantidade": { "type": "string" },
+          "medida": { "type": "string" },
+          "origem": { "type": "string" },
+          "referencia": { "type": "string", "format": "uuid" },
+          "filamentoId": { "type": "string", "format": "uuid" },
+          "saldoApos": { "type": "string" },
+          "data": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PaginaResponseMovimentacaoResponse": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/MovimentacaoResponse" }
+          },
+          "pagina": { "type": "integer", "format": "int32" },
+          "tamanho": { "type": "integer", "format": "int32" },
+          "total": { "type": "integer", "format": "int64" }
+        }
+      },
+      "Resumo": {
+        "type": "object",
+        "properties": {
+          "medida": { "type": "string" },
+          "entrou": { "type": "string" },
+          "saiu": { "type": "string" },
+          "pecasVendidas": { "type": "string" }
+        }
+      },
+      "ClienteResumo": {
+        "type": "object",
+        "properties": {
+          "cliente": { "$ref": "#/components/schemas/Cliente" },
+          "orcamentos": { "type": "integer", "format": "int64" },
+          "emAndamento": { "type": "integer", "format": "int64" },
+          "ultimoOrcamento": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Contadores": {
+        "type": "object",
+        "properties": {
+          "ativos": { "type": "integer", "format": "int64" },
+          "arquivados": { "type": "integer", "format": "int64" },
+          "comAndamento": { "type": "integer", "format": "int64" },
+          "semOrcamento": { "type": "integer", "format": "int64" }
+        }
+      },
+      "Listagem": {
+        "type": "object",
+        "properties": {
+          "clientes": {
+            "$ref": "#/components/schemas/PaginaResponseClienteResumo"
+          },
+          "resumo": { "$ref": "#/components/schemas/Contadores" }
+        }
+      },
+      "PaginaResponseClienteResumo": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ClienteResumo" }
+          },
+          "pagina": { "type": "integer", "format": "int32" },
+          "tamanho": { "type": "integer", "format": "int32" },
+          "total": { "type": "integer", "format": "int64" }
+        }
+      },
+      "Conta": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "tenantId": { "type": "string", "format": "uuid" },
+          "email": { "type": "string" },
+          "perfil": { "type": "string" },
+          "trocaSenhaObrigatoria": { "type": "boolean" }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
