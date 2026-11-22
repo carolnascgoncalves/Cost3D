@@ -99,11 +99,13 @@ Em 17/11/2026: testes de autenticação e apresentação (19 casos), checagem Ty
 
 - O login e a barra lateral usam o arquivo original `assets/images/cost3d-logo.png`, copiado da logo espaçada marsala existente. A proporção original é preservada, sem redesenhar o robô.
 - Minha conta mostra o e-mail e a troca de senha; o perfil de autorização deixou de aparecer na tela. As permissões da API não foram alteradas.
-- O menu Mais reúne atalhos para calcular, cadastro rápido, histórico, planejamento, catálogo, orçamentos, vendas, custos e configurações. Nesta entrega esses atalhos abrem o site no navegador e estão identificados como Abrir no site.
+- A barra do celular reúne Início, Catálogo, Calcular, Vendas e Mais. Clientes, Movimentações e Minha conta ficam em Mais. A indicação “Site” identifica os fluxos que usam o navegador.
 - Em Clientes, selecione uma pessoa para consultar seus orçamentos atuais e arquivados dentro do app. A lista usa `GET /api/v1/clientes/{id}/orcamentos`.
 - O site tem sua própria sessão de login. O app não envia tokens na URL nem tenta converter o login da API em sessão do site. Se o navegador pedir, entre normalmente.
 - O endereço do site usa o mesmo servidor de `EXPO_PUBLIC_API_URL` por padrão. Se necessário, configure `EXPO_PUBLIC_SITE_URL` no `.env.local` e reinicie o Expo. No celular, o endereço precisa estar acessível pela rede; localhost aponta para o próprio celular.
 
-Clientes, Movimentações, Início e Minha conta são telas nativas do app. Os demais módulos ainda precisam de endpoints novos antes da migração nativa.
+O Dashboard abre dentro do app e consulta /api/v1/dashboard para os períodos de 7 dias, 30 dias e todo o histórico.
+
+O app consulta os cálculos recentes e alertas em /api/v1/inicio, as quatro categorias em /api/v1/catalogo e os lotes em /api/v1/vendas. Execute o backend atualizado para testar essas telas.
 
 Teste a logo no celular e no desktop, confirme a ausência do perfil em Minha conta e abra os orçamentos de um cliente de teste. Confira as abas de atuais e arquivados e selecione outro cliente para verificar o filtro.

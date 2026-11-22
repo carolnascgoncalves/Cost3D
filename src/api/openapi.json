@@ -274,6 +274,43 @@
         "security": [{ "bearerAuth": [] }]
       }
     },
+    "/api/v1/vendas": {
+      "get": {
+        "tags": ["api-painel-controller"],
+        "operationId": "vendas",
+        "parameters": [
+          {
+            "name": "grupo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "ESTOQUE",
+              "enum": ["PARA_PRODUZIR", "ESTOQUE", "VENDIDOS"]
+            }
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaResponseLoteResumo"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
     "/api/v1/tenant": {
       "get": {
         "tags": ["api-tenant-controller"],
@@ -298,6 +335,21 @@
             "description": "OK",
             "content": {
               "*/*": { "schema": { "type": "string", "format": "byte" } }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/inicio": {
+      "get": {
+        "tags": ["api-painel-controller"],
+        "operationId": "inicio",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/InicioLoja" } }
             }
           }
         },
@@ -381,6 +433,35 @@
         "security": [{ "bearerAuth": [] }]
       }
     },
+    "/api/v1/dashboard": {
+      "get": {
+        "tags": ["api-painel-controller"],
+        "operationId": "dashboard",
+        "parameters": [
+          {
+            "name": "periodo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "30",
+              "pattern": "7|30|90|tudo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DashboardLoja" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
     "/api/v1/clientes/{id}/orcamentos": {
       "get": {
         "tags": ["api-clientes-controller"],
@@ -418,6 +499,114 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/PaginaResponseOrcamentoResumo"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/catalogo/pecas": {
+      "get": {
+        "tags": ["api-painel-controller"],
+        "operationId": "pecas",
+        "parameters": [
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaResponsePecaCatalogo"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/catalogo/impressoras": {
+      "get": {
+        "tags": ["api-painel-controller"],
+        "operationId": "impressoras",
+        "parameters": [
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaResponseImpressoraCatalogo"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/catalogo/filamentos": {
+      "get": {
+        "tags": ["api-painel-controller"],
+        "operationId": "filamentos",
+        "parameters": [
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaResponseFilamentoCatalogo"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/catalogo/embalagens": {
+      "get": {
+        "tags": ["api-painel-controller"],
+        "operationId": "embalagens",
+        "parameters": [
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaResponseEmbalagemCatalogo"
                 }
               }
             }
@@ -528,6 +717,29 @@
         "properties": { "arquivado": { "type": "boolean" } },
         "required": ["arquivado"]
       },
+      "LoteResumo": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "nome": { "type": "string" },
+          "unidades": { "type": "integer", "format": "int32" },
+          "vendidas": { "type": "integer", "format": "int32" },
+          "disponiveis": { "type": "integer", "format": "int64" },
+          "preco": { "type": "string" }
+        }
+      },
+      "PaginaResponseLoteResumo": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/LoteResumo" }
+          },
+          "pagina": { "type": "integer", "format": "int32" },
+          "tamanho": { "type": "integer", "format": "int32" },
+          "total": { "type": "integer", "format": "int64" }
+        }
+      },
       "Tema": {
         "type": "object",
         "properties": {
@@ -538,6 +750,34 @@
           "corFundo": { "type": "string" },
           "versao": { "type": "integer", "format": "int64" },
           "logoUrl": { "type": "string" }
+        }
+      },
+      "FilamentoCatalogo": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "nome": { "type": "string" },
+          "cor": { "type": "string" },
+          "estoque": { "type": "string" }
+        }
+      },
+      "InicioLoja": {
+        "type": "object",
+        "properties": {
+          "recentes": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Recente" }
+          },
+          "aguardandoVenda": { "type": "integer", "format": "int64" },
+          "estoqueCritico": { "$ref": "#/components/schemas/FilamentoCatalogo" }
+        }
+      },
+      "Recente": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "nome": { "type": "string" },
+          "situacao": { "type": "string" }
         }
       },
       "Abertura": {
@@ -597,6 +837,75 @@
           "pecasVendidas": { "type": "string" }
         }
       },
+      "CadastrosPainel": {
+        "type": "object",
+        "properties": {
+          "pecas": { "type": "integer", "format": "int64" },
+          "filamentos": { "type": "integer", "format": "int64" },
+          "impressoras": { "type": "integer", "format": "int64" },
+          "embalagens": { "type": "integer", "format": "int64" },
+          "clientes": { "type": "integer", "format": "int64" }
+        }
+      },
+      "CustoPainel": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string" },
+          "valor": { "type": "string" },
+          "percentual": { "type": "integer", "format": "int32" }
+        }
+      },
+      "DashboardLoja": {
+        "type": "object",
+        "properties": {
+          "lucro": { "type": "string" },
+          "vendas": { "type": "integer", "format": "int64" },
+          "horas": { "type": "string" },
+          "filamentoKg": { "type": "string" },
+          "serie": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PontoLucro" }
+          },
+          "plataformas": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/VendasPlataforma" }
+          },
+          "estoque": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/EstoquePainel" }
+          },
+          "calculadas": { "type": "integer", "format": "int64" },
+          "produzidas": { "type": "integer", "format": "int64" },
+          "vendidas": { "type": "integer", "format": "int64" },
+          "custos": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CustoPainel" }
+          },
+          "cadastros": { "$ref": "#/components/schemas/CadastrosPainel" }
+        }
+      },
+      "EstoquePainel": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string" },
+          "gramas": { "type": "string" },
+          "restante": { "type": "integer", "format": "int32" }
+        }
+      },
+      "PontoLucro": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "string" },
+          "valor": { "type": "string" }
+        }
+      },
+      "VendasPlataforma": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string" },
+          "vendas": { "type": "integer", "format": "int64" }
+        }
+      },
       "ClienteResumo": {
         "type": "object",
         "properties": {
@@ -653,6 +962,82 @@
           "itens": {
             "type": "array",
             "items": { "$ref": "#/components/schemas/OrcamentoResumo" }
+          },
+          "pagina": { "type": "integer", "format": "int32" },
+          "tamanho": { "type": "integer", "format": "int32" },
+          "total": { "type": "integer", "format": "int64" }
+        }
+      },
+      "PaginaResponsePecaCatalogo": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PecaCatalogo" }
+          },
+          "pagina": { "type": "integer", "format": "int32" },
+          "tamanho": { "type": "integer", "format": "int32" },
+          "total": { "type": "integer", "format": "int64" }
+        }
+      },
+      "PecaCatalogo": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "nome": { "type": "string" },
+          "categoria": { "type": "string" },
+          "gramas": { "type": "string" },
+          "minutos": { "type": "integer", "format": "int64" },
+          "preco": { "type": "string" }
+        }
+      },
+      "ImpressoraCatalogo": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "nome": { "type": "string" },
+          "modelo": { "type": "string" },
+          "watts": { "type": "string" }
+        }
+      },
+      "PaginaResponseImpressoraCatalogo": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ImpressoraCatalogo" }
+          },
+          "pagina": { "type": "integer", "format": "int32" },
+          "tamanho": { "type": "integer", "format": "int32" },
+          "total": { "type": "integer", "format": "int64" }
+        }
+      },
+      "PaginaResponseFilamentoCatalogo": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/FilamentoCatalogo" }
+          },
+          "pagina": { "type": "integer", "format": "int32" },
+          "tamanho": { "type": "integer", "format": "int32" },
+          "total": { "type": "integer", "format": "int64" }
+        }
+      },
+      "EmbalagemCatalogo": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "nome": { "type": "string" },
+          "custo": { "type": "string" }
+        }
+      },
+      "PaginaResponseEmbalagemCatalogo": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/EmbalagemCatalogo" }
           },
           "pagina": { "type": "integer", "format": "int32" },
           "tamanho": { "type": "integer", "format": "int32" },

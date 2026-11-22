@@ -12,7 +12,7 @@ export function BrandLogo({
       source={source}
       accessibilityLabel="Cost3D"
       resizeMode="contain"
-      style={[{ width, maxWidth: "100%", aspectRatio: 2400 / 986 }, style]}
+      style={[{ width, maxWidth: "100%", height: (width * 986) / 2400 }, style]}
     />
   );
 }

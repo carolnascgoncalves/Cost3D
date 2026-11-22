@@ -33,6 +33,20 @@ export interface components {
       refreshExpiraEm?: string;
     };
     Arquivo: { arquivado: boolean };
+    LoteResumo: {
+      id?: string;
+      nome?: string;
+      unidades?: number;
+      vendidas?: number;
+      disponiveis?: number;
+      preco?: string;
+    };
+    PaginaResponseLoteResumo: {
+      itens?: Array<components["schemas"]["LoteResumo"]>;
+      pagina?: number;
+      tamanho?: number;
+      total?: number;
+    };
     Tema: {
       id?: string;
       nome?: string;
@@ -42,6 +56,18 @@ export interface components {
       versao?: number;
       logoUrl?: string;
     };
+    FilamentoCatalogo: {
+      id?: string;
+      nome?: string;
+      cor?: string;
+      estoque?: string;
+    };
+    InicioLoja: {
+      recentes?: Array<components["schemas"]["Recente"]>;
+      aguardandoVenda?: number;
+      estoqueCritico?: components["schemas"]["FilamentoCatalogo"];
+    };
+    Recente: { id?: string; nome?: string; situacao?: string };
     Abertura: { registros?: number; gramas?: string };
     Extrato: {
       movimentacoes?: components["schemas"]["PaginaResponseMovimentacaoResponse"];
@@ -73,6 +99,31 @@ export interface components {
       saiu?: string;
       pecasVendidas?: string;
     };
+    CadastrosPainel: {
+      pecas?: number;
+      filamentos?: number;
+      impressoras?: number;
+      embalagens?: number;
+      clientes?: number;
+    };
+    CustoPainel: { nome?: string; valor?: string; percentual?: number };
+    DashboardLoja: {
+      lucro?: string;
+      vendas?: number;
+      horas?: string;
+      filamentoKg?: string;
+      serie?: Array<components["schemas"]["PontoLucro"]>;
+      plataformas?: Array<components["schemas"]["VendasPlataforma"]>;
+      estoque?: Array<components["schemas"]["EstoquePainel"]>;
+      calculadas?: number;
+      produzidas?: number;
+      vendidas?: number;
+      custos?: Array<components["schemas"]["CustoPainel"]>;
+      cadastros?: components["schemas"]["CadastrosPainel"];
+    };
+    EstoquePainel: { nome?: string; gramas?: string; restante?: number };
+    PontoLucro: { data?: string; valor?: string };
+    VendasPlataforma: { nome?: string; vendas?: number };
     ClienteResumo: {
       cliente?: components["schemas"]["Cliente"];
       orcamentos?: number;
@@ -105,6 +156,45 @@ export interface components {
     };
     PaginaResponseOrcamentoResumo: {
       itens?: Array<components["schemas"]["OrcamentoResumo"]>;
+      pagina?: number;
+      tamanho?: number;
+      total?: number;
+    };
+    PaginaResponsePecaCatalogo: {
+      itens?: Array<components["schemas"]["PecaCatalogo"]>;
+      pagina?: number;
+      tamanho?: number;
+      total?: number;
+    };
+    PecaCatalogo: {
+      id?: string;
+      nome?: string;
+      categoria?: string;
+      gramas?: string;
+      minutos?: number;
+      preco?: string;
+    };
+    ImpressoraCatalogo: {
+      id?: string;
+      nome?: string;
+      modelo?: string;
+      watts?: string;
+    };
+    PaginaResponseImpressoraCatalogo: {
+      itens?: Array<components["schemas"]["ImpressoraCatalogo"]>;
+      pagina?: number;
+      tamanho?: number;
+      total?: number;
+    };
+    PaginaResponseFilamentoCatalogo: {
+      itens?: Array<components["schemas"]["FilamentoCatalogo"]>;
+      pagina?: number;
+      tamanho?: number;
+      total?: number;
+    };
+    EmbalagemCatalogo: { id?: string; nome?: string; custo?: string };
+    PaginaResponseEmbalagemCatalogo: {
+      itens?: Array<components["schemas"]["EmbalagemCatalogo"]>;
       pagina?: number;
       tamanho?: number;
       total?: number;

@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
+  useWindowDimensions,
   StyleSheet,
   Text,
   TextInput,
@@ -17,10 +18,12 @@ export function Screen({
   children,
   scroll = true,
 }: PropsWithChildren<{ scroll?: boolean }>) {
+  const wide = useWindowDimensions().width >= 900;
   const content = (
     <View
       style={[
         styles.content,
+        { padding: wide ? 32 : 16, gap: wide ? 20 : 12 },
         scroll ? { flexGrow: 1 } : { flex: 1, minHeight: 0 },
       ]}
     >
@@ -72,11 +75,13 @@ export function Card({
   children,
   style,
 }: PropsWithChildren<{ style?: StyleProp<ViewStyle> }>) {
+  const wide = useWindowDimensions().width >= 900;
   const t = useTheme();
   return (
     <View
       style={[
         styles.card,
+        wide && { padding: 20, borderRadius: 16, gap: 10 },
         { backgroundColor: t.surface, borderColor: t.border },
         style,
       ]}
@@ -164,14 +169,17 @@ export function Button({
 }
 export function Field({
   label,
+  labelColor,
   style,
   ...props
-}: TextInputProps & { label: string }) {
+}: TextInputProps & { label: string; labelColor?: string }) {
   const t = useTheme();
   const [focused, setFocused] = useState(false);
   return (
     <View style={{ gap: 8 }}>
-      <Text style={{ color: t.text, fontSize: 14, fontWeight: "600" }}>
+      <Text
+        style={{ color: labelColor ?? t.text, fontSize: 14, fontWeight: "600" }}
+      >
         {label}
       </Text>
       <TextInput
@@ -362,12 +370,12 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 24,
   },
-  card: { padding: 20, borderWidth: 1, borderRadius: 12, gap: 14 },
+  card: { padding: 14, borderWidth: 1, borderRadius: 14, gap: 8 },
   button: {
-    minHeight: 46,
+    minHeight: 44,
     paddingHorizontal: 18,
     paddingVertical: 12,
-    borderRadius: 9,
+    borderRadius: 12,
     borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
@@ -375,7 +383,7 @@ const styles = StyleSheet.create({
   input: {
     minHeight: 48,
     borderWidth: 1,
-    borderRadius: 9,
+    borderRadius: 12,
     padding: 13,
     fontSize: 16,
   },

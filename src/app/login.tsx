@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,8 +14,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/auth/provider";
 import { useTheme } from "@/theme/provider";
-import { Body, Button, Card, Field, Notice } from "@/components/ui";
+import { Body, Button, Field, Notice } from "@/components/ui";
 import { BrandLogo } from "@/components/brand-logo";
+import { openWebsite } from "@/features/website";
 export default function Login() {
   const auth = useAuth();
   const t = useTheme();
@@ -27,7 +29,12 @@ export default function Login() {
   const [help, setHelp] = useState(false);
   if (auth.loading)
     return (
-      <View style={[s.loading, { backgroundColor: t.background }]}>
+      <View
+        style={[
+          s.loading,
+          { backgroundColor: wide ? t.background : t.primary },
+        ]}
+      >
         <ActivityIndicator
           color={t.primaryText}
           accessibilityLabel="Restaurando sessão"
@@ -52,18 +59,23 @@ export default function Login() {
     }
   }
   return (
-    <SafeAreaView style={[s.loading, { backgroundColor: t.background }]}>
+    <SafeAreaView
+      style={[s.loading, { backgroundColor: wide ? t.background : t.primary }]}
+    >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={s.container}
+          contentContainerStyle={[s.container, !wide && { padding: 28 }]}
         >
-          <View style={[s.layout, wide && s.desktop]}>
+          <View style={[s.layout, wide ? s.desktop : s.mobile]}>
             <View style={wide ? s.brandDesktop : s.brandMobile}>
-              <BrandLogo width={wide ? 390 : 240} />
+              <BrandLogo
+                width={wide ? 360 : 230}
+                style={!wide && { tintColor: "#F4EEE4" }}
+              />
               {wide && (
                 <>
                   <Text
@@ -96,32 +108,57 @@ export default function Login() {
                 </>
               )}
             </View>
-            <Card style={[s.form, wide && { padding: 36 }]}>
-              <Text
-                style={{
-                  color: t.muted,
-                  fontSize: 11,
-                  fontWeight: "700",
-                  letterSpacing: 1.5,
-                }}
-              >
-                BOAS-VINDAS À COST3D
-              </Text>
-              <Text
-                accessibilityRole="header"
-                style={{
-                  color: t.text,
-                  fontSize: 28,
-                  fontWeight: "700",
-                  letterSpacing: -0.6,
-                }}
-              >
-                Bom ter você por aqui.
-              </Text>
-              <Body muted>Entre na sua conta para continuar.</Body>
+            <View
+              style={[
+                s.form,
+                wide && {
+                  padding: 36,
+                  backgroundColor: t.surface,
+                  borderColor: t.border,
+                  borderWidth: 1,
+                },
+              ]}
+            >
+              {wide ? (
+                <>
+                  <Text
+                    style={{
+                      color: t.muted,
+                      fontSize: 11,
+                      fontWeight: "700",
+                      letterSpacing: 1.5,
+                    }}
+                  >
+                    BOAS-VINDAS À COST3D
+                  </Text>
+                  <Text
+                    accessibilityRole="header"
+                    style={{
+                      color: t.text,
+                      fontSize: 28,
+                      fontWeight: "700",
+                      letterSpacing: -0.6,
+                    }}
+                  >
+                    Bom ter você por aqui.
+                  </Text>
+                  <Body muted>Entre na sua conta para continuar.</Body>
+                </>
+              ) : (
+                <Text
+                  style={{
+                    color: "#F4EEE4",
+                    textAlign: "center",
+                    fontSize: 14,
+                  }}
+                >
+                  Gestão e cálculo de custos de impressão 3D
+                </Text>
+              )}
               <View style={{ gap: 20, marginTop: 10 }}>
                 <Field
                   label="E-mail"
+                  labelColor={wide ? undefined : "#F4EEE4"}
                   placeholder="voce@exemplo.com"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -133,6 +170,7 @@ export default function Login() {
                 />
                 <Field
                   label="Senha"
+                  labelColor={wide ? undefined : "#F4EEE4"}
                   placeholder="Digite sua senha"
                   secureTextEntry={!visible}
                   autoCapitalize="none"
@@ -143,34 +181,68 @@ export default function Login() {
                   onSubmitEditing={() => void submit()}
                 />
               </View>
-              <Button
-                label={visible ? "Ocultar senha" : "Mostrar senha"}
-                variant="ghost"
-                onPress={() => setVisible(!visible)}
-              />
+              {wide && (
+                <Button
+                  label={visible ? "Ocultar senha" : "Mostrar senha"}
+                  variant="ghost"
+                  onPress={() => setVisible(!visible)}
+                />
+              )}
               {!!(error || auth.error) && (
                 <Notice
                   message={error || auth.error}
                   onRetry={auth.error ? () => void auth.restore() : undefined}
                 />
               )}
-              <Button
-                label="Entrar"
-                busy={busy}
-                onPress={() => void submit()}
-              />
-              <Button
-                label="Ainda não tem conta?"
-                variant="ghost"
-                onPress={() => setHelp(!help)}
-              />
-              {help && (
-                <Body muted>
-                  Peça à pessoa responsável pela loja para criar seu acesso com
-                  seu e-mail.
-                </Body>
+              {wide ? (
+                <>
+                  <Button
+                    label="Entrar"
+                    busy={busy}
+                    onPress={() => void submit()}
+                  />
+                  <Button
+                    label="Ainda não tem conta?"
+                    variant="ghost"
+                    onPress={() => setHelp(!help)}
+                  />
+                  {help && (
+                    <Body muted>
+                      Peça à pessoa responsável pela loja para criar seu acesso
+                      com seu e-mail.
+                    </Body>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={busy}
+                    onPress={() => void submit()}
+                    style={s.mobileSubmit}
+                  >
+                    <Text style={{ color: t.primary, fontWeight: "700" }}>
+                      {busy ? "Entrando…" : "Entrar"}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="link"
+                    onPress={() =>
+                      void openWebsite("/recuperar-senha").catch(() =>
+                        setError(
+                          "Não foi possível abrir a recuperação de senha.",
+                        ),
+                      )
+                    }
+                    style={s.mobileLink}
+                  >
+                    <Text style={{ color: "#F4EEE4", fontWeight: "600" }}>
+                      Esqueci minha senha
+                    </Text>
+                  </Pressable>
+                </>
               )}
-            </Card>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -188,6 +260,15 @@ const s = StyleSheet.create({
   layout: { width: "100%", maxWidth: 1040, alignItems: "center", gap: 28 },
   desktop: { flexDirection: "row", gap: 72 },
   brandDesktop: { flex: 1, gap: 24 },
-  brandMobile: { paddingVertical: 8 },
-  form: { width: "100%", maxWidth: 420, padding: 24, borderRadius: 16 },
+  mobile: { maxWidth: 420, gap: 14 },
+  mobileSubmit: {
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    backgroundColor: "#F4EEE4",
+  },
+  mobileLink: { minHeight: 44, alignItems: "center", justifyContent: "center" },
+  brandMobile: { alignItems: "center" },
+  form: { width: "100%", maxWidth: 420, gap: 14, borderRadius: 16 },
 });

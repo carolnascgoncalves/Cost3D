@@ -1,85 +1,64 @@
-import { router } from "expo-router";
-import { Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator } from "react-native";
+import { ModuleScreen, MenuRows } from "@/components/module-screen";
+import { Body, Card, Notice } from "@/components/ui";
 import { useAuth } from "@/auth/provider";
-import { useTheme } from "@/theme/provider";
-import { Body, Button, Card, Heading, Screen } from "@/components/ui";
+import { useApiQuery } from "@/hooks/use-api-query";
+import { quantity } from "@/features/format";
+import type { components } from "@/api/schema";
 export default function Home() {
   const { account } = useAuth();
-  const t = useTheme();
-  const wide = useWindowDimensions().width >= 700;
+  const q = useApiQuery<components["schemas"]["InicioLoja"]>(
+    account?.tenantId ? "/inicio" : null,
+  );
+  const low = q.data?.estoqueCritico;
   return (
-    <Screen>
-      <Heading
-        title="Boas-vindas ao Cost3D"
-        subtitle="Sua loja organizada, de onde você estiver."
-      />
-      <Card style={{ backgroundColor: t.accentTint }}>
-        <Text
-          style={{
-            color: t.primaryText,
-            fontSize: 12,
-            fontWeight: "700",
-            letterSpacing: 1.5,
-          }}
-        >
-          CADA CAMADA CONTA
-        </Text>
-        <Text
-          style={{
-            color: t.text,
-            fontSize: 24,
-            fontWeight: "600",
-            lineHeight: 31,
-          }}
-        >
-          Da primeira camada{wide ? "\n" : " "}ao próximo pedido.
-        </Text>
-        <Body muted>
-          Um espaço para cuidar dos seus clientes e acompanhar o que entra e sai
-          da sua produção.
-        </Body>
-      </Card>
-      {!!account?.tenantId && (
-        <View style={{ flexDirection: wide ? "row" : "column", gap: 16 }}>
-          <Card style={{ flex: 1 }}>
-            <Text style={{ color: t.text, fontSize: 20, fontWeight: "600" }}>
-              Clientes
-            </Text>
-            <Body muted>Contatos, orçamentos e informações sempre à mão.</Body>
-            <Button
-              label="Ver clientes"
-              onPress={() => router.navigate("/customers")}
-            />
+    <ModuleScreen section="Painel principal" title="Boas-vindas ao Cost3D!">
+      {!account?.tenantId ? (
+        <MenuRows entries={[{ label: "Minha conta", route: "/account" }]} />
+      ) : q.loading ? (
+        <ActivityIndicator />
+      ) : q.error ? (
+        <Notice message={q.error} onRetry={q.retry} />
+      ) : (
+        <>
+          <Card>
+            <Body muted>Continue de onde parou</Body>
+            <Body>Seus últimos cálculos</Body>
+            {q.data?.recentes?.length ? (
+              q.data.recentes.map((r) => (
+                <Body key={r.id}>
+                  {r.nome} · {r.situacao}
+                </Body>
+              ))
+            ) : (
+              <Body muted>Nenhum cálculo salvo ainda.</Body>
+            )}
           </Card>
-          <Card style={{ flex: 1 }}>
-            <Text style={{ color: t.text, fontSize: 20, fontWeight: "600" }}>
-              Movimentações
-            </Text>
-            <Body muted>
-              Acompanhe materiais, produção e vendas no extrato.
-            </Body>
-            <Button
-              label="Ver movimentações"
-              onPress={() => router.navigate("/movements")}
-            />
-          </Card>
-        </View>
-      )}
-      {!account?.tenantId && (
-        <Card>
-          <Body>
-            Sua conta administrativa ainda não tem uma loja vinculada.
-          </Body>
-          <Button
-            label="Minha conta"
-            onPress={() => router.navigate("/account")}
+          <Body>Precisa de atenção</Body>
+          {low && (
+            <Card>
+              <Body>
+                {low.nome} {low.cor} acabando
+              </Body>
+              <Body muted>{quantity(low.estoque, "g")} restantes</Body>
+            </Card>
+          )}
+          {!!q.data?.aguardandoVenda && (
+            <Card>
+              <Body>{q.data.aguardandoVenda} un. aguardando venda</Body>
+              <Body muted>Peças produzidas em estoque</Body>
+            </Card>
+          )}
+          {!low && !q.data?.aguardandoVenda && (
+            <Card>
+              <Body muted>Nenhum alerta de estoque.</Body>
+            </Card>
+          )}
+          <MenuRows
+            entries={[{ label: "Abrir dashboard", route: "/dashboard" }]}
           />
-        </Card>
+        </>
       )}
-      <Text style={{ color: t.pageMuted, fontSize: 13, lineHeight: 21 }}>
-        Cálculos, peças, materiais e vendas continuam disponíveis no site
-        durante a migração.
-      </Text>
-    </Screen>
+    </ModuleScreen>
   );
 }

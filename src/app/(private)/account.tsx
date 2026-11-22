@@ -111,6 +111,13 @@ export default function Account() {
               />
             </>
           )}
+          {!changed && (
+            <Button
+              label="Sair da conta"
+              variant="ghost"
+              onPress={() => void signOut().catch((e) => setMessage(e.message))}
+            />
+          )}
           {!!message && <Notice message={message} />}
         </Card>
       </View>

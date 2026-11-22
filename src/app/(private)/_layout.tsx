@@ -16,13 +16,13 @@ import { ThemeProvider, useTheme } from "@/theme/provider";
 import { WorkspaceProvider } from "@/features/workspace";
 import { luminance } from "@/theme/colors";
 import { Notice } from "@/components/ui";
-import { BrandLogo } from "@/components/brand-logo";
+import { DesktopNav } from "@/components/desktop-nav";
 const items = [
-  { path: "/home", label: "Início", icon: "⌂", store: false },
-  { path: "/customers", label: "Clientes", icon: "♧", store: true },
-  { path: "/movements", label: "Extrato", icon: "⇄", store: true },
-  { path: "/account", label: "Conta", icon: "◎", store: false },
-  { path: "/more", label: "Mais", icon: "⋯", store: true },
+  { path: "/home", label: "Início", store: false },
+  { path: "/catalog", label: "Catálogo", store: true },
+  { path: "/calculate", label: "Calcular", store: true },
+  { path: "/sales", label: "Vendas", store: true },
+  { path: "/more", label: "Mais", store: false },
 ] as const;
 export default function PrivateLayout() {
   const { account, loading } = useAuth();
@@ -62,6 +62,11 @@ export default function PrivateLayout() {
   if (!account) return <Redirect href="/login" />;
   if (account.trocaSenhaObrigatoria && path !== "/account")
     return <Redirect href="/account" />;
+  if (
+    !account.tenantId &&
+    ["/catalog", "/sales", "/calculate", "/dashboard"].includes(path)
+  )
+    return <Redirect href="/account" />;
   return (
     <ThemeProvider value={theme}>
       <WorkspaceProvider key={account.id}>
@@ -96,7 +101,13 @@ function Shell({
         !item.store || (!!account?.tenantId && !account.trocaSenhaObrigatoria),
     )
     .map((item) => {
-      const selected = path === item.path || path.startsWith(item.path + "/");
+      const selected =
+        path === item.path ||
+        (item.path === "/home" && path === "/dashboard") ||
+        (item.path === "/more" &&
+          ["/customers", "/movements", "/account"].some(
+            (prefix) => path === prefix || path.startsWith(prefix + "/"),
+          ));
       return (
         <Pressable
           key={item.path}
@@ -108,23 +119,26 @@ function Shell({
             s.navItem,
             !wide && s.mobileItem,
             {
-              backgroundColor: selected ? t.accent : "transparent",
+              backgroundColor: selected && wide ? t.accentTint : "transparent",
               opacity: pressed ? 0.7 : 1,
             },
           ]}
         >
-          <Text
-            style={{ color: selected ? t.onAccent : t.muted, fontSize: 21 }}
-            accessibilityElementsHidden
-            importantForAccessibility="no"
-          >
-            {item.icon}
-          </Text>
+          {!wide && (
+            <View
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: 6,
+                backgroundColor: selected ? t.primary : t.border,
+              }}
+            />
+          )}
           <Text
             style={{
-              color: selected ? t.onAccent : t.text,
+              color: selected ? t.primaryText : t.muted,
               fontWeight: selected ? "700" : "500",
-              fontSize: wide ? 14 : 12,
+              fontSize: wide ? 14 : 11,
             }}
           >
             {item.label}
@@ -137,71 +151,56 @@ function Shell({
       <StatusBar style={luminance(t.background) < 0.2 ? "light" : "dark"} />
       <View style={[s.shell, wide && { flexDirection: "row" }]}>
         {wide && (
-          <View
-            style={[
-              s.sidebar,
-              { backgroundColor: t.surface, borderColor: t.border },
-            ]}
-          >
-            <View style={s.brandRow}>
-              <BrandLogo width={180} />
-            </View>
-            <Text
-              style={{
-                color: t.muted,
-                fontSize: 11,
-                letterSpacing: 2,
-                marginBottom: 10,
-              }}
-            >
-              MINHA LOJA
-            </Text>
-            {navigation}
-          </View>
+          <DesktopNav
+            store={!!account?.tenantId && !account.trocaSenhaObrigatoria}
+            onError={() => setExitError("Não foi possível abrir o site.")}
+          />
         )}
         <View style={s.main}>
-          <View
-            style={[
-              s.header,
-              { backgroundColor: t.surface, borderColor: t.border },
-            ]}
-          >
-            <View style={{ flex: 1, gap: 4 }}>
-              <Text
-                style={{ color: t.muted, fontSize: 11, letterSpacing: 1.4 }}
-              >
-                CADA CAMADA CONTA
-              </Text>
-              <Text
-                style={{ color: t.text, fontSize: 18, fontWeight: "700" }}
-                numberOfLines={1}
-              >
-                {name || "Cost3D"}
-              </Text>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              disabled={busy}
-              style={s.exit}
-              onPress={async () => {
-                setBusy(true);
-                setExitError("");
-                try {
-                  await signOut();
-                } catch {
-                  setExitError(
-                    "Não foi possível encerrar a sessão. Tente sair novamente.",
-                  );
-                } finally {
-                  setBusy(false);
-                }
-              }}
+          {wide && (
+            <View
+              style={[
+                s.header,
+                { backgroundColor: t.surface, borderColor: t.border },
+              ]}
             >
-              <Text style={{ color: t.primaryText, fontWeight: "600" }}>
-                {busy ? "Saindo…" : "Sair"}
-              </Text>
-            </Pressable>
-          </View>
+              <View style={{ flex: 1, gap: 4 }}>
+                <Text
+                  style={{ color: t.muted, fontSize: 11, letterSpacing: 1.4 }}
+                >
+                  CADA CAMADA CONTA
+                </Text>
+                <Text
+                  style={{ color: t.text, fontSize: 18, fontWeight: "700" }}
+                  numberOfLines={1}
+                >
+                  {name || "Cost3D"}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                disabled={busy}
+                style={s.exit}
+                onPress={async () => {
+                  setBusy(true);
+                  setExitError("");
+                  try {
+                    await signOut();
+                  } catch {
+                    setExitError(
+                      "Não foi possível encerrar a sessão. Tente sair novamente.",
+                    );
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                <Text style={{ color: t.primaryText, fontWeight: "600" }}>
+                  {busy ? "Saindo…" : "Sair"}
+                </Text>
+              </Pressable>
+            </View>
+          )}
           {!!(exitError || error) && (
             <View style={{ padding: 12 }}>
               <Notice
@@ -232,14 +231,6 @@ const s = StyleSheet.create({
   page: { flex: 1 },
   shell: { flex: 1, minHeight: 0 },
   main: { flex: 1, minHeight: 0 },
-  sidebar: { width: 236, padding: 20, gap: 10, borderRightWidth: 1 },
-  brandRow: {
-    flexDirection: "row",
-    gap: 10,
-    alignItems: "center",
-    marginBottom: 36,
-    marginTop: 12,
-  },
   navItem: {
     minHeight: 50,
     paddingHorizontal: 14,
@@ -269,5 +260,10 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  bottom: { flexDirection: "row", padding: 6, gap: 4, borderTopWidth: 1 },
+  bottom: {
+    flexDirection: "row",
+    minHeight: 64,
+    alignItems: "center",
+    borderTopWidth: 1,
+  },
 });
