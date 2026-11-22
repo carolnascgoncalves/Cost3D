@@ -123,6 +123,65 @@
         "security": [{ "bearerAuth": [] }]
       }
     },
+    "/api/v1/auth/web/refresh": {
+      "post": {
+        "tags": ["api-web-auth-controller"],
+        "operationId": "renovar",
+        "parameters": [
+          {
+            "name": "cost3d_refresh",
+            "in": "cookie",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/SessaoWeb" } }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/web/logout": {
+      "post": {
+        "tags": ["api-web-auth-controller"],
+        "operationId": "sair",
+        "parameters": [
+          {
+            "name": "cost3d_refresh",
+            "in": "cookie",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/v1/auth/web/login": {
+      "post": {
+        "tags": ["api-web-auth-controller"],
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Login" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": { "schema": { "$ref": "#/components/schemas/SessaoWeb" } }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/senha": {
       "post": {
         "tags": ["api-auth-controller"],
@@ -172,7 +231,7 @@
     "/api/v1/auth/login": {
       "post": {
         "tags": ["api-auth-controller"],
-        "operationId": "login",
+        "operationId": "login_1",
         "requestBody": {
           "content": {
             "application/json": {
@@ -322,6 +381,51 @@
         "security": [{ "bearerAuth": [] }]
       }
     },
+    "/api/v1/clientes/{id}/orcamentos": {
+      "get": {
+        "tags": ["api-clientes-controller"],
+        "operationId": "orcamentos",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "arquivados",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean", "default": false }
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0,
+              "maximum": 100000,
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginaResponseOrcamentoResumo"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
     "/api/v1/auth/me": {
       "get": {
         "tags": ["api-auth-controller"],
@@ -368,6 +472,27 @@
           "arquivado": { "type": "boolean" }
         }
       },
+      "SessaoWeb": {
+        "type": "object",
+        "properties": {
+          "accessToken": { "type": "string" },
+          "tokenType": { "type": "string" },
+          "expiresIn": { "type": "integer", "format": "int64" }
+        }
+      },
+      "Login": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "senha": { "type": "string", "maxLength": 72, "minLength": 0 }
+        },
+        "required": ["email", "senha"]
+      },
       "AlterarSenhaRequest": {
         "type": "object",
         "properties": {
@@ -397,19 +522,6 @@
           "expiresIn": { "type": "integer", "format": "int64" },
           "refreshExpiraEm": { "type": "string", "format": "date-time" }
         }
-      },
-      "Login": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email",
-            "maxLength": 150,
-            "minLength": 0
-          },
-          "senha": { "type": "string", "maxLength": 72, "minLength": 0 }
-        },
-        "required": ["email", "senha"]
       },
       "Arquivo": {
         "type": "object",
@@ -518,6 +630,29 @@
           "itens": {
             "type": "array",
             "items": { "$ref": "#/components/schemas/ClienteResumo" }
+          },
+          "pagina": { "type": "integer", "format": "int32" },
+          "tamanho": { "type": "integer", "format": "int32" },
+          "total": { "type": "integer", "format": "int64" }
+        }
+      },
+      "OrcamentoResumo": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "codigo": { "type": "string" },
+          "titulo": { "type": "string" },
+          "situacao": { "type": "string" },
+          "criadoEm": { "type": "string", "format": "date-time" },
+          "total": { "type": "string" }
+        }
+      },
+      "PaginaResponseOrcamentoResumo": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OrcamentoResumo" }
           },
           "pagina": { "type": "integer", "format": "int32" },
           "tamanho": { "type": "integer", "format": "int32" },

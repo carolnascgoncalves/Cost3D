@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Redirect, Slot, usePathname, router } from "expo-router";
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -17,11 +16,13 @@ import { ThemeProvider, useTheme } from "@/theme/provider";
 import { WorkspaceProvider } from "@/features/workspace";
 import { luminance } from "@/theme/colors";
 import { Notice } from "@/components/ui";
+import { BrandLogo } from "@/components/brand-logo";
 const items = [
   { path: "/home", label: "Início", icon: "⌂", store: false },
   { path: "/customers", label: "Clientes", icon: "♧", store: true },
   { path: "/movements", label: "Extrato", icon: "⇄", store: true },
   { path: "/account", label: "Conta", icon: "◎", store: false },
+  { path: "/more", label: "Mais", icon: "⋯", store: true },
 ] as const;
 export default function PrivateLayout() {
   const { account, loading } = useAuth();
@@ -143,21 +144,7 @@ function Shell({
             ]}
           >
             <View style={s.brandRow}>
-              <Image
-                source={require("../../../assets/images/cost3d-robot.png")}
-                style={{ width: 40, height: 41 }}
-                resizeMode="contain"
-              />
-              <Text
-                style={{
-                  color: t.primaryText,
-                  fontWeight: "700",
-                  fontSize: 23,
-                  letterSpacing: 2,
-                }}
-              >
-                cost3d
-              </Text>
+              <BrandLogo width={180} />
             </View>
             <Text
               style={{

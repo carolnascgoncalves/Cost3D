@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Redirect } from "expo-router";
 import {
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -15,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/auth/provider";
 import { useTheme } from "@/theme/provider";
 import { Body, Button, Card, Field, Notice } from "@/components/ui";
+import { BrandLogo } from "@/components/brand-logo";
 export default function Login() {
   const auth = useAuth();
   const t = useTheme();
@@ -63,24 +63,7 @@ export default function Login() {
         >
           <View style={[s.layout, wide && s.desktop]}>
             <View style={wide ? s.brandDesktop : s.brandMobile}>
-              <View style={s.wordmark}>
-                <Image
-                  source={require("../../assets/images/cost3d-robot.png")}
-                  accessibilityLabel="Robô Cost3D"
-                  style={{ width: wide ? 70 : 45, height: wide ? 72 : 46 }}
-                  resizeMode="contain"
-                />
-                <Text
-                  style={{
-                    color: t.primaryText,
-                    fontSize: wide ? 50 : 30,
-                    fontWeight: "700",
-                    letterSpacing: wide ? 6 : 3,
-                  }}
-                >
-                  cost3d
-                </Text>
-              </View>
+              <BrandLogo width={wide ? 390 : 240} />
               {wide && (
                 <>
                   <Text
@@ -206,6 +189,5 @@ const s = StyleSheet.create({
   desktop: { flexDirection: "row", gap: 72 },
   brandDesktop: { flex: 1, gap: 24 },
   brandMobile: { paddingVertical: 8 },
-  wordmark: { flexDirection: "row", gap: 12, alignItems: "center" },
   form: { width: "100%", maxWidth: 420, padding: 24, borderRadius: 16 },
 });

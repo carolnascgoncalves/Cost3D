@@ -17,6 +17,8 @@ export interface components {
       observacoes?: string;
       arquivado?: boolean;
     };
+    SessaoWeb: { accessToken?: string; tokenType?: string; expiresIn?: number };
+    Login: { email: string; senha: string };
     AlterarSenhaRequest: {
       senhaAtual: string;
       novaSenha: string;
@@ -30,7 +32,6 @@ export interface components {
       expiresIn?: number;
       refreshExpiraEm?: string;
     };
-    Login: { email: string; senha: string };
     Arquivo: { arquivado: boolean };
     Tema: {
       id?: string;
@@ -90,6 +91,20 @@ export interface components {
     };
     PaginaResponseClienteResumo: {
       itens?: Array<components["schemas"]["ClienteResumo"]>;
+      pagina?: number;
+      tamanho?: number;
+      total?: number;
+    };
+    OrcamentoResumo: {
+      id?: string;
+      codigo?: string;
+      titulo?: string;
+      situacao?: string;
+      criadoEm?: string;
+      total?: string;
+    };
+    PaginaResponseOrcamentoResumo: {
+      itens?: Array<components["schemas"]["OrcamentoResumo"]>;
       pagina?: number;
       tamanho?: number;
       total?: number;

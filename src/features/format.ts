@@ -19,6 +19,11 @@ export function decimal(value: string | undefined, places = 3) {
     (negative && units !== 0n ? "-" : "") + integer + (rest ? "," + rest : "")
   );
 }
+export function reais(value: string | undefined) {
+  if (value == null) return "—";
+  const [whole, cents = ""] = decimal(value, 2).split(",");
+  return `R$ ${whole},${cents.padEnd(2, "0")}`;
+}
 export function quantity(
   value: string | undefined,
   measure = "un.",

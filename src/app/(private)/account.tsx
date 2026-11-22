@@ -61,7 +61,6 @@ export default function Account() {
       <View style={{ width: "100%", maxWidth: 640, gap: 20 }}>
         <Card>
           <Body>{account?.email}</Body>
-          <Body muted>Perfil: {account?.perfil}</Body>
         </Card>
         <Card>
           {changed ? (

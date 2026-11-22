@@ -17,6 +17,7 @@ import {
 import { useTheme } from "@/theme/provider";
 import { useApiQuery } from "@/hooks/use-api-query";
 import type { Customer, CustomerInput } from "@/features/contracts";
+import { CustomerBudgets } from "@/features/customer-budgets";
 export default function CustomerDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const isNew = id === "new";
@@ -299,6 +300,7 @@ export default function CustomerDetail() {
                   </View>
                 </Card>
               )}
+              {query.data?.id === id && <CustomerBudgets key={id} id={id} />}
             </>
           )}
         </View>

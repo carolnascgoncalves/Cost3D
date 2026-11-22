@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { contrast, createTheme, readable } from "../src/theme/colors.ts";
 import {
   decimal,
+  reais,
   quantity,
   toIsoDate,
   productionDescription,
@@ -49,6 +50,10 @@ test("decimal formatting preserves values beyond floating point precision and ro
   );
   assert.equal(decimal("999.9995"), "1.000");
   assert.equal(decimal("-0.0001", 1), "0");
+});
+test("budget totals retain cents and decimal precision", () => {
+  assert.equal(reais("9007199254740993.10"), "R$ 9.007.199.254.740.993,10");
+  assert.equal(reais("0"), "R$ 0,00");
 });
 test("filament quantities use kg or g; unit sales keep un.", () => {
   assert.equal(quantity("-5415.300", "g", true), "-5,42 kg");
