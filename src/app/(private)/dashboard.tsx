@@ -203,7 +203,7 @@ export default function Dashboard() {
                 </Pressable>
               ))}
               <Card>
-                <Body>Estoque de filamentos</Body>
+                <Body strong={!wide}>Estoque de filamentos</Body>
                 {data.estoque?.length ? (
                   data.estoque.map((f, i) => (
                     <Meter
@@ -245,89 +245,150 @@ export default function Dashboard() {
         <Notice message={q.error} onRetry={q.retry} />
       ) : data ? (
         <>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            {[
-              ["Lucro líquido estimado", reais(data.lucro)],
-              ["Unidades vendidas", String(data.vendas ?? 0)],
-              ["Horas impressas", decimal(data.horas, 1) + " h"],
-              ["Filamento usado", decimal(data.filamentoKg, 2) + " kg"],
-            ].map(([label, value]) => (
-              <Card
-                key={label}
-                style={{ width: wide ? "23%" : "47%", flexGrow: 1 }}
-              >
-                <Body muted>{label}</Body>
-                <Text
-                  style={{
-                    fontSize: 20,
-                    fontWeight: "700",
-                    color:
-                      label === "Lucro líquido estimado" &&
-                      Number(data.lucro) < 0
-                        ? t.danger
-                        : t.text,
-                  }}
+          {(wide || visao === "indicadores") && (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+              {[
+                ["Lucro líquido estimado", reais(data.lucro)],
+                ["Unidades vendidas", String(data.vendas ?? 0)],
+                ["Horas impressas", decimal(data.horas, 1) + " h"],
+                ["Filamento usado", decimal(data.filamentoKg, 2) + " kg"],
+              ].map(([label, value]) => (
+                <Card
+                  key={label}
+                  style={{ width: wide ? "23%" : "47%", flexGrow: 1 }}
                 >
-                  {value}
-                </Text>
+                  <Body muted>{label}</Body>
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      fontWeight: "700",
+                      color:
+                        label === "Lucro líquido estimado" &&
+                        Number(data.lucro) < 0
+                          ? t.danger
+                          : t.text,
+                    }}
+                  >
+                    {value}
+                  </Text>
+                </Card>
+              ))}
+            </View>
+          )}
+          {(wide || (visao !== "fluxo" && visao !== "indicadores")) && (
+            <>
+              <ProfitChart key={period} points={data.serie ?? []} />
+              <View style={{ flexDirection: wide ? "row" : "column", gap: 12 }}>
+                <Card style={wide ? { flex: 1 } : undefined}>
+                  <Body strong={!wide}>Vendas por plataforma</Body>
+                  {data.plataformas?.length ? (
+                    data.plataformas.map((p) => (
+                      <Meter
+                        key={p.nome}
+                        label={p.nome ?? "Sem plataforma"}
+                        value={`${p.vendas} un.`}
+                        percent={(100 * (p.vendas ?? 0)) / maxSales}
+                      />
+                    ))
+                  ) : (
+                    <Body muted>Nenhuma venda no período.</Body>
+                  )}
+                </Card>
+                <Card style={wide ? { flex: 1 } : undefined}>
+                  <Body strong={!wide}>Estoque de filamentos</Body>
+                  {data.estoque?.length ? (
+                    data.estoque.map((f, i) => (
+                      <Meter
+                        key={i}
+                        label={f.nome ?? "Filamento"}
+                        value={quantity(f.gramas, "g")}
+                        percent={f.restante ?? 0}
+                      />
+                    ))
+                  ) : (
+                    <Body muted>Nenhum filamento cadastrado.</Body>
+                  )}
+                </Card>
+              </View>
+            </>
+          )}
+          {(wide || visao === "fluxo") && (
+            <>
+              <Card>
+                <Body strong={!wide}>Fluxo de produção</Body>
+                {!wide ? (
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    {[
+                      [data.calculadas, "Calculadas"],
+                      [data.produzidas, "Produzidas"],
+                      [data.vendidas, "Vendidas"],
+                    ].map(([value, label]) => (
+                      <View
+                        key={label}
+                        style={{ flex: 1, alignItems: "center" }}
+                      >
+                        <Text
+                          style={{
+                            color: t.text,
+                            fontSize: 22,
+                            fontWeight: "700",
+                          }}
+                        >
+                          {value}
+                        </Text>
+                        <Body muted>{label}</Body>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <Body muted>
+                    {data.calculadas} calculadas · {data.produzidas} produzidas
+                    · {data.vendidas} vendidas
+                  </Body>
+                )}
               </Card>
-            ))}
-          </View>
-          <ProfitChart key={period} points={data.serie ?? []} />
-          <View style={{ flexDirection: wide ? "row" : "column", gap: 12 }}>
-            <Card style={wide ? { flex: 1 } : undefined}>
-              <Body>Vendas por plataforma</Body>
-              {data.plataformas?.length ? (
-                data.plataformas.map((p) => (
-                  <Meter
-                    key={p.nome}
-                    label={p.nome ?? "Sem plataforma"}
-                    value={`${p.vendas} un.`}
-                    percent={(100 * (p.vendas ?? 0)) / maxSales}
-                  />
-                ))
-              ) : (
-                <Body muted>Nenhuma venda no período.</Body>
-              )}
-            </Card>
-            <Card style={wide ? { flex: 1 } : undefined}>
-              <Body>Estoque de filamentos</Body>
-              {data.estoque?.length ? (
-                data.estoque.map((f, i) => (
-                  <Meter
-                    key={i}
-                    label={f.nome ?? "Filamento"}
-                    value={quantity(f.gramas, "g")}
-                    percent={f.restante ?? 0}
-                  />
-                ))
-              ) : (
-                <Body muted>Nenhum filamento cadastrado.</Body>
-              )}
-            </Card>
-          </View>
-          <Card>
-            <Body>Fluxo de produção</Body>
-            <Body muted>
-              {data.calculadas} calculadas · {data.produzidas} produzidas ·{" "}
-              {data.vendidas} vendidas
-            </Body>
-          </Card>
-          <Card>
-            <Body>Para onde vai o custo</Body>
-            {data.custos?.some((c) => Number(c.valor) !== 0) ? (
-              data.custos.map((c) => (
-                <Meter
-                  key={c.nome}
-                  label={c.nome ?? "Custo"}
-                  value={reais(c.valor)}
-                  percent={c.percentual ?? 0}
-                />
-              ))
-            ) : (
-              <Body muted>Nenhum custo de produção neste período.</Body>
-            )}
-          </Card>
+              <Card>
+                <Body strong={!wide}>Para onde vai o custo</Body>
+                {data.custos?.some((c) => Number(c.valor) !== 0) ? (
+                  data.custos.map((c) => (
+                    <Meter
+                      key={c.nome}
+                      label={c.nome ?? "Custo"}
+                      value={reais(c.valor)}
+                      percent={c.percentual ?? 0}
+                    />
+                  ))
+                ) : (
+                  <Body muted>Nenhum custo de produção neste período.</Body>
+                )}
+              </Card>
+            </>
+          )}
+          {!wide && visao !== "indicadores" && (
+            <Button
+              variant="secondary"
+              label="Indicadores do período"
+              onPress={() => router.setParams({ visao: "indicadores" })}
+            />
+          )}
+          {!wide && (
+            <Button
+              label={
+                visao === "fluxo" || visao === "indicadores"
+                  ? "Voltar à visão geral"
+                  : "Fluxo de produção e custos"
+              }
+              variant="secondary"
+              onPress={() =>
+                router.setParams({
+                  visao:
+                    visao === "fluxo" || visao === "indicadores"
+                      ? "resumo"
+                      : "fluxo",
+                })
+              }
+            />
+          )}
           <Button
             label="Indicadores e cadastros"
             variant="secondary"

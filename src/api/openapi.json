@@ -517,6 +517,12 @@
             "in": "query",
             "required": false,
             "schema": { "type": "integer", "format": "int32", "default": 0 }
+          },
+          {
+            "name": "busca",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "" }
           }
         ],
         "responses": {
@@ -534,6 +540,37 @@
         "security": [{ "bearerAuth": [] }]
       }
     },
+    "/api/v1/catalogo/pecas/{id}/placas/{numero}/foto": {
+      "get": {
+        "tags": ["api-painel-controller"],
+        "operationId": "foto",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "numero",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "format": "int32" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/FotoCatalogo" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
     "/api/v1/catalogo/impressoras": {
       "get": {
         "tags": ["api-painel-controller"],
@@ -544,6 +581,12 @@
             "in": "query",
             "required": false,
             "schema": { "type": "integer", "format": "int32", "default": 0 }
+          },
+          {
+            "name": "busca",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "" }
           }
         ],
         "responses": {
@@ -571,6 +614,12 @@
             "in": "query",
             "required": false,
             "schema": { "type": "integer", "format": "int32", "default": 0 }
+          },
+          {
+            "name": "busca",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "" }
           }
         ],
         "responses": {
@@ -598,6 +647,12 @@
             "in": "query",
             "required": false,
             "schema": { "type": "integer", "format": "int32", "default": 0 }
+          },
+          {
+            "name": "busca",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "" }
           }
         ],
         "responses": {
@@ -758,7 +813,11 @@
           "id": { "type": "string", "format": "uuid" },
           "nome": { "type": "string" },
           "cor": { "type": "string" },
-          "estoque": { "type": "string" }
+          "estoque": { "type": "string" },
+          "codigoCor": { "type": "string" },
+          "pesoRolo": { "type": "string" },
+          "marca": { "type": "string" },
+          "precoRolo": { "type": "string" }
         }
       },
       "InicioLoja": {
@@ -834,6 +893,7 @@
           "medida": { "type": "string" },
           "entrou": { "type": "string" },
           "saiu": { "type": "string" },
+          "saldo": { "type": "string" },
           "pecasVendidas": { "type": "string" }
         }
       },
@@ -988,7 +1048,28 @@
           "categoria": { "type": "string" },
           "gramas": { "type": "string" },
           "minutos": { "type": "integer", "format": "int64" },
-          "preco": { "type": "string" }
+          "preco": { "type": "string" },
+          "placaMiniatura": { "type": "integer", "format": "int32" },
+          "modeloImpressora": { "type": "string" },
+          "materiais": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PecaMaterialResumo" }
+          }
+        }
+      },
+      "PecaMaterialResumo": {
+        "type": "object",
+        "properties": {
+          "material": { "type": "string" },
+          "corHex": { "type": "string" },
+          "pesoGramas": { "type": "number", "format": "double" }
+        }
+      },
+      "FotoCatalogo": {
+        "type": "object",
+        "properties": {
+          "tipo": { "type": "string" },
+          "base64": { "type": "string" }
         }
       },
       "ImpressoraCatalogo": {
@@ -997,7 +1078,8 @@
           "id": { "type": "string", "format": "uuid" },
           "nome": { "type": "string" },
           "modelo": { "type": "string" },
-          "watts": { "type": "string" }
+          "watts": { "type": "string" },
+          "aquecimento": { "type": "integer", "format": "int32" }
         }
       },
       "PaginaResponseImpressoraCatalogo": {
@@ -1029,7 +1111,8 @@
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "nome": { "type": "string" },
-          "custo": { "type": "string" }
+          "custo": { "type": "string" },
+          "usos": { "type": "integer", "format": "int64" }
         }
       },
       "PaginaResponseEmbalagemCatalogo": {

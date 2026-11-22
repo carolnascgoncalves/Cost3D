@@ -5,6 +5,7 @@ type Auth = {
   account: session.Account | null;
   loading: boolean;
   error: string;
+  offline: boolean;
   restore: () => Promise<void>;
   signIn: (email: string, senha: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -13,14 +14,17 @@ const Context = createContext<Auth>(null!);
 export function AuthProvider({ children }: React.PropsWithChildren) {
   const [account, setAccount] = useState<session.Account | null>(null);
   const [loading, setLoading] = useState(true);
+  const [offline, setOffline] = useState(false);
   const [error, setError] = useState("");
   async function restore() {
     setLoading(true);
+    setOffline(false);
     setError("");
     try {
       await session.refreshSession();
       setAccount(await session.request<session.Account>("/auth/me"));
     } catch (e) {
+      setOffline(e instanceof session.ApiError && e.status === 0);
       if (e instanceof session.ApiError && e.status === 401)
         await session.clearSession();
       else
@@ -42,6 +46,7 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
       value={{
         account,
         loading,
+        offline,
         error,
         restore,
         signIn: async (email, senha) => {

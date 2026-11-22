@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View, useWindowDimensions } from "react-native";
 import {
+  Badge,
+  ValueRow,
   Body,
   Card,
   Chip,
@@ -15,6 +17,7 @@ import { useApiQuery } from "@/hooks/use-api-query";
 import { useTheme } from "@/theme/provider";
 
 export function CustomerBudgets({ id }: { id: string }) {
+  const mobile = useWindowDimensions().width < 900;
   const t = useTheme();
   const [archived, setArchived] = useState(false);
   const [page, setPage] = useState(0);
@@ -29,7 +32,7 @@ export function CustomerBudgets({ id }: { id: string }) {
   }
   return (
     <View style={{ gap: 12 }}>
-      <Heading title="Orçamentos" />
+      {!mobile && <Heading title="Orçamentos" />}
       <View style={layout.row}>
         <Chip
           label="Atuais"
@@ -51,13 +54,36 @@ export function CustomerBudgets({ id }: { id: string }) {
           {data?.itens?.length ? (
             data.itens.map((budget) => (
               <Card key={budget.id}>
-                <Body>
-                  #{budget.codigo} · {budget.titulo}
-                </Body>
-                <Body muted>
-                  {budget.situacao} · {dateTime(budget.criadoEm)}
-                </Body>
-                <Body>Total · {reais(budget.total)}</Body>
+                {mobile ? (
+                  <>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <View style={{ flex: 1, gap: 4 }}>
+                        <Body muted>#{budget.codigo}</Body>
+                        <Body strong>{budget.titulo}</Body>
+                      </View>
+                      {!!budget.situacao && <Badge>{budget.situacao}</Badge>}
+                    </View>
+                    <Body muted>{dateTime(budget.criadoEm)}</Body>
+                    <ValueRow label="Total" value={reais(budget.total)} />
+                  </>
+                ) : (
+                  <>
+                    <Body>
+                      #{budget.codigo} · {budget.titulo}
+                    </Body>
+                    <Body muted>
+                      {budget.situacao} · {dateTime(budget.criadoEm)}
+                    </Body>
+                    <Body>Total · {reais(budget.total)}</Body>
+                  </>
+                )}
               </Card>
             ))
           ) : (

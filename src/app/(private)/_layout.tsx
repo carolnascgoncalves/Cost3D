@@ -1,7 +1,7 @@
+import { SessionLoading } from "@/components/brand-logo";
 import { useEffect, useState } from "react";
 import { Redirect, Slot, usePathname, router } from "expo-router";
 import {
-  ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
@@ -57,8 +57,7 @@ export default function PrivateLayout() {
     account?.trocaSenhaObrigatoria,
     revision,
   ]);
-  if (loading)
-    return <ActivityIndicator accessibilityLabel="Restaurando sessão" />;
+  if (loading) return <SessionLoading />;
   if (!account) return <Redirect href="/login" />;
   if (account.trocaSenhaObrigatoria && path !== "/account")
     return <Redirect href="/account" />;
@@ -130,7 +129,7 @@ function Shell({
                 width: 20,
                 height: 20,
                 borderRadius: 6,
-                backgroundColor: selected ? t.primary : t.border,
+                backgroundColor: selected ? t.primary : t.navInactive,
               }}
             />
           )}

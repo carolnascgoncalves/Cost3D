@@ -69,6 +69,8 @@ export function createTheme(input?: {
   const pageText =
     contrast(background, "#422329") >= 4.5 ? "#422329" : readable(background);
   return {
+    header: primary,
+    navInactive: mix(text, surface, 0.2),
     primary,
     accent,
     background,
@@ -85,6 +87,45 @@ export function createTheme(input?: {
     success: dark ? "#91D6A2" : "#27613A",
     danger: dark ? "#FFAAA5" : "#A23C37",
     dangerBackground: dark ? "#572626" : "#FBECEB",
+  };
+}
+export function createMobileTheme(input?: Parameters<typeof createTheme>[0]) {
+  const palette = {
+    primary: "#6b58b0",
+    accent: "#ede7fb",
+    background: "#faf5ff",
+  };
+  const standardStore =
+    input?.corPrimaria?.toLowerCase() === "#492e1e" &&
+    input?.corDestaque?.toLowerCase() === "#e9a695" &&
+    input?.corFundo?.toLowerCase() === "#f5e7da";
+  const overrides = standardStore ? undefined : input;
+  const theme = createTheme({
+    corPrimaria: validColor(overrides?.corPrimaria, palette.primary),
+    corDestaque: validColor(overrides?.corDestaque, palette.accent),
+    corFundo: validColor(overrides?.corFundo, palette.background),
+  });
+  const referenceSurface =
+    theme.background.toLowerCase() === palette.background;
+  return {
+    ...theme,
+    ...(referenceSurface && {
+      surface: "#ffffff",
+      text: "#3b2a5c",
+      pageText: "#3b2a5c",
+      muted: "#6b5a8e",
+      pageMuted: "#6b5a8e",
+      border: "#e4dbf5",
+    }),
+    accentTint:
+      theme.accent.toLowerCase() === palette.accent
+        ? palette.accent
+        : theme.accentTint,
+    header:
+      theme.primary.toLowerCase() === palette.primary
+        ? "#45346a"
+        : theme.primary,
+    navInactive: referenceSurface ? "#cbbfe8" : theme.border,
   };
 }
 export type Theme = ReturnType<typeof createTheme>;

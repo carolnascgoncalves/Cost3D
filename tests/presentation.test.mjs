@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { contrast, createTheme, readable } from "../src/theme/colors.ts";
+import {
+  contrast,
+  createTheme,
+  createMobileTheme,
+  readable,
+} from "../src/theme/colors.ts";
 import {
   decimal,
   reais,
@@ -20,6 +25,27 @@ test("tenant colors propagate and invalid colors fall back to Cost3D", () => {
   assert.equal(blue.accent, "#FFE966");
   assert.equal(blue.background, "#F5F9FF");
   assert.equal(createTheme({ corPrimaria: "url(evil)" }).primary, "#86202D");
+});
+test("mobile reference palette covers a default store and preserves a custom store", () => {
+  const standardStore = {
+    corPrimaria: "#492E1E",
+    corDestaque: "#e9a695",
+    corFundo: "#f5e7da",
+  };
+  const mobile = createMobileTheme(standardStore);
+  assert.deepEqual(mobile, createMobileTheme());
+  assert.equal(mobile.header, "#45346a");
+  assert.equal(mobile.primary, "#6b58b0");
+  assert.equal(mobile.accentTint, "#ede7fb");
+  assert.equal(mobile.surface, "#ffffff");
+  assert.equal(createTheme(standardStore).primary, standardStore.corPrimaria);
+  const custom = createMobileTheme({
+    ...standardStore,
+    corPrimaria: "#194580",
+  });
+  assert.equal(custom.header, "#194580");
+  assert.equal(custom.background, standardStore.corFundo);
+  assert.ok(contrast(custom.onPrimary, custom.header) >= 4.5);
 });
 test("button text meets 4.5 contrast on light, dark and middle gray backgrounds", () => {
   for (let value = 0; value <= 255; value++) {

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View } from "react-native";
+import { ModuleScreen } from "@/components/module-screen";
+import { Image, View, useWindowDimensions } from "react-native";
 import { useAuth } from "@/auth/provider";
 import { request } from "@/api/session";
 import type { components } from "@/api/schema";
@@ -14,6 +15,8 @@ import {
 } from "@/components/ui";
 export default function Account() {
   const { account, signOut } = useAuth();
+  const mobile = useWindowDimensions().width < 900;
+  const [editing, setEditing] = useState(false);
   const [old, setOld] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -52,15 +55,32 @@ export default function Account() {
       setBusy(false);
     }
   }
+  const Frame = mobile ? ModuleScreen : Screen;
   return (
-    <Screen>
-      <Heading
-        title="Minha conta"
-        subtitle="Seus dados de acesso e segurança."
-      />
+    <Frame section="Menu" title="Minha conta">
+      {!mobile && (
+        <Heading
+          title="Minha conta"
+          subtitle="Seus dados de acesso e segurança."
+        />
+      )}
       <View style={{ width: "100%", maxWidth: 640, gap: 20 }}>
-        <Card>
-          <Body>{account?.email}</Body>
+        <Card
+          style={
+            mobile && { flexDirection: "row", alignItems: "center", gap: 16 }
+          }
+        >
+          {mobile && (
+            <Image
+              source={require("../../../assets/images/cost3d-mascote.png")}
+              resizeMode="contain"
+              style={{ width: 64, height: 64 }}
+            />
+          )}
+          <View style={{ flex: 1 }}>
+            {mobile && <Body muted>E-mail</Body>}
+            <Body strong={mobile}>{account?.email}</Body>
+          </View>
         </Card>
         <Card>
           {changed ? (
@@ -73,6 +93,12 @@ export default function Account() {
                 }}
               />
             </>
+          ) : mobile && !editing && !account?.trocaSenhaObrigatoria ? (
+            <Button
+              label="Alterar senha"
+              variant="secondary"
+              onPress={() => setEditing(true)}
+            />
           ) : (
             <>
               <Body>
@@ -121,6 +147,6 @@ export default function Account() {
           {!!message && <Notice message={message} />}
         </Card>
       </View>
-    </Screen>
+    </Frame>
   );
 }

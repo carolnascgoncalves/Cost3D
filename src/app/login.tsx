@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Redirect } from "expo-router";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,7 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/auth/provider";
 import { useTheme } from "@/theme/provider";
 import { Body, Button, Field, Notice } from "@/components/ui";
-import { BrandLogo } from "@/components/brand-logo";
+import { BrandLogo, SessionLoading } from "@/components/brand-logo";
 import { openWebsite } from "@/features/website";
 export default function Login() {
   const auth = useAuth();
@@ -27,6 +28,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [help, setHelp] = useState(false);
+  if (auth.loading && !wide) return <SessionLoading />;
   if (auth.loading)
     return (
       <View
@@ -40,6 +42,42 @@ export default function Login() {
           accessibilityLabel="Restaurando sessão"
         />
       </View>
+    );
+  if (!wide && auth.offline)
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 14,
+            padding: 28,
+          }}
+        >
+          <Image
+            source={require("../../assets/images/cost3d-mascote.png")}
+            style={{ width: 120, height: 120 }}
+            resizeMode="contain"
+          />
+          <Text
+            accessibilityRole="header"
+            style={{ fontSize: 24, fontWeight: "700", color: t.primary }}
+          >
+            Sem conexão
+          </Text>
+          <Text style={{ fontSize: 15, textAlign: "center", color: t.text }}>
+            Não conseguimos falar com o servidor. Confira sua internet e tente
+            de novo.
+          </Text>
+          <View style={{ width: "100%", maxWidth: 360 }}>
+            <Button
+              label="Tentar de novo"
+              onPress={() => void auth.restore()}
+            />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     );
   if (auth.account) return <Redirect href="/home" />;
   async function submit() {
@@ -72,10 +110,7 @@ export default function Login() {
         >
           <View style={[s.layout, wide ? s.desktop : s.mobile]}>
             <View style={wide ? s.brandDesktop : s.brandMobile}>
-              <BrandLogo
-                width={wide ? 360 : 230}
-                style={!wide && { tintColor: "#F4EEE4" }}
-              />
+              <BrandLogo width={wide ? 360 : 230} light={!wide} />
               {wide && (
                 <>
                   <Text
@@ -146,20 +181,22 @@ export default function Login() {
                 </>
               ) : (
                 <Text
+                  accessibilityRole={error ? "alert" : undefined}
                   style={{
+                    fontWeight: error ? "700" : "400",
                     color: "#F4EEE4",
                     textAlign: "center",
                     fontSize: 14,
                   }}
                 >
-                  Gestão e cálculo de custos de impressão 3D
+                  {error || "Gestão e cálculo de custos de impressão 3D"}
                 </Text>
               )}
               <View style={{ gap: 20, marginTop: 10 }}>
                 <Field
                   label="E-mail"
                   labelColor={wide ? undefined : "#F4EEE4"}
-                  placeholder="voce@exemplo.com"
+                  placeholder={wide ? "voce@exemplo.com" : undefined}
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="email-address"
@@ -171,7 +208,7 @@ export default function Login() {
                 <Field
                   label="Senha"
                   labelColor={wide ? undefined : "#F4EEE4"}
-                  placeholder="Digite sua senha"
+                  placeholder={wide ? "Digite sua senha" : undefined}
                   secureTextEntry={!visible}
                   autoCapitalize="none"
                   autoComplete="current-password"
@@ -188,7 +225,7 @@ export default function Login() {
                   onPress={() => setVisible(!visible)}
                 />
               )}
-              {!!(error || auth.error) && (
+              {!!((wide && error) || auth.error) && (
                 <Notice
                   message={error || auth.error}
                   onRetry={auth.error ? () => void auth.restore() : undefined}

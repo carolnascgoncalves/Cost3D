@@ -93,11 +93,18 @@ export function Card({
 export function Body({
   children,
   muted = false,
-}: PropsWithChildren<{ muted?: boolean }>) {
+  strong = false,
+}: PropsWithChildren<{ muted?: boolean; strong?: boolean }>) {
+  const mobile = useWindowDimensions().width < 900;
   const t = useTheme();
   return (
     <Text
-      style={{ color: muted ? t.muted : t.text, fontSize: 15, lineHeight: 23 }}
+      style={{
+        color: muted ? t.muted : t.text,
+        fontSize: mobile && muted ? 12 : 15,
+        lineHeight: mobile ? (muted ? 17 : 21) : 23,
+        fontWeight: strong ? "700" : "400",
+      }}
     >
       {children}
     </Text>
@@ -240,6 +247,46 @@ export function Notice({
     </View>
   );
 }
+export function ValueRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        justifyContent: "space-between",
+        gap: 12,
+        alignItems: "center",
+      }}
+    >
+      <View style={{ flex: 1 }}>
+        <Body muted>{label}</Body>
+      </View>
+      <Body strong>{value}</Body>
+    </View>
+  );
+}
+export function Badge({
+  children,
+  danger = false,
+}: PropsWithChildren<{ danger?: boolean }>) {
+  const t = useTheme();
+  return (
+    <View
+      style={{
+        alignSelf: "center",
+        maxWidth: "52%",
+        borderRadius: 99,
+        backgroundColor: danger ? t.dangerBackground : t.accentTint,
+        paddingHorizontal: 10,
+        minHeight: 28,
+        justifyContent: "center",
+      }}
+    >
+      <Text style={{ fontSize: 11, color: danger ? t.danger : t.text }}>
+        {children}
+      </Text>
+    </View>
+  );
+}
 export function Chip({
   label,
   selected,
@@ -249,6 +296,7 @@ export function Chip({
   selected: boolean;
   onPress: () => void;
 }) {
+  const mobile = useWindowDimensions().width < 900;
   const t = useTheme();
   return (
     <Pressable
@@ -259,18 +307,18 @@ export function Chip({
         minHeight: 44,
         justifyContent: "center",
         borderRadius: 24,
-        paddingHorizontal: 16,
+        paddingHorizontal: mobile ? 10 : 16,
         paddingVertical: 10,
         borderWidth: 1,
-        borderColor: selected ? t.accent : t.border,
-        backgroundColor: selected ? t.accent : t.surface,
+        borderColor: selected ? (mobile ? t.primary : t.accent) : t.border,
+        backgroundColor: selected ? (mobile ? t.primary : t.accent) : t.surface,
         opacity: pressed ? 0.7 : 1,
       })}
     >
       <Text
         style={{
-          color: selected ? t.onAccent : t.text,
-          fontSize: 13,
+          color: selected ? (mobile ? t.onPrimary : t.onAccent) : t.text,
+          fontSize: mobile ? 12 : 13,
           fontWeight: selected ? "700" : "400",
         }}
       >

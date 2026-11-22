@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { ActivityIndicator, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { request, ApiError } from "@/api/session";
 import { useAuth } from "@/auth/provider";
 import {
   Body,
+  Chip,
   Button,
   Card,
   Empty,
@@ -14,12 +20,15 @@ import {
   Screen,
   layout,
 } from "@/components/ui";
+import { ModuleScreen } from "@/components/module-screen";
 import { useTheme } from "@/theme/provider";
 import { useApiQuery } from "@/hooks/use-api-query";
 import type { Customer, CustomerInput } from "@/features/contracts";
 import { CustomerBudgets } from "@/features/customer-budgets";
 export default function CustomerDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const mobile = useWindowDimensions().width < 900;
+  const [showContact, setShowContact] = useState(false);
   const isNew = id === "new";
   const { account } = useAuth();
   const t = useTheme();
@@ -124,31 +133,45 @@ export default function CustomerDetail() {
         />
       </Screen>
     );
+  const Frame = mobile ? ModuleScreen : Screen;
+  const title = isNew
+    ? "Novo cliente"
+    : editing
+      ? "Editar cliente"
+      : query.data?.nome || "Cliente";
   return (
-    <Screen>
-      <View style={layout.row}>
-        <Button
-          label="‹ Clientes"
-          variant="ghost"
-          onPress={() => router.navigate("/customers")}
-        />
-      </View>
-      <Heading
-        title={
-          isNew
-            ? "Novo cliente"
-            : editing
-              ? "Editar cliente"
-              : query.data?.nome || "Cliente"
-        }
-        subtitle={
-          isNew
-            ? "Comece pelo nome. Os contatos são opcionais."
-            : query.data?.arquivado
-              ? "Cliente arquivado"
-              : "Contato e informações do cliente."
-        }
-      />
+    <Frame
+      title={title}
+      section="Clientes"
+      onBack={() => router.navigate("/customers")}
+    >
+      {!mobile && (
+        <>
+          <View style={layout.row}>
+            <Button
+              label="‹ Clientes"
+              variant="ghost"
+              onPress={() => router.navigate("/customers")}
+            />
+          </View>
+          <Heading
+            title={
+              isNew
+                ? "Novo cliente"
+                : editing
+                  ? "Editar cliente"
+                  : query.data?.nome || "Cliente"
+            }
+            subtitle={
+              isNew
+                ? "Comece pelo nome. Os contatos são opcionais."
+                : query.data?.arquivado
+                  ? "Cliente arquivado"
+                  : "Contato e informações do cliente."
+            }
+          />
+        </>
+      )}
       {query.loading && !isNew ? (
         <ActivityIndicator color={t.primaryText} />
       ) : query.error ? (
@@ -247,33 +270,49 @@ export default function CustomerDetail() {
             </Card>
           ) : (
             <>
-              <Card>
-                <Body>Telefone</Body>
-                <Body muted>{query.data?.telefone || "Não informado"}</Body>
-                <Body>E-mail</Body>
-                <Body muted>{query.data?.email || "Não informado"}</Body>
-                <Body>Observações</Body>
-                <Body muted>
-                  {query.data?.observacoes || "Nenhuma observação"}
-                </Body>
+              {mobile && (
                 <View style={layout.row}>
-                  <Button
-                    label="Editar cliente"
-                    disabled={busy}
-                    onPress={() => {
-                      setEditing(true);
-                      setSuccess("");
-                    }}
+                  <Chip
+                    label="Orçamentos"
+                    selected={!showContact}
+                    onPress={() => setShowContact(false)}
                   />
-                  <Button
-                    label={query.data?.arquivado ? "Restaurar" : "Arquivar"}
-                    variant="secondary"
-                    disabled={busy}
-                    onPress={() => setConfirm(true)}
+                  <Chip
+                    label="Dados do cliente"
+                    selected={showContact}
+                    onPress={() => setShowContact(true)}
                   />
                 </View>
-              </Card>
-              {confirm && (
+              )}
+              {(!mobile || showContact) && (
+                <Card>
+                  <Body>Telefone</Body>
+                  <Body muted>{query.data?.telefone || "Não informado"}</Body>
+                  <Body>E-mail</Body>
+                  <Body muted>{query.data?.email || "Não informado"}</Body>
+                  <Body>Observações</Body>
+                  <Body muted>
+                    {query.data?.observacoes || "Nenhuma observação"}
+                  </Body>
+                  <View style={layout.row}>
+                    <Button
+                      label="Editar cliente"
+                      disabled={busy}
+                      onPress={() => {
+                        setEditing(true);
+                        setSuccess("");
+                      }}
+                    />
+                    <Button
+                      label={query.data?.arquivado ? "Restaurar" : "Arquivar"}
+                      variant="secondary"
+                      disabled={busy}
+                      onPress={() => setConfirm(true)}
+                    />
+                  </View>
+                </Card>
+              )}
+              {(!mobile || showContact) && confirm && (
                 <Card>
                   <Body>
                     {query.data?.arquivado
@@ -300,11 +339,13 @@ export default function CustomerDetail() {
                   </View>
                 </Card>
               )}
-              {query.data?.id === id && <CustomerBudgets key={id} id={id} />}
+              {(!mobile || !showContact) && query.data?.id === id && (
+                <CustomerBudgets key={id} id={id} />
+              )}
             </>
           )}
         </View>
       )}
-    </Screen>
+    </Frame>
   );
 }

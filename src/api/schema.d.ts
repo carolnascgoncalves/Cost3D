@@ -61,6 +61,10 @@ export interface components {
       nome?: string;
       cor?: string;
       estoque?: string;
+      codigoCor?: string;
+      pesoRolo?: string;
+      marca?: string;
+      precoRolo?: string;
     };
     InicioLoja: {
       recentes?: Array<components["schemas"]["Recente"]>;
@@ -97,6 +101,7 @@ export interface components {
       medida?: string;
       entrou?: string;
       saiu?: string;
+      saldo?: string;
       pecasVendidas?: string;
     };
     CadastrosPainel: {
@@ -173,12 +178,22 @@ export interface components {
       gramas?: string;
       minutos?: number;
       preco?: string;
+      placaMiniatura?: number;
+      modeloImpressora?: string;
+      materiais?: Array<components["schemas"]["PecaMaterialResumo"]>;
     };
+    PecaMaterialResumo: {
+      material?: string;
+      corHex?: string;
+      pesoGramas?: number;
+    };
+    FotoCatalogo: { tipo?: string; base64?: string };
     ImpressoraCatalogo: {
       id?: string;
       nome?: string;
       modelo?: string;
       watts?: string;
+      aquecimento?: number;
     };
     PaginaResponseImpressoraCatalogo: {
       itens?: Array<components["schemas"]["ImpressoraCatalogo"]>;
@@ -192,7 +207,12 @@ export interface components {
       tamanho?: number;
       total?: number;
     };
-    EmbalagemCatalogo: { id?: string; nome?: string; custo?: string };
+    EmbalagemCatalogo: {
+      id?: string;
+      nome?: string;
+      custo?: string;
+      usos?: number;
+    };
     PaginaResponseEmbalagemCatalogo: {
       itens?: Array<components["schemas"]["EmbalagemCatalogo"]>;
       pagina?: number;

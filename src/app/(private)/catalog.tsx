@@ -1,12 +1,23 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
-import { ModuleScreen, MenuRows } from "@/components/module-screen";
+import {
+  ActivityIndicator,
+  ScrollView,
+  TextInput,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import { ModuleScreen, MenuRows, SiteButton } from "@/components/module-screen";
 import { Body, Card, Chip, Notice, Pagination, layout } from "@/components/ui";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { useTheme } from "@/theme/provider";
 import { decimal, quantity, reais } from "@/features/format";
-import type { components } from "@/api/schema";
+import {
+  CatalogCard,
+  stockLevel,
+  type CatalogRow as Row,
+} from "@/components/catalog-card";
 
 const categories = [
   { label: "Peças", key: "pecas", create: "Nova peça", site: "/peca/novo" },
@@ -30,18 +41,52 @@ const categories = [
   },
 ] as const;
 type Category = (typeof categories)[number];
-type Schemas = components["schemas"];
-type Row = Schemas["PecaCatalogo"] &
-  Schemas["FilamentoCatalogo"] &
-  Schemas["EmbalagemCatalogo"] &
-  Schemas["ImpressoraCatalogo"];
 
 export default function Catalog() {
   const { categoria } = useLocalSearchParams<{ categoria?: string }>();
   const category = categories.find((c) => c.key === categoria) ?? categories[0];
+  return <Listings key={category.key} category={category} />;
+}
+
+function Listings({ category }: { category: Category }) {
+  const mobile = useWindowDimensions().width < 900;
+  const t = useTheme();
+  const [piece, setPiece] = useState<Row>();
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [lowOnly, setLowOnly] = useState(false);
+  const q = useApiQuery<{ itens?: Row[]; total?: number; tamanho?: number }>(
+    "/catalogo/" +
+      category.key +
+      "?pagina=" +
+      page +
+      "&busca=" +
+      encodeURIComponent(search.trim()),
+  );
+  const items = q.data?.itens ?? [];
+  const lowStock =
+    mobile && category.key === "filamentos"
+      ? items.filter((row) => stockLevel(row)?.low)
+      : [];
+  const visible =
+    mobile && category.key === "filamentos" && lowOnly ? lowStock : items;
+  if (mobile && piece)
+    return (
+      <ModuleScreen
+        section="Peças"
+        title={piece.nome || "Peça"}
+        onBack={() => setPiece(undefined)}
+      >
+        <CatalogCard category="pecas" row={piece} detail />
+      </ModuleScreen>
+    );
   return (
     <ModuleScreen section="Seu catálogo" title={category.label}>
-      <View style={layout.row}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 6 }}
+      >
         {categories.map((c) => (
           <Chip
             key={c.key}
@@ -50,80 +95,125 @@ export default function Catalog() {
             onPress={() => router.setParams({ categoria: c.key })}
           />
         ))}
-      </View>
-      <Listings key={category.key} category={category} />
-    </ModuleScreen>
-  );
-}
-
-function Listings({ category }: { category: Category }) {
-  const t = useTheme();
-  const [page, setPage] = useState(0);
-  const q = useApiQuery<{ itens?: Row[]; total?: number; tamanho?: number }>(
-    `/catalogo/${category.key}?pagina=${page}`,
-  );
-  return (
-    <>
-      <MenuRows entries={[{ label: category.create, site: category.site }]} />
+      </ScrollView>
+      {mobile && (
+        <TextInput
+          accessibilityLabel={"Pesquisar em " + category.label}
+          placeholder={"Pesquisar em " + category.label.toLowerCase() + "…"}
+          placeholderTextColor={t.muted}
+          value={search}
+          onChangeText={(value) => {
+            setSearch(value);
+            setPage(0);
+          }}
+          maxLength={150}
+          style={{
+            borderWidth: 1,
+            borderColor: t.border,
+            backgroundColor: t.surface,
+            color: t.text,
+            borderRadius: 12,
+            paddingHorizontal: 12,
+            minHeight: 44,
+          }}
+        />
+      )}
+      {mobile ? (
+        <SiteButton label={"+ " + category.create} site={category.site} />
+      ) : (
+        <MenuRows entries={[{ label: category.create, site: category.site }]} />
+      )}
       {q.loading ? (
         <ActivityIndicator color={t.primaryText} />
       ) : q.error ? (
         <Notice message={q.error} onRetry={q.retry} />
       ) : (
         <>
-          {!q.data?.itens?.length && (
+          {mobile && category.key === "filamentos" && (
+            <View style={layout.row}>
+              <Chip
+                label={"Acabando (" + lowStock.length + ")"}
+                selected={lowOnly}
+                onPress={() => setLowOnly(!lowOnly)}
+              />
+              <Body muted>
+                {lowOnly
+                  ? "Estoque baixo nesta página"
+                  : "Todos os filamentos desta página"}
+              </Body>
+            </View>
+          )}
+          {!visible.length && (
             <Card>
-              <Body muted>Nenhum cadastro nesta categoria.</Body>
+              <Body muted>
+                {lowOnly
+                  ? "Nenhum filamento acabando nesta página."
+                  : search
+                    ? "Nenhum cadastro encontrado."
+                    : "Nenhum cadastro nesta categoria."}
+              </Body>
             </Card>
           )}
-          {q.data?.itens?.map((row) => (
-            <Card key={row.id}>
-              <View style={layout.row}>
-                <Text
-                  style={{
-                    color: t.text,
-                    fontSize: 17,
-                    fontWeight: "700",
-                    flex: 1,
-                  }}
-                >
-                  {row.nome}
-                </Text>
-                {!!row.categoria && <Body muted>{row.categoria}</Body>}
-              </View>
-              {category.key === "pecas" && (
-                <>
+          {visible.map((row) =>
+            mobile ? (
+              <CatalogCard
+                key={row.id}
+                category={category.key}
+                row={row}
+                onPiece={
+                  category.key === "pecas" ? () => setPiece(row) : undefined
+                }
+              />
+            ) : (
+              <Card key={row.id}>
+                <View style={layout.row}>
+                  <Text
+                    style={{
+                      color: t.text,
+                      fontSize: 17,
+                      fontWeight: "700",
+                      flex: 1,
+                    }}
+                  >
+                    {row.nome}
+                  </Text>
+                  {!!row.categoria && <Body muted>{row.categoria}</Body>}
+                </View>
+                {category.key === "pecas" && (
+                  <>
+                    <Body muted>
+                      {quantity(row.gramas, "g")} · {row.minutos} min de
+                      impressão
+                    </Body>
+                    <Body>Último preço · {reais(row.preco)}</Body>
+                    {row.id && (
+                      <MenuRows
+                        entries={[
+                          {
+                            label: "Calcular",
+                            site: `/historico/novo?pecaCriada=${encodeURIComponent(row.id)}`,
+                          },
+                        ]}
+                      />
+                    )}
+                  </>
+                )}
+                {category.key === "filamentos" && (
                   <Body muted>
-                    {quantity(row.gramas, "g")} · {row.minutos} min de impressão
+                    {row.cor} · {quantity(row.estoque, "g")} restantes
                   </Body>
-                  <Body>Último preço · {reais(row.preco)}</Body>
-                  {row.id && (
-                    <MenuRows
-                      entries={[
-                        {
-                          label: "Calcular",
-                          site: `/historico/novo?pecaCriada=${encodeURIComponent(row.id)}`,
-                        },
-                      ]}
-                    />
-                  )}
-                </>
-              )}
-              {category.key === "filamentos" && (
-                <Body muted>
-                  {row.cor} · {quantity(row.estoque, "g")} restantes
-                </Body>
-              )}
-              {category.key === "impressoras" && (
-                <Body muted>
-                  {row.modelo} · {decimal(row.watts)} W
-                </Body>
-              )}
-              {category.key === "embalagens" && (
-                <Body>Custo unitário · {reais(row.custo)}</Body>
-              )}
-            </Card>
-          ))}
+                )}
+                {category.key === "impressoras" && (
+                  <Body muted>
+                    {row.modelo} · {decimal(row.watts)} W
+                  </Body>
+                )}
+                {category.key === "embalagens" && (
+                  <Body>Custo unitário · {reais(row.custo)}</Body>
+                )}
+              </Card>
+            ),
+          )}
           {(q.data?.total ?? 0) > (q.data?.tamanho ?? 12) && (
             <Pagination
               page={page}
@@ -134,6 +224,6 @@ function Listings({ category }: { category: Category }) {
           )}
         </>
       )}
-    </>
+    </ModuleScreen>
   );
 }

@@ -1,6 +1,7 @@
-import { router, type Href } from "expo-router";
-import { useState, type PropsWithChildren } from "react";
+import { useFocusEffect, router, type Href } from "expo-router";
+import { useCallback, useState, type PropsWithChildren } from "react";
 import {
+  BackHandler,
   Pressable,
   Text,
   View,
@@ -8,47 +9,96 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useTheme } from "@/theme/provider";
-import { Card, Notice } from "@/components/ui";
+import { Button, Card, Notice } from "@/components/ui";
 import { openWebsite } from "@/features/website";
+
+export function SiteButton({ label, site }: { label: string; site: string }) {
+  const [error, setError] = useState("");
+  return (
+    <View style={{ gap: 6 }}>
+      <Button
+        label={label}
+        onPress={() => {
+          setError("");
+          void openWebsite(site).catch(() =>
+            setError("Não foi possível abrir o site."),
+          );
+        }}
+      />
+      {!!error && <Notice message={error} />}
+    </View>
+  );
+}
+
+export function ModuleHeader({
+  section,
+  title,
+  onBack,
+}: {
+  section: string;
+  title: string;
+  onBack?: () => void;
+}) {
+  const t = useTheme();
+  const wide = useWindowDimensions().width >= 900;
+  return (
+    <View
+      style={{
+        backgroundColor: wide ? t.background : t.header,
+        paddingHorizontal: wide ? 48 : 20,
+        paddingTop: wide ? 40 : 20,
+        paddingBottom: 18,
+        gap: 6,
+      }}
+    >
+      <Text
+        accessibilityRole={onBack ? "button" : undefined}
+        onPress={onBack}
+        style={{
+          color: wide ? t.pageMuted : t.onPrimary,
+          fontSize: 11,
+          letterSpacing: 1.1,
+        }}
+      >
+        {onBack ? "‹ " + section : section.toUpperCase()}
+      </Text>
+      <Text
+        accessibilityRole="header"
+        style={{
+          color: wide ? t.pageText : t.onPrimary,
+          fontSize: wide ? 34 : 24,
+          fontWeight: "700",
+        }}
+      >
+        {title}
+      </Text>
+    </View>
+  );
+}
 
 export function ModuleScreen({
   section,
   title,
   children,
-}: PropsWithChildren<{ section: string; title: string }>) {
-  const t = useTheme();
+  onBack,
+}: PropsWithChildren<{ section: string; title: string; onBack?: () => void }>) {
   const wide = useWindowDimensions().width >= 900;
+  useFocusEffect(
+    useCallback(() => {
+      if (!onBack) return;
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        () => {
+          onBack();
+          return true;
+        },
+      );
+      return () => subscription.remove();
+    }, [onBack]),
+  );
   return (
     <View style={{ flex: 1 }}>
-      <View
-        style={{
-          backgroundColor: wide ? t.background : t.primary,
-          paddingHorizontal: wide ? 48 : 20,
-          paddingTop: wide ? 40 : 20,
-          paddingBottom: 18,
-          gap: 6,
-        }}
-      >
-        <Text
-          style={{
-            color: wide ? t.pageMuted : t.onPrimary,
-            fontSize: 11,
-            letterSpacing: 1.1,
-          }}
-        >
-          {section.toUpperCase()}
-        </Text>
-        <Text
-          accessibilityRole="header"
-          style={{
-            color: wide ? t.pageText : t.onPrimary,
-            fontSize: wide ? 34 : 24,
-            fontWeight: "700",
-          }}
-        >
-          {title}
-        </Text>
-      </View>
+      <ModuleHeader section={section} title={title} onBack={onBack} />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
@@ -69,6 +119,7 @@ export function ModuleScreen({
 type Entry = { label: string; route: Href } | { label: string; site: string };
 export function MenuRows({ entries }: { entries: Entry[] }) {
   const t = useTheme();
+  const wide = useWindowDimensions().width >= 900;
   const [error, setError] = useState("");
   return (
     <>
@@ -103,7 +154,7 @@ export function MenuRows({ entries }: { entries: Entry[] }) {
               {item.label}
             </Text>
             <Text style={{ color: t.muted, fontSize: 13 }}>
-              {"site" in item ? "Site  ›" : "›"}
+              {wide && "site" in item ? "Site  ›" : "›"}
             </Text>
           </Pressable>
         ))}

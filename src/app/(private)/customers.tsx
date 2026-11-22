@@ -2,11 +2,13 @@ import { router } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  useWindowDimensions,
   FlatList,
   Pressable,
   Text,
   View,
 } from "react-native";
+import { ModuleHeader } from "@/components/module-screen";
 import { useAuth } from "@/auth/provider";
 import {
   Body,
@@ -27,6 +29,7 @@ import { defaultCustomers, useWorkspace } from "@/features/workspace";
 import type { CustomerList, CustomerRow } from "@/features/contracts";
 export default function Customers() {
   const t = useTheme();
+  const mobile = useWindowDimensions().width < 900;
   const { account } = useAuth();
   const { customers: filter, setCustomers } = useWorkspace();
   const [search, setSearch] = useState(filter.busca);
@@ -63,11 +66,14 @@ export default function Customers() {
         onRefresh={query.retry}
         ListHeaderComponent={
           <View style={{ gap: 20, marginBottom: 8 }}>
+            {mobile && <ModuleHeader section="Menu" title="Clientes" />}
             <View style={[layout.row, { justifyContent: "space-between" }]}>
-              <Heading
-                title="Clientes"
-                subtitle="Pessoas que compram da sua loja."
-              />
+              {!mobile && (
+                <Heading
+                  title="Clientes"
+                  subtitle="Pessoas que compram da sua loja."
+                />
+              )}
               <Button
                 label="+ Novo cliente"
                 onPress={() =>
@@ -93,10 +99,12 @@ export default function Customers() {
                   setCustomers({ ...filter, arquivados: true, pagina: 0 })
                 }
               />
-              <Text style={{ color: t.pageMuted }}>
-                {query.data?.resumo?.ativos ?? "—"} ativos ·{" "}
-                {query.data?.resumo?.arquivados ?? "—"} arquivados
-              </Text>
+              {!mobile && (
+                <Text style={{ color: t.pageMuted }}>
+                  {query.data?.resumo?.ativos ?? "—"} ativos ·{" "}
+                  {query.data?.resumo?.arquivados ?? "—"} arquivados
+                </Text>
+              )}
             </View>
             <Card>
               <Field

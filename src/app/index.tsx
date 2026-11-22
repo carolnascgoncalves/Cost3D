@@ -1,10 +1,10 @@
+import { SessionLoading } from "@/components/brand-logo";
 import { Redirect } from "expo-router";
-import { ActivityIndicator } from "react-native";
 import { useAuth } from "@/auth/provider";
 export default function Index() {
   const { account, loading } = useAuth();
   return loading ? (
-    <ActivityIndicator accessibilityLabel="Restaurando sessão" />
+    <SessionLoading />
   ) : (
     <Redirect href={account ? "/home" : "/login"} />
   );
