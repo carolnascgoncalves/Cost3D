@@ -48,20 +48,20 @@ export function SessionLoading() {
         alignItems: "center",
         justifyContent: "center",
         gap: 24,
-        backgroundColor: "#86202d",
+        backgroundColor: "#f4eee4",
       }}
     >
-      <BrandLogo light width={260} />
+      <BrandLogo width={260} />
       <View
         style={{
           width: 140,
           height: 6,
           borderRadius: 3,
-          backgroundColor: "#ab606b",
+          backgroundColor: "#ead8d4",
           overflow: "hidden",
         }}
       >
-        <View style={{ width: "60%", height: 6, backgroundColor: "#f4eee4" }} />
+        <View style={{ width: "60%", height: 6, backgroundColor: "#86202d" }} />
       </View>
     </View>
   );

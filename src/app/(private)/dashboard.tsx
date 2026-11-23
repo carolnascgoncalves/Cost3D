@@ -3,7 +3,6 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   Text,
   View,
   useWindowDimensions,
@@ -11,149 +10,28 @@ import {
 import type { components } from "@/api/schema";
 import { ModuleScreen } from "@/components/module-screen";
 import { Body, Button, Card, Chip, Notice, layout } from "@/components/ui";
-import { decimal, quantity, reais } from "@/features/format";
+import { decimal, reais } from "@/features/format";
 import { useApiQuery } from "@/hooks/use-api-query";
-import { useTheme } from "@/theme/provider";
+import { useStoreName, useTheme } from "@/theme/provider";
 
-type Point = components["schemas"]["PontoLucro"];
-
-function ProfitChart({ points }: { points: Point[] }) {
-  const t = useTheme();
-  const [index, setIndex] = useState(points.length - 1);
-  const selected = points[index] ?? points.at(-1);
-  const numbers = points.map((p) => Number(p.valor));
-  const high = Math.max(0, ...numbers),
-    low = Math.min(0, ...numbers);
-  const scale = 100 / (high - low || 1);
-  const baseline = high || low ? high * scale : 100;
-  return (
-    <Card>
-      <Body>Lucro líquido estimado</Body>
-      {points.length > 0 ? (
-        <>
-          <Body muted>
-            {selected?.data} · {reais(selected?.valor)}
-          </Body>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={points.length > 12}
-            contentContainerStyle={{ flexGrow: 1 }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                flex: 1,
-                minWidth: points.length * 24,
-                height: 108,
-              }}
-            >
-              <View
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  top: baseline,
-                  height: 1,
-                  backgroundColor: t.border,
-                }}
-              />
-              {points.map((p, i) => {
-                const n = numbers[i];
-                return (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: i === index }}
-                    accessibilityLabel={p.data + ", " + reais(p.valor)}
-                    key={p.data}
-                    onPress={() => setIndex(i)}
-                    style={{ flex: 1, minWidth: 24, height: 108 }}
-                  >
-                    <View
-                      style={{
-                        position: "absolute",
-                        left: 4,
-                        right: 4,
-                        top: n > 0 ? baseline - n * scale : baseline,
-                        height: Math.max(n === 0 ? 1 : 2, Math.abs(n) * scale),
-                        borderRadius: 3,
-                        opacity: i === index ? 1 : 0.7,
-                        backgroundColor: n < 0 ? t.danger : t.primary,
-                      }}
-                    />
-                  </Pressable>
-                );
-              })}
-            </View>
-          </ScrollView>
-          <View
-            style={{ flexDirection: "row", justifyContent: "space-between" }}
-          >
-            <Body muted>{points[0].data}</Body>
-            <Body muted>{points.at(-1)?.data}</Body>
-          </View>
-        </>
-      ) : (
-        <Body muted>Nenhum resultado neste período.</Body>
-      )}
-    </Card>
-  );
-}
-
-function Meter({
-  label,
-  value,
-  percent,
-}: {
-  label: string;
-  value: string;
-  percent: number;
-}) {
-  const t = useTheme();
-  return (
-    <View style={{ gap: 6 }}>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          gap: 8,
-        }}
-      >
-        <Text style={{ color: t.text, flex: 1 }}>{label}</Text>
-        <Text style={{ color: t.muted }}>{value}</Text>
-      </View>
-      <View
-        style={{
-          height: 8,
-          borderRadius: 4,
-          backgroundColor: t.accentTint,
-          overflow: "hidden",
-        }}
-      >
-        <View
-          style={{
-            height: 8,
-            width: `${Math.max(0, Math.min(100, percent))}%`,
-            backgroundColor: t.primary,
-            borderRadius: 4,
-          }}
-        />
-      </View>
-    </View>
-  );
-}
+import {
+  ProfitChart,
+  PlatformChart,
+  CategoryChart,
+  FilamentStock,
+  ProductionFlow,
+} from "@/components/dashboard-charts";
 
 export default function Dashboard() {
   const t = useTheme(),
     wide = useWindowDimensions().width >= 900;
+  const name = useStoreName();
+  const [expanded, setExpanded] = useState(false);
   const [period, setPeriod] = useState("30");
   const q = useApiQuery<components["schemas"]["DashboardLoja"]>(
     `/dashboard?periodo=${period}`,
   );
   const data = q.data;
-  const maxSales = Math.max(
-    1,
-    ...(data?.plataformas ?? []).map((p) => p.vendas ?? 0),
-  );
   const { visao } = useLocalSearchParams<{ visao?: string }>();
   if (visao === "cadastros") {
     const sections = [
@@ -202,21 +80,7 @@ export default function Dashboard() {
                   </Card>
                 </Pressable>
               ))}
-              <Card>
-                <Body strong={!wide}>Estoque de filamentos</Body>
-                {data.estoque?.length ? (
-                  data.estoque.map((f, i) => (
-                    <Meter
-                      key={i}
-                      label={f.nome ?? "Filamento"}
-                      value={quantity(f.gramas, "g")}
-                      percent={f.restante ?? 0}
-                    />
-                  ))
-                ) : (
-                  <Body muted>Nenhum filamento cadastrado.</Body>
-                )}
-              </Card>
+              <FilamentStock items={data.estoque ?? []} />
             </>
           )
         )}
@@ -224,11 +88,16 @@ export default function Dashboard() {
     );
   }
   return (
-    <ModuleScreen section="Visão geral" title="Dashboard">
+    <ModuleScreen
+      lightHeader
+      section="Painel principal"
+      title={name ? "Resultados de " + name : "Resultados da loja"}
+    >
+      <Body muted>Lucro, vendas e produção no período.</Body>
       <View style={layout.row}>
         {[
-          ["7", "7 dias"],
           ["30", "30 dias"],
+          ["90", "90 dias"],
           ["tudo", "Tudo"],
         ].map(([key, label]) => (
           <Chip
@@ -245,28 +114,37 @@ export default function Dashboard() {
         <Notice message={q.error} onRetry={q.retry} />
       ) : data ? (
         <>
-          {(wide || visao === "indicadores") && (
+          {
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
               {[
                 ["Lucro líquido estimado", reais(data.lucro)],
-                ["Unidades vendidas", String(data.vendas ?? 0)],
-                ["Horas impressas", decimal(data.horas, 1) + " h"],
+                ["Vendas da loja", String(data.vendas ?? 0)],
+                ["Horas imprimindo", decimal(data.horas, 1) + " h"],
                 ["Filamento usado", decimal(data.filamentoKg, 2) + " kg"],
               ].map(([label, value]) => (
                 <Card
                   key={label}
-                  style={{ width: wide ? "23%" : "47%", flexGrow: 1 }}
+                  style={{
+                    width: wide ? "23%" : "47%",
+                    flexGrow: 1,
+                    backgroundColor: label.startsWith("Lucro")
+                      ? t.header
+                      : t.surface,
+                  }}
                 >
-                  <Body muted>{label}</Body>
+                  <Text
+                    style={{
+                      color: label.startsWith("Lucro") ? t.onPrimary : t.muted,
+                      fontSize: 13,
+                    }}
+                  >
+                    {label}
+                  </Text>
                   <Text
                     style={{
                       fontSize: 20,
                       fontWeight: "700",
-                      color:
-                        label === "Lucro líquido estimado" &&
-                        Number(data.lucro) < 0
-                          ? t.danger
-                          : t.text,
+                      color: label.startsWith("Lucro") ? t.onPrimary : t.text,
                     }}
                   >
                     {value}
@@ -274,126 +152,61 @@ export default function Dashboard() {
                 </Card>
               ))}
             </View>
-          )}
-          {(wide || (visao !== "fluxo" && visao !== "indicadores")) && (
+          }
+          <ProfitChart
+            key={period}
+            points={data.serie ?? []}
+            monthly={period === "tudo"}
+            change={data.variacaoLucro}
+          />
+          <Button
+            variant="secondary"
+            label={
+              expanded
+                ? "Recolher indicadores"
+                : "Ver mais indicadores e cadastros"
+            }
+            onPress={() => setExpanded(!expanded)}
+          />
+          {expanded && (
             <>
-              <ProfitChart key={period} points={data.serie ?? []} />
               <View style={{ flexDirection: wide ? "row" : "column", gap: 12 }}>
-                <Card style={wide ? { flex: 1 } : undefined}>
-                  <Body strong={!wide}>Vendas por plataforma</Body>
-                  {data.plataformas?.length ? (
-                    data.plataformas.map((p) => (
-                      <Meter
-                        key={p.nome}
-                        label={p.nome ?? "Sem plataforma"}
-                        value={`${p.vendas} un.`}
-                        percent={(100 * (p.vendas ?? 0)) / maxSales}
-                      />
-                    ))
-                  ) : (
-                    <Body muted>Nenhuma venda no período.</Body>
-                  )}
-                </Card>
-                <Card style={wide ? { flex: 1 } : undefined}>
-                  <Body strong={!wide}>Estoque de filamentos</Body>
-                  {data.estoque?.length ? (
-                    data.estoque.map((f, i) => (
-                      <Meter
-                        key={i}
-                        label={f.nome ?? "Filamento"}
-                        value={quantity(f.gramas, "g")}
-                        percent={f.restante ?? 0}
-                      />
-                    ))
-                  ) : (
-                    <Body muted>Nenhum filamento cadastrado.</Body>
-                  )}
-                </Card>
+                <View style={wide ? { flex: 1 } : undefined}>
+                  <PlatformChart data={data} />
+                </View>
+                <View style={wide ? { flex: 1 } : undefined}>
+                  <ProductionFlow data={data} />
+                </View>
+              </View>
+              <View style={{ flexDirection: wide ? "row" : "column", gap: 12 }}>
+                <View style={wide ? { flex: 1 } : undefined}>
+                  <FilamentStock items={data.estoque ?? []} />
+                </View>
+                <View style={wide ? { flex: 1 } : undefined}>
+                  <CategoryChart items={data.categorias ?? []} />
+                </View>
               </View>
             </>
           )}
-          {(wide || visao === "fluxo") && (
-            <>
-              <Card>
-                <Body strong={!wide}>Fluxo de produção</Body>
-                {!wide ? (
-                  <View style={{ flexDirection: "row", gap: 8 }}>
-                    {[
-                      [data.calculadas, "Calculadas"],
-                      [data.produzidas, "Produzidas"],
-                      [data.vendidas, "Vendidas"],
-                    ].map(([value, label]) => (
-                      <View
-                        key={label}
-                        style={{ flex: 1, alignItems: "center" }}
-                      >
-                        <Text
-                          style={{
-                            color: t.text,
-                            fontSize: 22,
-                            fontWeight: "700",
-                          }}
-                        >
-                          {value}
-                        </Text>
-                        <Body muted>{label}</Body>
-                      </View>
-                    ))}
-                  </View>
-                ) : (
-                  <Body muted>
-                    {data.calculadas} calculadas · {data.produzidas} produzidas
-                    · {data.vendidas} vendidas
-                  </Body>
-                )}
-              </Card>
-              <Card>
-                <Body strong={!wide}>Para onde vai o custo</Body>
-                {data.custos?.some((c) => Number(c.valor) !== 0) ? (
-                  data.custos.map((c) => (
-                    <Meter
-                      key={c.nome}
-                      label={c.nome ?? "Custo"}
-                      value={reais(c.valor)}
-                      percent={c.percentual ?? 0}
-                    />
-                  ))
-                ) : (
-                  <Body muted>Nenhum custo de produção neste período.</Body>
-                )}
-              </Card>
-            </>
-          )}
-          {!wide && visao !== "indicadores" && (
+          {expanded && (
             <Button
               variant="secondary"
-              label="Indicadores do período"
-              onPress={() => router.setParams({ visao: "indicadores" })}
-            />
-          )}
-          {!wide && (
-            <Button
-              label={
-                visao === "fluxo" || visao === "indicadores"
-                  ? "Voltar à visão geral"
-                  : "Fluxo de produção e custos"
-              }
-              variant="secondary"
+              label="Cálculos recentes"
               onPress={() =>
-                router.setParams({
-                  visao:
-                    visao === "fluxo" || visao === "indicadores"
-                      ? "resumo"
-                      : "fluxo",
+                router.push({
+                  pathname: "/calculate",
+                  params: { modo: "historico" },
                 })
               }
             />
           )}
-          <Button
-            label="Indicadores e cadastros"
-            variant="secondary"
-            onPress={() => router.setParams({ visao: "cadastros" })}
-          />
+          {expanded && (
+            <Button
+              label="Ver cadastros"
+              variant="secondary"
+              onPress={() => router.setParams({ visao: "cadastros" })}
+            />
+          )}
         </>
       ) : null}
     </ModuleScreen>

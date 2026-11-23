@@ -34,17 +34,19 @@ export function ModuleHeader({
   section,
   title,
   onBack,
+  lightHeader,
 }: {
   section: string;
   title: string;
   onBack?: () => void;
+  lightHeader?: boolean;
 }) {
   const t = useTheme();
   const wide = useWindowDimensions().width >= 900;
   return (
     <View
       style={{
-        backgroundColor: wide ? t.background : t.header,
+        backgroundColor: wide || lightHeader ? t.background : t.header,
         paddingHorizontal: wide ? 48 : 20,
         paddingTop: wide ? 40 : 20,
         paddingBottom: 18,
@@ -55,7 +57,7 @@ export function ModuleHeader({
         accessibilityRole={onBack ? "button" : undefined}
         onPress={onBack}
         style={{
-          color: wide ? t.pageMuted : t.onPrimary,
+          color: wide || lightHeader ? t.pageMuted : t.onPrimary,
           fontSize: 11,
           letterSpacing: 1.1,
         }}
@@ -65,7 +67,7 @@ export function ModuleHeader({
       <Text
         accessibilityRole="header"
         style={{
-          color: wide ? t.pageText : t.onPrimary,
+          color: wide || lightHeader ? t.pageText : t.onPrimary,
           fontSize: wide ? 34 : 24,
           fontWeight: "700",
         }}
@@ -81,7 +83,13 @@ export function ModuleScreen({
   title,
   children,
   onBack,
-}: PropsWithChildren<{ section: string; title: string; onBack?: () => void }>) {
+  lightHeader,
+}: PropsWithChildren<{
+  section: string;
+  title: string;
+  onBack?: () => void;
+  lightHeader?: boolean;
+}>) {
   const wide = useWindowDimensions().width >= 900;
   useFocusEffect(
     useCallback(() => {
@@ -98,7 +106,12 @@ export function ModuleScreen({
   );
   return (
     <View style={{ flex: 1 }}>
-      <ModuleHeader section={section} title={title} onBack={onBack} />
+      <ModuleHeader
+        section={section}
+        title={title}
+        onBack={onBack}
+        lightHeader={lightHeader}
+      />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{

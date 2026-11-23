@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from "react";
+import type { PropsWithChildren, ReactNode } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -177,40 +177,77 @@ export function Button({
 export function Field({
   label,
   labelColor,
+  labelAction,
+  trailing,
   style,
   ...props
-}: TextInputProps & { label: string; labelColor?: string }) {
+}: TextInputProps & {
+  label: string;
+  labelColor?: string;
+  labelAction?: ReactNode;
+  trailing?: ReactNode;
+}) {
   const t = useTheme();
   const [focused, setFocused] = useState(false);
   return (
     <View style={{ gap: 8 }}>
-      <Text
-        style={{ color: labelColor ?? t.text, fontSize: 14, fontWeight: "600" }}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+        }}
       >
-        {label}
-      </Text>
-      <TextInput
-        {...props}
-        accessibilityLabel={props.accessibilityLabel || label}
-        placeholderTextColor={t.muted}
-        onFocus={(e) => {
-          setFocused(true);
-          props.onFocus?.(e);
-        }}
-        onBlur={(e) => {
-          setFocused(false);
-          props.onBlur?.(e);
-        }}
-        style={[
-          styles.input,
-          {
-            color: t.text,
-            borderColor: focused ? t.primary : t.border,
-            backgroundColor: t.surface,
-          },
-          style,
-        ]}
-      />
+        <Text
+          style={{
+            color: labelColor ?? t.text,
+            fontSize: 14,
+            fontWeight: "600",
+          }}
+        >
+          {label}
+        </Text>
+        {labelAction}
+      </View>
+      <View>
+        <TextInput
+          {...props}
+          accessibilityLabel={props.accessibilityLabel || label}
+          placeholderTextColor={t.muted}
+          onFocus={(e) => {
+            setFocused(true);
+            props.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            props.onBlur?.(e);
+          }}
+          style={[
+            styles.input,
+            {
+              color: t.text,
+              borderColor: focused ? t.primary : t.border,
+              backgroundColor: t.surface,
+            },
+            trailing ? { paddingRight: 48 } : undefined,
+            style,
+          ]}
+        />
+        {trailing && (
+          <View
+            style={{
+              position: "absolute",
+              right: 0,
+              top: 0,
+              bottom: 0,
+              justifyContent: "center",
+            }}
+          >
+            {trailing}
+          </View>
+        )}
+      </View>
     </View>
   );
 }

@@ -1,3 +1,4 @@
+import { Icon } from "@/components/icon";
 import { SessionLoading } from "@/components/brand-logo";
 import { useEffect, useState } from "react";
 import { Redirect, Slot, usePathname, router } from "expo-router";
@@ -18,11 +19,11 @@ import { luminance } from "@/theme/colors";
 import { Notice } from "@/components/ui";
 import { DesktopNav } from "@/components/desktop-nav";
 const items = [
-  { path: "/home", label: "Início", store: false },
-  { path: "/catalog", label: "Catálogo", store: true },
-  { path: "/calculate", label: "Calcular", store: true },
-  { path: "/sales", label: "Vendas", store: true },
-  { path: "/more", label: "Mais", store: false },
+  { path: "/home", icon: "house", label: "Início", store: false },
+  { path: "/catalog", icon: "collection", label: "Catálogo", store: true },
+  { path: "/calculate", icon: "calculator", label: "Calcular", store: true },
+  { path: "/sales", icon: "shop", label: "Vendas", store: true },
+  { path: "/more", icon: "three-dots", label: "Mais", store: false },
 ] as const;
 export default function PrivateLayout() {
   const { account, loading } = useAuth();
@@ -126,12 +127,18 @@ function Shell({
           {!wide && (
             <View
               style={{
-                width: 20,
-                height: 20,
-                borderRadius: 6,
-                backgroundColor: selected ? t.primary : t.navInactive,
+                paddingHorizontal: 10,
+                paddingVertical: 2,
+                borderRadius: 10,
+                backgroundColor: selected ? t.accentTint : "transparent",
               }}
-            />
+            >
+              <Icon
+                name={item.icon}
+                color={selected ? t.primaryText : t.muted}
+                size={21}
+              />
+            </View>
           )}
           <Text
             style={{

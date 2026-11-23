@@ -32,7 +32,10 @@ const groups: [string, Link[]][] = [
     "Cálculos",
     [
       { label: "Calcular", route: "/calculate" },
-      { label: "Meus cálculos", site: "/historico/listar" },
+      {
+        label: "Meus cálculos",
+        route: { pathname: "/calculate", params: { modo: "historico" } },
+      },
     ],
   ],
   [

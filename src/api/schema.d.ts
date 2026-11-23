@@ -17,6 +17,32 @@ export interface components {
       observacoes?: string;
       arquivado?: boolean;
     };
+    ConfirmacaoCalculo: {
+      entrada: components["schemas"]["EntradaCalculo"];
+      custoEsperado: number;
+      precoEsperado: number;
+    };
+    EntradaCalculo: {
+      pecaId?: string;
+      impressoraId: string;
+      filamentos: Array<components["schemas"]["ItemCalculoRequest"]>;
+      embalagemId?: string;
+      unidades?: number;
+      minutos?: number;
+      trabalho?: number;
+      markup?: number;
+    };
+    ItemCalculoRequest: {
+      filamentoId: string;
+      quantidadeFilamentoGramas: number;
+    };
+    ValorCalculo: {
+      id?: string;
+      nome?: string;
+      custoUnitario?: number;
+      precoUnitario?: number;
+      unidades?: number;
+    };
     SessaoWeb: { accessToken?: string; tokenType?: string; expiresIn?: number };
     Login: { email: string; senha: string };
     AlterarSenhaRequest: {
@@ -70,8 +96,16 @@ export interface components {
       recentes?: Array<components["schemas"]["Recente"]>;
       aguardandoVenda?: number;
       estoqueCritico?: components["schemas"]["FilamentoCatalogo"];
+      valorHoraConfigurado?: boolean;
     };
-    Recente: { id?: string; nome?: string; situacao?: string };
+    Recente: {
+      id?: string;
+      nome?: string;
+      situacao?: string;
+      custoUnitario?: string;
+      precoSugerido?: string;
+      unidades?: number;
+    };
     Abertura: { registros?: number; gramas?: string };
     Extrato: {
       movimentacoes?: components["schemas"]["PaginaResponseMovimentacaoResponse"];
@@ -125,10 +159,24 @@ export interface components {
       vendidas?: number;
       custos?: Array<components["schemas"]["CustoPainel"]>;
       cadastros?: components["schemas"]["CadastrosPainel"];
+      categorias?: Array<components["schemas"]["VendasCategoria"]>;
+      lucroPlataformas?: string;
+      variacaoLucro?: string;
     };
-    EstoquePainel: { nome?: string; gramas?: string; restante?: number };
+    EstoquePainel: {
+      nome?: string;
+      gramas?: string;
+      restante?: number;
+      cor?: string;
+    };
     PontoLucro: { data?: string; valor?: string };
-    VendasPlataforma: { nome?: string; vendas?: number };
+    VendasCategoria: { nome?: string; unidades?: number };
+    VendasPlataforma: {
+      nome?: string;
+      vendas?: number;
+      lucro?: string;
+      cor?: string;
+    };
     ClienteResumo: {
       cliente?: components["schemas"]["Cliente"];
       orcamentos?: number;
@@ -188,6 +236,20 @@ export interface components {
       pesoGramas?: number;
     };
     FotoCatalogo: { tipo?: string; base64?: string };
+    ArquivoCatalogo: {
+      nomeArquivo?: string;
+      modeloImpressora?: string;
+      fatiador?: string;
+      numeroPlacas?: number;
+      placas?: Array<components["schemas"]["PlacaCatalogo"]>;
+    };
+    PlacaCatalogo: {
+      numero?: number;
+      temImagem?: boolean;
+      tempoSegundos?: number;
+      pesoGramas?: number;
+      materiais?: Array<components["schemas"]["PecaMaterialResumo"]>;
+    };
     ImpressoraCatalogo: {
       id?: string;
       nome?: string;
@@ -200,6 +262,21 @@ export interface components {
       pagina?: number;
       tamanho?: number;
       total?: number;
+    };
+    CustosImpressora: {
+      depreciacaoHora?: string;
+      vidaUtilHoras?: string;
+      horasMensais?: string;
+      minutosImpressos?: number;
+      gastoTotal?: string;
+      manutencaoHora?: string;
+      registros?: Array<components["schemas"]["GastoCatalogo"]>;
+    };
+    GastoCatalogo: {
+      id?: string;
+      descricao?: string;
+      data?: string;
+      valor?: string;
     };
     PaginaResponseFilamentoCatalogo: {
       itens?: Array<components["schemas"]["FilamentoCatalogo"]>;
@@ -218,6 +295,42 @@ export interface components {
       pagina?: number;
       tamanho?: number;
       total?: number;
+    };
+    HistoricoListaResponse: {
+      id?: string;
+      nomePeca?: string;
+      dataCalculo?: string;
+      plataformaVenda?: string;
+      precoVendaPlataforma?: number;
+      precoSugerido?: number;
+      produzido?: boolean;
+      vendido?: boolean;
+      temFoto?: boolean;
+      unidades?: number;
+      custoTotal?: number;
+      lucroLiquido?: number;
+      dataVenda?: string;
+      unidadesVendidas?: number;
+    };
+    PaginaResponseHistoricoListaResponse: {
+      itens?: Array<components["schemas"]["HistoricoListaResponse"]>;
+      pagina?: number;
+      tamanho?: number;
+      total?: number;
+    };
+    CalculoSalvo: {
+      valores?: components["schemas"]["ValorCalculo"];
+      impressora?: string;
+      filamento?: string;
+      embalagem?: string;
+      minutos?: number;
+      situacao?: string;
+      data?: string;
+    };
+    PadroesCalculo: {
+      embalagemFixa?: boolean;
+      markupFixo?: boolean;
+      markup?: number;
     };
     Conta: {
       id?: string;

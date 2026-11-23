@@ -1,3 +1,4 @@
+import { Icon } from "@/components/icon";
 import { useState } from "react";
 import { Redirect } from "expo-router";
 import {
@@ -31,12 +32,7 @@ export default function Login() {
   if (auth.loading && !wide) return <SessionLoading />;
   if (auth.loading)
     return (
-      <View
-        style={[
-          s.loading,
-          { backgroundColor: wide ? t.background : t.primary },
-        ]}
-      >
+      <View style={[s.loading, { backgroundColor: t.background }]}>
         <ActivityIndicator
           color={t.primaryText}
           accessibilityLabel="Restaurando sessão"
@@ -97,20 +93,18 @@ export default function Login() {
     }
   }
   return (
-    <SafeAreaView
-      style={[s.loading, { backgroundColor: wide ? t.background : t.primary }]}
-    >
+    <SafeAreaView style={[s.loading, { backgroundColor: t.background }]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[s.container, !wide && { padding: 28 }]}
+          contentContainerStyle={[s.container, !wide && { padding: 16 }]}
         >
           <View style={[s.layout, wide ? s.desktop : s.mobile]}>
             <View style={wide ? s.brandDesktop : s.brandMobile}>
-              <BrandLogo width={wide ? 360 : 230} light={!wide} />
+              <BrandLogo width={wide ? 360 : 184} />
               {wide && (
                 <>
                   <Text
@@ -146,57 +140,44 @@ export default function Login() {
             <View
               style={[
                 s.form,
-                wide && {
-                  padding: 36,
-                  backgroundColor: t.surface,
+                {
+                  padding: wide ? 36 : 22,
+                  backgroundColor: "#fff",
                   borderColor: t.border,
                   borderWidth: 1,
                 },
               ]}
             >
-              {wide ? (
-                <>
-                  <Text
-                    style={{
-                      color: t.muted,
-                      fontSize: 11,
-                      fontWeight: "700",
-                      letterSpacing: 1.5,
-                    }}
-                  >
-                    BOAS-VINDAS À COST3D
-                  </Text>
-                  <Text
-                    accessibilityRole="header"
-                    style={{
-                      color: t.text,
-                      fontSize: 28,
-                      fontWeight: "700",
-                      letterSpacing: -0.6,
-                    }}
-                  >
-                    Bom ter você por aqui.
-                  </Text>
-                  <Body muted>Entre na sua conta para continuar.</Body>
-                </>
-              ) : (
+              <View style={{ gap: 7 }}>
                 <Text
-                  accessibilityRole={error ? "alert" : undefined}
                   style={{
-                    fontWeight: error ? "700" : "400",
-                    color: "#F4EEE4",
-                    textAlign: "center",
-                    fontSize: 14,
+                    color: t.muted,
+                    fontWeight: "700",
+                    fontSize: 11,
+                    letterSpacing: 1.4,
                   }}
                 >
-                  {error || "Gestão e cálculo de custos de impressão 3D"}
+                  BOAS-VINDAS À COST3D
                 </Text>
-              )}
+                <Text
+                  accessibilityRole="header"
+                  style={{
+                    color: t.text,
+                    fontSize: wide ? 28 : 25,
+                    fontWeight: "700",
+                    letterSpacing: -0.6,
+                  }}
+                >
+                  Bom ter você por aqui.
+                </Text>
+                <Text style={{ color: t.muted, fontSize: 15 }}>
+                  Entre na sua conta para continuar.
+                </Text>
+              </View>
               <View style={{ gap: 20, marginTop: 10 }}>
                 <Field
                   label="E-mail"
-                  labelColor={wide ? undefined : "#F4EEE4"}
-                  placeholder={wide ? "voce@exemplo.com" : undefined}
+                  placeholder="voce@exemplo.com"
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="email-address"
@@ -207,8 +188,41 @@ export default function Login() {
                 />
                 <Field
                   label="Senha"
-                  labelColor={wide ? undefined : "#F4EEE4"}
-                  placeholder={wide ? "Digite sua senha" : undefined}
+                  placeholder="Digite sua senha"
+                  labelAction={
+                    <Text
+                      accessibilityRole="link"
+                      style={{
+                        color: t.primaryText,
+                        textDecorationLine: "underline",
+                      }}
+                      onPress={() =>
+                        void openWebsite("/recuperar-senha").catch(() =>
+                          setError(
+                            "Não foi possível abrir a recuperação de senha.",
+                          ),
+                        )
+                      }
+                    >
+                      Esqueci minha senha
+                    </Text>
+                  }
+                  trailing={
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        visible ? "Ocultar senha" : "Mostrar senha"
+                      }
+                      onPress={() => setVisible(!visible)}
+                      style={s.eye}
+                    >
+                      <Icon
+                        name={visible ? "eye-slash" : "eye"}
+                        size={17}
+                        color={t.primaryText}
+                      />
+                    </Pressable>
+                  }
                   secureTextEntry={!visible}
                   autoCapitalize="none"
                   autoComplete="current-password"
@@ -218,66 +232,41 @@ export default function Login() {
                   onSubmitEditing={() => void submit()}
                 />
               </View>
-              {wide && (
-                <Button
-                  label={visible ? "Ocultar senha" : "Mostrar senha"}
-                  variant="ghost"
-                  onPress={() => setVisible(!visible)}
-                />
-              )}
-              {!!((wide && error) || auth.error) && (
+              {!!(error || auth.error) && (
                 <Notice
                   message={error || auth.error}
                   onRetry={auth.error ? () => void auth.restore() : undefined}
                 />
               )}
-              {wide ? (
-                <>
-                  <Button
-                    label="Entrar"
-                    busy={busy}
-                    onPress={() => void submit()}
-                  />
-                  <Button
-                    label="Ainda não tem conta?"
-                    variant="ghost"
-                    onPress={() => setHelp(!help)}
-                  />
-                  {help && (
-                    <Body muted>
-                      Peça à pessoa responsável pela loja para criar seu acesso
-                      com seu e-mail.
-                    </Body>
-                  )}
-                </>
-              ) : (
-                <>
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={busy}
-                    onPress={() => void submit()}
-                    style={s.mobileSubmit}
+              <Button
+                label="Entrar"
+                busy={busy}
+                onPress={() => void submit()}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: help }}
+                onPress={() => setHelp(!help)}
+                style={s.mobileLink}
+              >
+                <Text style={{ color: t.muted, textAlign: "center" }}>
+                  Ainda não tem conta?{" "}
+                  <Text
+                    style={{
+                      color: t.primaryText,
+                      fontWeight: "700",
+                      textDecorationLine: "underline",
+                    }}
                   >
-                    <Text style={{ color: t.primary, fontWeight: "700" }}>
-                      {busy ? "Entrando…" : "Entrar"}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="link"
-                    onPress={() =>
-                      void openWebsite("/recuperar-senha").catch(() =>
-                        setError(
-                          "Não foi possível abrir a recuperação de senha.",
-                        ),
-                      )
-                    }
-                    style={s.mobileLink}
-                  >
-                    <Text style={{ color: "#F4EEE4", fontWeight: "600" }}>
-                      Esqueci minha senha
-                    </Text>
-                  </Pressable>
-                </>
+                    Criar conta
+                  </Text>
+                </Text>
+              </Pressable>
+              {help && (
+                <Body muted>
+                  O cadastro é feito pela administração da sua loja. Peça à
+                  pessoa responsável para criar seu acesso com seu e-mail.
+                </Body>
               )}
             </View>
           </View>
@@ -298,12 +287,11 @@ const s = StyleSheet.create({
   desktop: { flexDirection: "row", gap: 72 },
   brandDesktop: { flex: 1, gap: 24 },
   mobile: { maxWidth: 420, gap: 14 },
-  mobileSubmit: {
+  eye: {
+    width: 44,
     minHeight: 44,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
-    backgroundColor: "#F4EEE4",
   },
   mobileLink: { minHeight: 44, alignItems: "center", justifyContent: "center" },
   brandMobile: { alignItems: "center" },

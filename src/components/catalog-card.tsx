@@ -1,3 +1,6 @@
+import { pieceCalculation } from "@/features/mobile-calculations";
+import { router } from "expo-router";
+import { Icon } from "./icon";
 import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { components } from "@/api/schema";
@@ -12,39 +15,14 @@ export type CatalogRow = Schemas["PecaCatalogo"] &
   Schemas["ImpressoraCatalogo"] &
   Schemas["FilamentoCatalogo"] &
   Schemas["EmbalagemCatalogo"];
-type Category = "pecas" | "filamentos" | "impressoras" | "embalagens";
-const paths = {
+export type CatalogCategory =
+  "pecas" | "filamentos" | "impressoras" | "embalagens";
+export const catalogPaths = {
   pecas: "peca",
   filamentos: "filamento",
   impressoras: "impressora",
   embalagens: "embalagem",
 };
-const icons = {
-  printer: require("../../assets/images/catalogo/printer.png"),
-  box: require("../../assets/images/catalogo/box-seam.png"),
-  palette: require("../../assets/images/catalogo/palette.png"),
-  eye: require("../../assets/images/catalogo/eye.png"),
-  pencil: require("../../assets/images/catalogo/pencil.png"),
-  warning: require("../../assets/images/catalogo/exclamation-triangle.png"),
-};
-function Icon({
-  name,
-  size = 22,
-  color,
-}: {
-  name: keyof typeof icons;
-  size?: number;
-  color: string;
-}) {
-  return (
-    <Image
-      accessible={false}
-      resizeMode="contain"
-      source={icons[name]}
-      style={{ width: size, height: size, tintColor: color }}
-    />
-  );
-}
 function Metric({ label, value }: { label: string; value: string }) {
   const t = useTheme();
   return (
@@ -68,7 +46,13 @@ export function stockLevel(row: CatalogRow) {
   );
   return { rolls, percent, low: percent <= 34 };
 }
-function PiecePhoto({ row }: { row: CatalogRow }) {
+export function PiecePhoto({
+  row,
+  large = false,
+}: {
+  row: CatalogRow;
+  large?: boolean;
+}) {
   const t = useTheme();
   const photo = useApiQuery<Schemas["FotoCatalogo"]>(
     row.id && row.placaMiniatura
@@ -82,7 +66,11 @@ function PiecePhoto({ row }: { row: CatalogRow }) {
   const [failed, setFailed] = useState(false);
   return (
     <View
-      style={[s.photo, { backgroundColor: t.surface, borderColor: t.border }]}
+      style={[
+        s.photo,
+        large && { width: "100%", height: 190, borderWidth: 0 },
+        { backgroundColor: t.surface, borderColor: t.border },
+      ]}
     >
       {photo.data?.base64 && !failed ? (
         <Image
@@ -94,11 +82,41 @@ function PiecePhoto({ row }: { row: CatalogRow }) {
           }}
           onError={() => setFailed(true)}
         />
+      ) : large ? (
+        <Body muted>
+          {photo.loading ? "Carregando prévia…" : "Prévia indisponível"}
+        </Body>
       ) : (
         <Icon name="box" color={t.muted} size={28} />
       )}
     </View>
   );
+}
+export function MaterialChips({
+  materiais,
+}: {
+  materiais: CatalogRow["materiais"];
+}) {
+  const t = useTheme();
+  return materiais?.length ? (
+    <View style={s.chips}>
+      {materiais.map((m, index) => (
+        <View key={index} style={[s.material, { borderColor: t.border }]}>
+          {!!m.corHex && (
+            <View
+              style={[
+                s.dot,
+                { backgroundColor: m.corHex, borderColor: t.border },
+              ]}
+            />
+          )}
+          <Text style={{ flexShrink: 1, color: t.text, fontSize: 13 }}>
+            {m.material || "Material"} · {decimal(String(m.pesoGramas), 1)} g
+          </Text>
+        </View>
+      ))}
+    </View>
+  ) : null;
 }
 function PieceIdentity({ row }: { row: CatalogRow }) {
   const t = useTheme();
@@ -124,26 +142,7 @@ function PieceIdentity({ row }: { row: CatalogRow }) {
             </Text>
           </View>
         )}
-        {!!row.materiais?.length && (
-          <View style={s.chips}>
-            {row.materiais.map((m, index) => (
-              <View key={index} style={[s.material, { borderColor: t.border }]}>
-                {!!m.corHex && (
-                  <View
-                    style={[
-                      s.dot,
-                      { backgroundColor: m.corHex, borderColor: t.border },
-                    ]}
-                  />
-                )}
-                <Text style={{ flexShrink: 1, color: t.text, fontSize: 13 }}>
-                  {m.material || "Material"} ·{" "}
-                  {decimal(String(m.pesoGramas), 1)} g
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
+        <MaterialChips materiais={row.materiais} />
         {!!row.modeloImpressora && <Body muted>{row.modeloImpressora}</Body>}
       </View>
     </View>
@@ -152,18 +151,16 @@ function PieceIdentity({ row }: { row: CatalogRow }) {
 export function CatalogCard({
   category,
   row,
-  onPiece,
-  detail = false,
+  onDetails,
 }: {
-  category: Category;
+  category: CatalogCategory;
   row: CatalogRow;
-  onPiece?: () => void;
-  detail?: boolean;
+  onDetails?: () => void;
 }) {
   const t = useTheme();
   const [error, setError] = useState("");
   const id = row.id && encodeURIComponent(row.id);
-  const path = "/" + paths[category];
+  const path = "/" + catalogPaths[category];
   const filament = category === "filamentos";
   const printer = category === "impressoras";
   const level = stockLevel(row);
@@ -197,11 +194,11 @@ export function CatalogCard({
     <Card style={{ gap: 16, padding: 16 }}>
       {category === "pecas" ? (
         <>
-          {onPiece ? (
+          {onDetails ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={"Ver detalhes de " + row.nome}
-              onPress={onPiece}
+              onPress={onDetails}
             >
               <PieceIdentity row={row} />
             </Pressable>
@@ -341,15 +338,14 @@ export function CatalogCard({
           {category === "pecas" && (
             <Button
               label="Calcular"
-              onPress={() => open("/historico/novo?pecaCriada=" + id)}
+              onPress={() => router.push(pieceCalculation(row))}
             />
           )}
-          {!detail &&
-            action(
-              "eye",
-              "Ver detalhes de",
-              onPiece ?? (() => open(path + "/detalhes/" + id)),
-            )}
+          {action(
+            "eye",
+            "Ver detalhes de",
+            onDetails ?? (() => open(path + "/detalhes/" + id)),
+          )}
           {action("pencil", "Editar", () => open(path + "/editar/" + id))}
           {filament && (
             <Button

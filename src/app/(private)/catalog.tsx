@@ -1,3 +1,4 @@
+import { pieceCalculation } from "@/features/mobile-calculations";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
@@ -10,6 +11,7 @@ import {
 } from "react-native";
 import { ModuleScreen, MenuRows, SiteButton } from "@/components/module-screen";
 import { Body, Card, Chip, Notice, Pagination, layout } from "@/components/ui";
+import { CatalogDetail } from "@/components/catalog-detail";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { useTheme } from "@/theme/provider";
 import { decimal, quantity, reais } from "@/features/format";
@@ -72,13 +74,11 @@ function Listings({ category }: { category: Category }) {
     mobile && category.key === "filamentos" && lowOnly ? lowStock : items;
   if (mobile && piece)
     return (
-      <ModuleScreen
-        section="Peças"
-        title={piece.nome || "Peça"}
+      <CatalogDetail
+        category={category.key}
+        row={items.find((item) => item.id === piece.id) ?? piece}
         onBack={() => setPiece(undefined)}
-      >
-        <CatalogCard category="pecas" row={piece} detail />
-      </ModuleScreen>
+      />
     );
   return (
     <ModuleScreen section="Seu catálogo" title={category.label}>
@@ -160,9 +160,7 @@ function Listings({ category }: { category: Category }) {
                 key={row.id}
                 category={category.key}
                 row={row}
-                onPiece={
-                  category.key === "pecas" ? () => setPiece(row) : undefined
-                }
+                onDetails={() => setPiece(row)}
               />
             ) : (
               <Card key={row.id}>
@@ -191,7 +189,7 @@ function Listings({ category }: { category: Category }) {
                         entries={[
                           {
                             label: "Calcular",
-                            site: `/historico/novo?pecaCriada=${encodeURIComponent(row.id)}`,
+                            route: pieceCalculation(row),
                           },
                         ]}
                       />
