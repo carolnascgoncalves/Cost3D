@@ -1,4 +1,4 @@
-import { pieceCalculation } from "@/features/mobile-calculations";
+import { pieceCalculation } from "@/features/calculation-route";
 import { router } from "expo-router";
 import { Icon } from "./icon";
 import { useCallback, useState, type ComponentProps } from "react";

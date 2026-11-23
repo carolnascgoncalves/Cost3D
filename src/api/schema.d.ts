@@ -21,6 +21,8 @@ export interface components {
       entrada: components["schemas"]["EntradaCalculo"];
       custoEsperado: number;
       precoEsperado: number;
+      precoPlataformaEsperado?: number;
+      foto?: string;
     };
     EntradaCalculo: {
       pecaId?: string;
@@ -31,10 +33,43 @@ export interface components {
       minutos?: number;
       trabalho?: number;
       markup?: number;
+      venda?: components["schemas"]["VendaCalculoEntrada"];
+      placas?: number;
+      nomeConsulta?: string;
     };
     ItemCalculoRequest: {
       filamentoId: string;
       quantidadeFilamentoGramas: number;
+    };
+    VendaCalculoEntrada: {
+      plataformaVenda?:
+        "NENHUMA" | "SHOPEE" | "TIKTOK" | "MERCADO_LIVRE" | "AMAZON";
+      tipoAnuncio?: string;
+      percentualComissaoPlataforma?: number;
+      custoAdicionalPlataforma?: number;
+      percentualImposto?: number;
+      freteVendedor?: number;
+      percentualAfiliado?: number;
+      tipoPessoaShopee?: string;
+      mais450PedidosShopee?: boolean;
+      freteGratisTikTok?: boolean;
+      isencaoComissaoTikTok?: boolean;
+      faixaPesoPacote?: string;
+      freteMercadoLivreManual?: number;
+    };
+    CustosCalculo: {
+      custoFilamento?: number;
+      custoEnergia?: number;
+      custoDepreciacao?: number;
+      custoManutencao?: number;
+      custoEmbalagem?: number;
+      custoMaoObra?: number;
+      custoFalha?: number;
+      custoPurga?: number;
+      custoLoja?: number;
+      taxasPlataforma?: number;
+      precoVendaPlataforma?: number;
+      lucroLiquido?: number;
     };
     ValorCalculo: {
       id?: string;
@@ -42,6 +77,21 @@ export interface components {
       custoUnitario?: number;
       precoUnitario?: number;
       unidades?: number;
+      custos?: components["schemas"]["CustosCalculo"];
+    };
+    ArquivoConsulta: {
+      nome?: string;
+      placas?: number;
+      segundos?: number;
+      gramas?: number;
+      materiais?: Array<components["schemas"]["Modelo3mfFilamentoResponse"]>;
+      completo?: boolean;
+    };
+    Modelo3mfFilamentoResponse: {
+      id?: number;
+      material?: string;
+      cor?: string;
+      pesoGramas?: number;
     };
     SessaoWeb: { accessToken?: string; tokenType?: string; expiresIn?: number };
     Login: { email: string; senha: string };
@@ -331,6 +381,7 @@ export interface components {
       embalagemFixa?: boolean;
       markupFixo?: boolean;
       markup?: number;
+      avancado?: boolean;
     };
     Conta: {
       id?: string;

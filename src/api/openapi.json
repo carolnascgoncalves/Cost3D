@@ -204,6 +204,36 @@
         "security": [{ "bearerAuth": [] }]
       }
     },
+    "/api/v1/calculos/arquivo": {
+      "post": {
+        "tags": ["api-calculos-controller"],
+        "operationId": "arquivo",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "arquivo3mf": { "type": "string", "format": "binary" }
+                },
+                "required": ["arquivo3mf"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ArquivoConsulta" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
     "/api/v1/auth/web/refresh": {
       "post": {
         "tags": ["api-web-auth-controller"],
@@ -655,7 +685,7 @@
     "/api/v1/catalogo/pecas/{id}/arquivo": {
       "get": {
         "tags": ["api-painel-controller"],
-        "operationId": "arquivo",
+        "operationId": "arquivo_1",
         "parameters": [
           {
             "name": "id",
@@ -826,6 +856,31 @@
         "security": [{ "bearerAuth": [] }]
       }
     },
+    "/api/v1/calculos/{id}/foto": {
+      "get": {
+        "tags": ["api-calculos-controller"],
+        "operationId": "foto_1",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/FotoCatalogo" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
     "/api/v1/calculos/padroes": {
       "get": {
         "tags": ["api-calculos-controller"],
@@ -894,7 +949,14 @@
         "properties": {
           "entrada": { "$ref": "#/components/schemas/EntradaCalculo" },
           "custoEsperado": { "type": "number" },
-          "precoEsperado": { "type": "number" }
+          "precoEsperado": { "type": "number" },
+          "precoPlataformaEsperado": { "type": "number" },
+          "foto": {
+            "type": "string",
+            "format": "byte",
+            "maxLength": 3145728,
+            "minLength": 1
+          }
         },
         "required": ["custoEsperado", "entrada", "precoEsperado"]
       },
@@ -928,7 +990,15 @@
             "maximum": 1000000,
             "minimum": 0
           },
-          "markup": { "type": "number", "maximum": 99999, "minimum": 0 }
+          "markup": { "type": "number", "maximum": 99999, "minimum": 0 },
+          "venda": { "$ref": "#/components/schemas/VendaCalculoEntrada" },
+          "placas": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 100,
+            "minimum": 1
+          },
+          "nomeConsulta": { "type": "string", "maxLength": 150, "minLength": 0 }
         },
         "required": ["filamentos", "impressoraId"]
       },
@@ -943,6 +1013,44 @@
         },
         "required": ["filamentoId", "quantidadeFilamentoGramas"]
       },
+      "VendaCalculoEntrada": {
+        "type": "object",
+        "properties": {
+          "plataformaVenda": {
+            "type": "string",
+            "enum": ["NENHUMA", "SHOPEE", "TIKTOK", "MERCADO_LIVRE", "AMAZON"]
+          },
+          "tipoAnuncio": { "type": "string" },
+          "percentualComissaoPlataforma": { "type": "number", "minimum": 0 },
+          "custoAdicionalPlataforma": { "type": "number", "minimum": 0 },
+          "percentualImposto": { "type": "number", "minimum": 0 },
+          "freteVendedor": { "type": "number", "minimum": 0 },
+          "percentualAfiliado": { "type": "number", "minimum": 0 },
+          "tipoPessoaShopee": { "type": "string" },
+          "mais450PedidosShopee": { "type": "boolean" },
+          "freteGratisTikTok": { "type": "boolean" },
+          "isencaoComissaoTikTok": { "type": "boolean" },
+          "faixaPesoPacote": { "type": "string" },
+          "freteMercadoLivreManual": { "type": "number", "minimum": 0 }
+        }
+      },
+      "CustosCalculo": {
+        "type": "object",
+        "properties": {
+          "custoFilamento": { "type": "number" },
+          "custoEnergia": { "type": "number" },
+          "custoDepreciacao": { "type": "number" },
+          "custoManutencao": { "type": "number" },
+          "custoEmbalagem": { "type": "number" },
+          "custoMaoObra": { "type": "number" },
+          "custoFalha": { "type": "number" },
+          "custoPurga": { "type": "number" },
+          "custoLoja": { "type": "number" },
+          "taxasPlataforma": { "type": "number" },
+          "precoVendaPlataforma": { "type": "number" },
+          "lucroLiquido": { "type": "number" }
+        }
+      },
       "ValorCalculo": {
         "type": "object",
         "properties": {
@@ -950,7 +1058,33 @@
           "nome": { "type": "string" },
           "custoUnitario": { "type": "number" },
           "precoUnitario": { "type": "number" },
-          "unidades": { "type": "integer", "format": "int32" }
+          "unidades": { "type": "integer", "format": "int32" },
+          "custos": { "$ref": "#/components/schemas/CustosCalculo" }
+        }
+      },
+      "ArquivoConsulta": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string" },
+          "placas": { "type": "integer", "format": "int32" },
+          "segundos": { "type": "number", "format": "double" },
+          "gramas": { "type": "number", "format": "double" },
+          "materiais": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Modelo3mfFilamentoResponse"
+            }
+          },
+          "completo": { "type": "boolean" }
+        }
+      },
+      "Modelo3mfFilamentoResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "material": { "type": "string" },
+          "cor": { "type": "string" },
+          "pesoGramas": { "type": "number", "format": "double" }
         }
       },
       "SessaoWeb": {
@@ -1484,7 +1618,8 @@
         "properties": {
           "embalagemFixa": { "type": "boolean" },
           "markupFixo": { "type": "boolean" },
-          "markup": { "type": "number" }
+          "markup": { "type": "number" },
+          "avancado": { "type": "boolean" }
         }
       },
       "Conta": {

@@ -4,9 +4,11 @@ export type TenantTheme = components["schemas"]["Tema"];
 type Tokens = components["schemas"]["Tokens"];
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  code?: string;
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 type Options = {
@@ -35,7 +37,9 @@ export function createSession(options: Options) {
         ...init,
         credentials: web ? "include" : "omit",
         headers: {
-          "Content-Type": "application/json",
+          ...(typeof FormData !== "undefined" && init.body instanceof FormData
+            ? {}
+            : { "Content-Type": "application/json" }),
           ...(web ? { "X-Cost3D-Web": "1" } : {}),
           ...init.headers,
         },
@@ -51,6 +55,7 @@ export function createSession(options: Options) {
       throw new ApiError(
         response.status,
         problem.detail || `Não foi possível concluir (${response.status}).`,
+        problem.codigo,
       );
     }
     return response;

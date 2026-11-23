@@ -1,4 +1,4 @@
-import { pieceCalculation } from "@/features/mobile-calculations";
+import { pieceCalculation } from "@/features/calculation-route";
 import { router } from "expo-router";
 import { Icon } from "./icon";
 import { useState } from "react";
@@ -49,9 +49,11 @@ export function stockLevel(row: CatalogRow) {
 export function PiecePhoto({
   row,
   large = false,
+  compact = false,
 }: {
   row: CatalogRow;
   large?: boolean;
+  compact?: boolean;
 }) {
   const t = useTheme();
   const photo = useApiQuery<Schemas["FotoCatalogo"]>(
@@ -68,6 +70,7 @@ export function PiecePhoto({
     <View
       style={[
         s.photo,
+        compact && { width: 32, height: 32, borderRadius: 8 },
         large && { width: "100%", height: 190, borderWidth: 0 },
         { backgroundColor: t.surface, borderColor: t.border },
       ]}
