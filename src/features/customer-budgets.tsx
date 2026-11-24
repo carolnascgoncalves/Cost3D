@@ -25,6 +25,7 @@ export function CustomerBudgets({ id }: { id: string }) {
     components["schemas"]["PaginaResponseOrcamentoResumo"]
   >(
     `/clientes/${encodeURIComponent(id)}/orcamentos?arquivados=${archived}&pagina=${page}`,
+    true,
   );
   function selectArchive(value: boolean) {
     setArchived(value);
@@ -45,7 +46,7 @@ export function CustomerBudgets({ id }: { id: string }) {
           onPress={() => selectArchive(true)}
         />
       </View>
-      {loading ? (
+      {loading && !data ? (
         <ActivityIndicator color={t.primaryText} />
       ) : error ? (
         <Notice message={error} onRetry={retry} />
@@ -97,6 +98,7 @@ export function CustomerBudgets({ id }: { id: string }) {
           )}
           {data?.tamanho && (page > 0 || (data.total ?? 0) > data.tamanho) ? (
             <Pagination
+              disabled={loading}
               page={page}
               total={data.total ?? 0}
               size={data.tamanho}

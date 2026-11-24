@@ -1,47 +1,52 @@
+import { AccountBadge } from "@/components/account-badge";
 import { useState } from "react";
 import { View } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/auth/provider";
-import { groups, type Link } from "@/features/menu-groups";
+import { type Link } from "@/features/menu-groups";
 import { openWebsite } from "@/features/website";
 import { ModuleScreen } from "@/components/module-screen";
 import { MenuCard } from "@/components/menu-card";
 import type { IconName } from "@/components/icon";
+import { useTheme } from "@/theme/provider";
 import { Body, Notice } from "@/components/ui";
-const icons: Record<string, IconName> = {
-  Início: "house",
-  Dashboard: "collection",
-  Peças: "box",
-  Filamentos: "palette",
-  Impressoras: "printer",
-  Embalagens: "box",
-  Calcular: "calculator",
-  "Meus cálculos": "clock-history",
-  Clientes: "collection",
-  "Orçamentos e pedidos": "pencil",
-  "Vendas e estoque": "shop",
-  "Outras vendas": "bag-plus",
-  "Planejar produção": "calendar3",
-  Movimentações: "arrow-repeat",
-  "Custos extras": "cash-coin",
-  Configurações: "calculator",
-  "Minha conta": "house",
+type MenuItem = Link & { icon: IconName };
+const account: MenuItem = {
+  label: "Minha conta",
+  route: "/account",
+  icon: "person",
 };
-const account: Link = { label: "Minha conta", route: "/account" };
-const sections: [string, Link[]][] = groups.map(([name, items]) => [
-  name,
-  name === "Gestão"
-    ? [
-        ...items.filter((i) => i.label !== "Mais"),
-        { label: "Configurações", site: "/configuracao" },
-        account,
-      ]
-    : items,
-]);
+const sections: [string, MenuItem[]][] = [
+  [
+    "Visão geral",
+    [{ label: "Dashboard", route: "/dashboard", icon: "bar-chart" }],
+  ],
+  [
+    "Comercial",
+    [
+      { label: "Clientes", route: "/customers", icon: "person" },
+      { label: "Orçamentos e pedidos", site: "/orcamentos", icon: "file-text" },
+      { label: "Outras vendas", site: "/outras-vendas", icon: "bag-plus" },
+    ],
+  ],
+  [
+    "Produção e gestão",
+    [
+      { label: "Planejar produção", site: "/simulacao", icon: "calendar3" },
+      { label: "Movimentações", route: "/movements", icon: "arrow-switch" },
+      { label: "Custos extras", site: "/custos-loja", icon: "cash-coin" },
+    ],
+  ],
+  [
+    "Conta",
+    [account, { label: "Configurações", route: "/settings", icon: "gear" }],
+  ],
+];
 export default function More() {
+  const theme = useTheme();
   const auth = useAuth(),
     [error, setError] = useState("");
-  const visible: [string, Link[]][] = auth.account?.tenantId
+  const visible: [string, MenuItem[]][] = auth.account?.tenantId
     ? sections
     : [["Conta", [account]]];
   function open(item: Link) {
@@ -59,17 +64,40 @@ export default function More() {
   }
   return (
     <ModuleScreen lightHeader section="Menu" title="Mais">
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <AccountBadge />
+        <Body strong>{auth.account?.email}</Body>
+      </View>
       {visible.map(([name, entries]) => (
         <View key={name} style={{ gap: 8, marginTop: 8 }}>
           <Body strong>{name}</Body>
-          {entries.map((item) => (
-            <MenuCard
-              key={item.label}
-              label={item.label}
-              icon={icons[item.label]}
-              onPress={() => open(item)}
-            />
-          ))}
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: theme.border,
+              borderRadius: 14,
+              backgroundColor: theme.surface,
+              paddingHorizontal: 5,
+              overflow: "hidden",
+            }}
+          >
+            {entries.map((item, index) => (
+              <View
+                key={item.label}
+                style={{
+                  borderTopWidth: index ? 1 : 0,
+                  borderColor: theme.border,
+                }}
+              >
+                <MenuCard
+                  grouped
+                  label={item.label}
+                  icon={item.icon}
+                  onPress={() => open(item)}
+                />
+              </View>
+            ))}
+          </View>
         </View>
       ))}
       {!!error && <Notice message={error} />}

@@ -6,6 +6,7 @@ import {
   Text,
   View,
   ScrollView,
+  type ScrollViewProps,
   useWindowDimensions,
 } from "react-native";
 import { useTheme } from "@/theme/provider";
@@ -84,11 +85,15 @@ export function ModuleScreen({
   children,
   onBack,
   lightHeader,
+  fillContent = false,
+  refreshControl,
 }: PropsWithChildren<{
   section: string;
   title: string;
   onBack?: () => void;
   lightHeader?: boolean;
+  fillContent?: boolean;
+  refreshControl?: ScrollViewProps["refreshControl"];
 }>) {
   const wide = useWindowDimensions().width >= 900;
   useFocusEffect(
@@ -113,9 +118,11 @@ export function ModuleScreen({
         lightHeader={lightHeader}
       />
       <ScrollView
+        refreshControl={refreshControl}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           paddingHorizontal: wide ? 48 : 16,
+          flexGrow: fillContent ? 1 : 0,
           paddingVertical: 16,
           gap: 12,
           width: "100%",

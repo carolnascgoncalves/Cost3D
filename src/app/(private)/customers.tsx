@@ -1,14 +1,15 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   useWindowDimensions,
-  FlatList,
+  RefreshControl,
   Pressable,
   Text,
   View,
 } from "react-native";
-import { ModuleHeader } from "@/components/module-screen";
+import { ListSearch } from "@/components/list-search";
+import { ModuleScreen } from "@/components/module-screen";
 import { useAuth } from "@/auth/provider";
 import {
   Body,
@@ -16,8 +17,6 @@ import {
   Card,
   Chip,
   Empty,
-  Field,
-  Heading,
   Notice,
   Pagination,
   Screen,
@@ -32,19 +31,24 @@ export default function Customers() {
   const mobile = useWindowDimensions().width < 900;
   const { account } = useAuth();
   const { customers: filter, setCustomers } = useWorkspace();
-  const [search, setSearch] = useState(filter.busca);
+  const [refreshing, setRefreshing] = useState(false);
   const path =
     "/clientes?" +
     new URLSearchParams({
-      busca: filter.busca,
+      busca: filter.busca.trim(),
       arquivados: String(filter.arquivados),
       pagina: String(filter.pagina),
       tamanho: "20",
     });
-  const query = useApiQuery<CustomerList>(account?.tenantId ? path : null);
+  const query = useApiQuery<CustomerList>(
+    account?.tenantId ? path : null,
+    true,
+  );
+  useEffect(() => {
+    if (!query.loading) setRefreshing(false);
+  }, [query.loading]);
   const total = query.data?.clientes?.total || 0;
-  const apply = () =>
-    setCustomers({ ...filter, busca: search.trim(), pagina: 0 });
+
   if (!account?.tenantId)
     return (
       <Screen>
@@ -55,93 +59,76 @@ export default function Customers() {
       </Screen>
     );
   return (
-    <Screen scroll={false}>
-      <FlatList
-        style={layout.list}
-        contentContainerStyle={layout.listContent}
-        data={query.data?.clientes?.itens || []}
-        keyExtractor={(item, index) => item.cliente?.id || String(index)}
-        keyboardShouldPersistTaps="handled"
-        refreshing={query.loading}
-        onRefresh={query.retry}
-        ListHeaderComponent={
-          <View style={{ gap: 20, marginBottom: 8 }}>
-            {mobile && <ModuleHeader section="Menu" title="Clientes" />}
-            <View style={[layout.row, { justifyContent: "space-between" }]}>
-              {!mobile && (
-                <Heading
-                  title="Clientes"
-                  subtitle="Pessoas que compram da sua loja."
-                />
-              )}
-              <Button
-                label="+ Novo cliente"
-                onPress={() =>
-                  router.push({
-                    pathname: "/customers/[id]",
-                    params: { id: "new" },
-                  })
-                }
-              />
-            </View>
-            <View style={layout.row}>
-              <Chip
-                label="Ativos"
-                selected={!filter.arquivados}
-                onPress={() =>
-                  setCustomers({ ...filter, arquivados: false, pagina: 0 })
-                }
-              />
-              <Chip
-                label="Arquivados"
-                selected={filter.arquivados}
-                onPress={() =>
-                  setCustomers({ ...filter, arquivados: true, pagina: 0 })
-                }
-              />
-              {!mobile && (
-                <Text style={{ color: t.pageMuted }}>
-                  {query.data?.resumo?.ativos ?? "—"} ativos ·{" "}
-                  {query.data?.resumo?.arquivados ?? "—"} arquivados
-                </Text>
-              )}
-            </View>
-            <Card>
-              <Field
-                label="Buscar cliente"
-                placeholder="Nome, telefone ou e-mail"
-                value={search}
-                maxLength={150}
-                onChangeText={setSearch}
-                returnKeyType="search"
-                onSubmitEditing={apply}
-              />
-              <View style={layout.row}>
-                <Button label="Buscar" onPress={apply} />
-                <Button
-                  label="Limpar filtros"
-                  variant="ghost"
-                  onPress={() => {
-                    setSearch("");
-                    setCustomers({ ...defaultCustomers });
-                  }}
-                />
-              </View>
-            </Card>
-            {!!query.error && (
-              <Notice message={query.error} onRetry={query.retry} />
-            )}
-            {query.loading && (
-              <ActivityIndicator
-                color={t.primaryText}
-                accessibilityLabel="Carregando clientes"
-              />
-            )}
-          </View>
+    <ModuleScreen
+      section="Menu"
+      title="Clientes"
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing && query.loading}
+          onRefresh={() => {
+            setRefreshing(true);
+            query.retry();
+          }}
+        />
+      }
+    >
+      <View style={layout.row}>
+        <Chip
+          label="Ativos"
+          selected={!filter.arquivados}
+          onPress={() =>
+            setCustomers({ ...filter, arquivados: false, pagina: 0 })
+          }
+        />
+        <Chip
+          label="Arquivados"
+          selected={filter.arquivados}
+          onPress={() =>
+            setCustomers({ ...filter, arquivados: true, pagina: 0 })
+          }
+        />
+        {!mobile && (
+          <Text style={{ color: t.pageMuted }}>
+            {query.data?.resumo?.ativos ?? "—"} ativos ·{" "}
+            {query.data?.resumo?.arquivados ?? "—"} arquivados
+          </Text>
+        )}
+      </View>
+      <ListSearch
+        accessibilityLabel="Pesquisar clientes"
+        placeholder="Pesquisar por nome, telefone ou e-mail"
+        value={filter.busca}
+        onChangeText={(busca) =>
+          setCustomers((current) => ({ ...current, busca, pagina: 0 }))
         }
-        renderItem={({ item }) => <CustomerItem item={item} />}
-        ListEmptyComponent={
-          !query.loading && !query.error ? (
+      />
+      <Button
+        label="+ Novo cliente"
+        onPress={() =>
+          router.push({ pathname: "/customers/[id]", params: { id: "new" } })
+        }
+      />
+      {filter.busca || filter.arquivados ? (
+        <Button
+          variant="ghost"
+          label="Limpar filtros"
+          onPress={() => setCustomers({ ...defaultCustomers })}
+        />
+      ) : null}
+      {query.error ? (
+        <Notice message={query.error} onRetry={query.retry} />
+      ) : !query.data ? (
+        <ActivityIndicator color={t.primaryText} />
+      ) : (
+        <>
+          {(query.data.clientes?.itens ?? []).map((row) => (
+            <CustomerItem
+              key={row.cliente?.id}
+              item={row}
+              disabled={query.loading}
+            />
+          ))}
+          {!total && !query.loading && (
             <Empty
               title="Nenhum cliente encontrado"
               description={
@@ -152,29 +139,34 @@ export default function Customers() {
                     : "Cadastre o primeiro cliente da sua loja."
               }
             />
-          ) : undefined
-        }
-        ListFooterComponent={
-          !query.loading && !query.error && total > 0 ? (
+          )}
+          {total > 0 && (
             <Pagination
               page={filter.pagina}
               total={total}
+              disabled={query.loading}
               onPage={(pagina) => setCustomers({ ...filter, pagina })}
             />
-          ) : undefined
-        }
-      />
-    </Screen>
+          )}
+        </>
+      )}
+    </ModuleScreen>
   );
 }
-function CustomerItem({ item }: { item: CustomerRow }) {
+function CustomerItem({
+  item,
+  disabled,
+}: {
+  item: CustomerRow;
+  disabled: boolean;
+}) {
   const t = useTheme();
   const customer = item.cliente;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Ver cliente ${customer?.nome || ""}`}
-      disabled={!customer?.id}
+      disabled={disabled || !customer?.id}
       onPress={() =>
         router.push({
           pathname: "/customers/[id]",

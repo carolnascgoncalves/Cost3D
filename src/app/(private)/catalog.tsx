@@ -1,16 +1,25 @@
+import { ListSearch } from "@/components/list-search";
+import { CatalogEditor } from "@/features/catalog-editor";
 import { pieceCalculation } from "@/features/calculation-route";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
-  TextInput,
   Text,
   View,
   useWindowDimensions,
 } from "react-native";
 import { ModuleScreen, MenuRows, SiteButton } from "@/components/module-screen";
-import { Body, Card, Chip, Notice, Pagination, layout } from "@/components/ui";
+import {
+  Body,
+  Button,
+  Card,
+  Chip,
+  Notice,
+  Pagination,
+  layout,
+} from "@/components/ui";
 import { CatalogDetail } from "@/components/catalog-detail";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { useTheme } from "@/theme/provider";
@@ -53,6 +62,7 @@ export default function Catalog() {
 function Listings({ category }: { category: Category }) {
   const mobile = useWindowDimensions().width < 900;
   const t = useTheme();
+  const [editor, setEditor] = useState<{ id: string; purchase: boolean }>();
   const [piece, setPiece] = useState<Row>();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -72,9 +82,26 @@ function Listings({ category }: { category: Category }) {
       : [];
   const visible =
     mobile && category.key === "filamentos" && lowOnly ? lowStock : items;
+  function edit(row: Row, purchase = false) {
+    if (row.id) setEditor({ id: row.id, purchase });
+  }
+  if (editor)
+    return (
+      <CatalogEditor
+        category={category.key}
+        {...editor}
+        onBack={() => setEditor(undefined)}
+        onSaved={() => {
+          setEditor(undefined);
+          setPiece(undefined);
+          q.retry();
+        }}
+      />
+    );
   if (mobile && piece)
     return (
       <CatalogDetail
+        onEdit={(purchase) => edit(piece, purchase)}
         category={category.key}
         row={items.find((item) => item.id === piece.id) ?? piece}
         onBack={() => setPiece(undefined)}
@@ -97,24 +124,13 @@ function Listings({ category }: { category: Category }) {
         ))}
       </ScrollView>
       {mobile && (
-        <TextInput
+        <ListSearch
           accessibilityLabel={"Pesquisar em " + category.label}
           placeholder={"Pesquisar em " + category.label.toLowerCase() + "…"}
-          placeholderTextColor={t.muted}
           value={search}
           onChangeText={(value) => {
             setSearch(value);
             setPage(0);
-          }}
-          maxLength={150}
-          style={{
-            borderWidth: 1,
-            borderColor: t.border,
-            backgroundColor: t.surface,
-            color: t.text,
-            borderRadius: 12,
-            paddingHorizontal: 12,
-            minHeight: 44,
           }}
         />
       )}
@@ -157,6 +173,7 @@ function Listings({ category }: { category: Category }) {
           {visible.map((row) =>
             mobile ? (
               <CatalogCard
+                onEdit={(purchase) => edit(row, purchase)}
                 key={row.id}
                 category={category.key}
                 row={row}
@@ -164,6 +181,18 @@ function Listings({ category }: { category: Category }) {
               />
             ) : (
               <Card key={row.id}>
+                <Button
+                  label="Editar"
+                  variant="ghost"
+                  onPress={() => edit(row)}
+                />
+                {category.key === "filamentos" && (
+                  <Button
+                    label="Registrar compra"
+                    variant="secondary"
+                    onPress={() => edit(row, true)}
+                  />
+                )}
                 <View style={layout.row}>
                   <Text
                     style={{

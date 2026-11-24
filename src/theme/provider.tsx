@@ -7,6 +7,8 @@ import {
 import type { TenantTheme } from "@/api/session";
 import { useWindowDimensions } from "react-native";
 import { createMobileTheme, createTheme } from "./colors";
+const StoreIcon = createContext<string | undefined>(undefined);
+export const useStoreIcon = () => useContext(StoreIcon);
 const StoreName = createContext("Cost3D");
 export const useStoreName = () => useContext(StoreName);
 const Context = createContext(createTheme());
@@ -21,7 +23,9 @@ export function ThemeProvider({
   );
   return (
     <StoreName.Provider value={value?.nome || "Cost3D"}>
-      <Context.Provider value={theme}>{children}</Context.Provider>
+      <StoreIcon.Provider value={value?.logoUrl}>
+        <Context.Provider value={theme}>{children}</Context.Provider>
+      </StoreIcon.Provider>
     </StoreName.Provider>
   );
 }

@@ -1,5 +1,10 @@
 import { Image } from "react-native";
 const icons = {
+  "bar-chart": require("../../assets/images/catalogo/bar-chart.png"),
+  person: require("../../assets/images/catalogo/person.png"),
+  "file-text": require("../../assets/images/catalogo/file-text.png"),
+  "arrow-switch": require("../../assets/images/catalogo/arrow-switch.png"),
+  gear: require("../../assets/images/catalogo/gear.png"),
   house: require("../../assets/images/catalogo/house.png"),
   shop: require("../../assets/images/catalogo/shop.png"),
   "three-dots": require("../../assets/images/catalogo/three-dots.png"),

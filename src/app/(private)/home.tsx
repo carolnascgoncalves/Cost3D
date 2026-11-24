@@ -1,3 +1,4 @@
+import { AccountBadge } from "@/components/account-badge";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -9,7 +10,7 @@ import {
 } from "react-native";
 import { Icon, type IconName } from "@/components/icon";
 import { ModuleScreen, MenuRows } from "@/components/module-screen";
-import { Body, Button, Card, Notice } from "@/components/ui";
+import { Body, Card, Notice } from "@/components/ui";
 import { useAuth } from "@/auth/provider";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { useStoreName, useTheme } from "@/theme/provider";
@@ -31,19 +32,19 @@ function Attention({
   warning?: boolean;
 }) {
   const t = useTheme();
+  const wide = useWindowDimensions().width >= 900;
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => ({
-        flexGrow: 1,
-        flexBasis: 220,
+        ...(wide ? { flexGrow: 1, flexBasis: 220 } : {}),
         opacity: pressed ? 0.75 : 1,
       })}
     >
       <Card
         style={{
-          height: "100%",
+          minHeight: 64,
           flexDirection: "row",
           alignItems: "center",
           gap: 10,
@@ -92,10 +93,49 @@ export default function Home() {
     low = data?.estoqueCritico,
     count = data?.aguardandoVenda ?? 0;
   return (
-    <ModuleScreen
-      section="Painel principal"
-      title={"Boas-vindas ao " + name + "!"}
-    >
+    <ModuleScreen lightHeader section="Minha loja" title={name}>
+      {account?.tenantId && (
+        <View
+          style={{
+            backgroundColor: t.primary,
+            borderRadius: 16,
+            padding: 18,
+            gap: 14,
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <AccountBadge />
+            <Text
+              style={{
+                color: t.onPrimary,
+                fontSize: 23,
+                fontWeight: "700",
+                flex: 1,
+              }}
+            >
+              Dashboard
+            </Text>
+          </View>
+          <Text style={{ color: t.onPrimary }}>
+            Acompanhe o lucro, as vendas e a produção da loja.
+          </Text>
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => router.push("/dashboard")}
+            style={{
+              alignSelf: "flex-start",
+              borderRadius: 8,
+              paddingVertical: 10,
+              paddingHorizontal: 15,
+              backgroundColor: t.surface,
+            }}
+          >
+            <Text style={{ color: t.primaryText, fontWeight: "700" }}>
+              Ver dashboard →
+            </Text>
+          </Pressable>
+        </View>
+      )}
       {!account?.tenantId ? (
         <MenuRows entries={[{ label: "Minha conta", route: "/account" }]} />
       ) : q.loading ? (
@@ -214,7 +254,13 @@ export default function Home() {
             </Text>
             <Body muted>O que vale resolver agora</Body>
           </View>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          <View
+            style={{
+              flexDirection: wide ? "row" : "column",
+              flexWrap: wide ? "wrap" : "nowrap",
+              gap: 8,
+            }}
+          >
             {low && (
               <Attention
                 warning
@@ -236,9 +282,7 @@ export default function Home() {
                   count + (count === 1 ? " peça sem venda" : " peças sem venda")
                 }
                 subtitle="Produzidas e paradas"
-                onPress={() =>
-                  open("/historico/listar?produzido=SIM&vendido=NAO")
-                }
+                onPress={() => router.push("/sales")}
               />
             )}
             {data?.valorHoraConfigurado === false && (
@@ -246,7 +290,12 @@ export default function Home() {
                 icon="clock-history"
                 title="Defina o valor da sua hora"
                 subtitle="Opcional · inclui mão de obra no cálculo"
-                onPress={() => open("/configuracao#valorMaoObraHora")}
+                onPress={() =>
+                  router.push({
+                    pathname: "/settings",
+                    params: { secao: "mao" },
+                  })
+                }
               />
             )}
           </View>
@@ -254,10 +303,6 @@ export default function Home() {
             <Body muted>Nenhuma pendência no momento.</Body>
           )}
           {!!error && <Notice message={error} />}
-          <Button
-            label="Abrir dashboard"
-            onPress={() => router.push("/dashboard")}
-          />
         </>
       )}
     </ModuleScreen>

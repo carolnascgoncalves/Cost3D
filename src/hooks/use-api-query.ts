@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import { request } from "@/api/session";
-export function useApiQuery<T>(path: string | null) {
+export function useApiQuery<T>(path: string | null, keepPrevious = false) {
   const [data, setData] = useState<T>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -16,7 +16,7 @@ export function useApiQuery<T>(path: string | null) {
       }
       setLoading(true);
       setError("");
-      setData(undefined);
+      if (!keepPrevious) setData(undefined);
       request<T>(path)
         .then((value) => {
           if (active) setData(value);
@@ -35,7 +35,7 @@ export function useApiQuery<T>(path: string | null) {
       return () => {
         active = false;
       };
-    }, [path, revision]),
+    }, [path, revision, keepPrevious]),
   );
   return { data, loading, error, retry: () => setRevision((v) => v + 1) };
 }

@@ -4,7 +4,8 @@ import {
   usePathname,
   useGlobalSearchParams,
 } from "expo-router";
-import { Pressable, ScrollView, Text } from "react-native";
+import { AccountBadge } from "./account-badge";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { BrandLogo } from "@/components/brand-logo";
 import { openWebsite } from "@/features/website";
 import { useTheme } from "@/theme/provider";
@@ -40,10 +41,20 @@ export function DesktopNav({
         gap: 2,
       }}
     >
-      <BrandLogo
-        width={140}
-        style={{ tintColor: t.onPrimary, marginLeft: 12, marginBottom: 10 }}
-      />
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
+          marginBottom: 8,
+        }}
+      >
+        <AccountBadge />
+        <BrandLogo
+          width={140}
+          style={{ tintColor: t.onPrimary, marginLeft: 12, marginBottom: 10 }}
+        />
+      </View>
       {sections.map(([group, links]) => (
         <NavSection key={group} title={group}>
           {links.map((link) => {

@@ -1,6 +1,29 @@
 /** Generated from OpenAPI by npm run api:generate. Do not edit. */
 export interface components {
   schemas: {
+    ConfiguracaoRequest: {
+      markupPercentual?: number;
+      markupFixo?: boolean;
+      markupOpcao1: number;
+      markupOpcao2: number;
+      markupOpcao3: number;
+      tarifaEnergiaKwh: number;
+      embalagemFixa: boolean;
+      custoEmbalagemFixa?: number;
+      formularioAvancado?: boolean;
+      maoObraAtivada?: boolean;
+      valorMaoObraHora?: number;
+      maoObraTempoFixo?: boolean;
+      tempoMaoObraFixoMinutos?: number;
+      depreciacaoAtivada?: boolean;
+      taxaFalhaAtivada?: boolean;
+      percentualFalha?: number;
+      purgaGramasPorImpressao?: number;
+      percentualFalhaValido?: boolean;
+      tempoMaoObraFixoValido?: boolean;
+      maoObraValida?: boolean;
+      markupFixoValido?: boolean;
+    };
     Entrada: {
       nome: string;
       telefone?: string;
@@ -16,6 +39,105 @@ export interface components {
       email?: string;
       observacoes?: string;
       arquivado?: boolean;
+    };
+    PecaRequest: {
+      nome: string;
+      categoria: string;
+      quantidadeFilamentoGramas: number;
+      tempoImpressaoMinutos: number;
+      dadosArquivo3mf?: string;
+    };
+    ImpressoraRequest: {
+      nome: string;
+      modelo?: string;
+      potenciaWatts?: number;
+      valorCompra?: number;
+      vidaUtilHoras?: number;
+      depreciacaoPorHora?: number;
+      depreciacaoOrigem?: string;
+      anunciosNovos?: number;
+      anunciosUsados?: number;
+      depreciacaoManual?: boolean;
+      horasMensaisUso?: number;
+      horasMensaisManual?: boolean;
+      tempoAquecimentoMinutos?: number;
+    };
+    FilamentoDadosRequest: {
+      nome: string;
+      cor: string;
+      codigoCor: string;
+      marca?: string;
+      pesoRoloGramas: number;
+      estoqueGramas?: number;
+      precoRolo: number;
+    };
+    EmbalagemDadosRequest: { nome: string; custoUnitario: number };
+    RegistroVenda: {
+      unidades?: number;
+      preco?: number;
+      desconto?: number;
+      taxas?: number;
+      chave: string;
+    };
+    RegistroPerda: {
+      filamentoId: string;
+      unidades?: number;
+      gramas: number;
+      minutos?: number;
+      observacao?: string;
+      chave: string;
+    };
+    RegistroCusto: { descricao: string; valor: number; chave: string };
+    Localizacao: { latitude: number; longitude: number };
+    Modelo3mfFilamentoResponse: {
+      id?: number;
+      material?: string;
+      cor?: string;
+      pesoGramas?: number;
+    };
+    Modelo3mfPlacaResponse: {
+      numero?: number;
+      imagemPreviewDataUri?: string;
+      tempoSegundos?: number;
+      pesoGramas?: number;
+      filamentos?: Array<components["schemas"]["Modelo3mfFilamentoResponse"]>;
+      quantidadePecas?: number;
+    };
+    Modelo3mfResponse: {
+      nome?: string;
+      modeloImpressora?: string;
+      material?: string;
+      corMaterial?: string;
+      alturaCamada?: string;
+      diametroBico?: string;
+      perfil?: string;
+      fatiador?: string;
+      jaFatiado?: boolean;
+      temEstatisticas?: boolean;
+      estatisticasCompletas?: boolean;
+      numeroPlacasComEstatisticas?: number;
+      tempoTotalSegundos?: number;
+      pesoTotalGramas?: number;
+      filamentosUsados?: Array<
+        components["schemas"]["Modelo3mfFilamentoResponse"]
+      >;
+      numeroPlacas?: number;
+      placas?: Array<components["schemas"]["Modelo3mfPlacaResponse"]>;
+    };
+    PecaModeloImportacaoRequest: {
+      nomeArquivo?: string;
+      dados?: components["schemas"]["Modelo3mfResponse"];
+    };
+    CompraCatalogo: {
+      chave: string;
+      compra: components["schemas"]["CompraFilamentoRequest"];
+    };
+    CompraFilamentoRequest: {
+      unidadesCompra: number;
+      gramasCompradas?: number;
+      pesoRoloGramas: number;
+      precoRolo: number;
+      quantidadeTotalGramas?: number;
     };
     ConfirmacaoCalculo: {
       entrada: components["schemas"]["EntradaCalculo"];
@@ -71,6 +193,13 @@ export interface components {
       precoVendaPlataforma?: number;
       lucroLiquido?: number;
     };
+    FilamentoResultado: {
+      nome?: string;
+      cor?: string;
+      codigoCor?: string;
+      gramas?: number;
+      custo?: number;
+    };
     ValorCalculo: {
       id?: string;
       nome?: string;
@@ -78,6 +207,10 @@ export interface components {
       precoUnitario?: number;
       unidades?: number;
       custos?: components["schemas"]["CustosCalculo"];
+      plataforma?: string;
+      comissao?: number;
+      markup?: number;
+      filamentos?: Array<components["schemas"]["FilamentoResultado"]>;
     };
     ArquivoConsulta: {
       nome?: string;
@@ -86,12 +219,6 @@ export interface components {
       gramas?: number;
       materiais?: Array<components["schemas"]["Modelo3mfFilamentoResponse"]>;
       completo?: boolean;
-    };
-    Modelo3mfFilamentoResponse: {
-      id?: number;
-      material?: string;
-      cor?: string;
-      pesoGramas?: number;
     };
     SessaoWeb: { accessToken?: string; tokenType?: string; expiresIn?: number };
     Login: { email: string; senha: string };
@@ -115,6 +242,8 @@ export interface components {
       unidades?: number;
       vendidas?: number;
       disponiveis?: number;
+      reservadas?: number;
+      plataforma?: string;
       preco?: string;
     };
     PaginaResponseLoteResumo: {
@@ -122,6 +251,44 @@ export interface components {
       pagina?: number;
       tamanho?: number;
       total?: number;
+    };
+    CustoLote: { descricao?: string; valor?: number; cancelado?: boolean };
+    DetalheLote: {
+      nome?: string;
+      impressora?: string;
+      produzido?: boolean;
+      unidades?: number;
+      vendidas?: number;
+      reservadas?: number;
+      disponiveis?: number;
+      custoUnitario?: number;
+      custoLote?: number;
+      preco?: number;
+      lucroPrevisto?: number;
+      lucroVendas?: number;
+      totalExtras?: number;
+      materiais?: Array<components["schemas"]["Material"]>;
+      incluidos?: Array<components["schemas"]["CustoLote"]>;
+      personalizados?: Array<components["schemas"]["CustoLote"]>;
+      vendas?: Array<components["schemas"]["VendaLote"]>;
+    };
+    Material: {
+      nome?: string;
+      gramas?: number;
+      saldo?: number;
+      cor?: string;
+      codigoCor?: string;
+      custo?: number;
+      falta?: number;
+      corSegura?: string;
+      insuficiente?: boolean;
+    };
+    VendaLote: {
+      data?: string;
+      unidades?: number;
+      canceladas?: number;
+      preco?: number;
+      lucro?: number;
     };
     Tema: {
       id?: string;
@@ -132,6 +299,7 @@ export interface components {
       versao?: number;
       logoUrl?: string;
     };
+    FotoCatalogo: { tipo?: string; base64?: string };
     FilamentoCatalogo: {
       id?: string;
       nome?: string;
@@ -227,6 +395,13 @@ export interface components {
       lucro?: string;
       cor?: string;
     };
+    TarifaEnergiaReferenciaResponse: {
+      distribuidora?: string;
+      valorKwh?: number;
+      inicioVigencia?: string;
+      fimVigencia?: string;
+      unidade?: string;
+    };
     ClienteResumo: {
       cliente?: components["schemas"]["Cliente"];
       orcamentos?: number;
@@ -285,7 +460,6 @@ export interface components {
       corHex?: string;
       pesoGramas?: number;
     };
-    FotoCatalogo: { tipo?: string; base64?: string };
     ArquivoCatalogo: {
       nomeArquivo?: string;
       modeloImpressora?: string;
@@ -379,9 +553,14 @@ export interface components {
     };
     PadroesCalculo: {
       embalagemFixa?: boolean;
+      custoEmbalagemFixa?: number;
       markupFixo?: boolean;
       markup?: number;
       avancado?: boolean;
+      atalhosMarkup?: Array<number>;
+      maoObraAtivada?: boolean;
+      maoObraTempoFixo?: boolean;
+      tempoMaoObraFixoMinutos?: number;
     };
     Conta: {
       id?: string;

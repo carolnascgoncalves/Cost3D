@@ -152,10 +152,12 @@ function PieceIdentity({ row }: { row: CatalogRow }) {
   );
 }
 export function CatalogCard({
+  onEdit,
   category,
   row,
   onDetails,
 }: {
+  onEdit: (purchase?: boolean) => void;
   category: CatalogCategory;
   row: CatalogRow;
   onDetails?: () => void;
@@ -349,12 +351,12 @@ export function CatalogCard({
             "Ver detalhes de",
             onDetails ?? (() => open(path + "/detalhes/" + id)),
           )}
-          {action("pencil", "Editar", () => open(path + "/editar/" + id))}
+          {action("pencil", "Editar", () => onEdit())}
           {filament && (
             <Button
               variant="secondary"
               label="Registrar compra"
-              onPress={() => open(path + "/compra/" + id)}
+              onPress={() => onEdit(true)}
             />
           )}
         </View>

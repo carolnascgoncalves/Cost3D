@@ -34,6 +34,7 @@ export default function CustomerDetail() {
   const t = useTheme();
   const query = useApiQuery<Customer>(
     !isNew && account?.tenantId ? `/clientes/${encodeURIComponent(id)}` : null,
+    true,
   );
   const [editing, setEditing] = useState(isNew);
   const [form, setForm] = useState<CustomerInput>({
@@ -172,7 +173,7 @@ export default function CustomerDetail() {
           />
         </>
       )}
-      {query.loading && !isNew ? (
+      {query.loading && query.data?.id !== id && !isNew ? (
         <ActivityIndicator color={t.primaryText} />
       ) : query.error ? (
         <Notice message={query.error} onRetry={query.retry} />

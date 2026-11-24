@@ -6,12 +6,14 @@ export function MenuCard({
   description,
   icon,
   primary = false,
+  grouped = false,
   onPress,
 }: {
   label: string;
   description?: string;
   icon: IconName;
   primary?: boolean;
+  grouped?: boolean;
   onPress: () => void;
 }) {
   const t = useTheme(),
@@ -24,11 +26,11 @@ export function MenuCard({
         flexDirection: "row",
         gap: 14,
         alignItems: "center",
-        borderWidth: 1,
+        borderWidth: grouped ? 0 : 1,
         borderColor: primary ? t.primary : t.border,
         backgroundColor: primary ? t.primary : t.surface,
-        borderRadius: 14,
-        padding: 16,
+        borderRadius: grouped ? 0 : 14,
+        padding: grouped ? 10 : 16,
         minHeight: description ? 84 : 62,
         opacity: pressed ? 0.75 : 1,
       })}

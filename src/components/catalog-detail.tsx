@@ -147,8 +147,7 @@ function Action({
     </Pressable>
   );
 }
-type WebAction = (path: string) => void;
-function PieceFile({ row, open }: { row: CatalogRow; open: WebAction }) {
+function PieceFile({ row, onEdit }: { row: CatalogRow; onEdit: () => void }) {
   const q = useApiQuery<Schemas["ArquivoCatalogo"]>(
     row.id
       ? "/catalogo/pecas/" + encodeURIComponent(row.id) + "/arquivo"
@@ -178,11 +177,7 @@ function PieceFile({ row, open }: { row: CatalogRow; open: WebAction }) {
             .filter(Boolean)
             .join(" · ")}
         </Body>
-        <Action
-          icon="arrow-repeat"
-          label="Trocar arquivo"
-          onPress={() => open("/peca/editar/" + encodeURIComponent(row.id!))}
-        />
+        <Action icon="arrow-repeat" label="Trocar arquivo" onPress={onEdit} />
       </Card>
       {!!row.materiais?.length && (
         <>
@@ -226,10 +221,12 @@ function PieceFile({ row, open }: { row: CatalogRow; open: WebAction }) {
   );
 }
 export function CatalogDetail({
+  onEdit,
   category,
   row,
   onBack,
 }: {
+  onEdit: (purchase?: boolean) => void;
   category: CatalogCategory;
   row: CatalogRow;
   onBack: () => void;
@@ -318,7 +315,7 @@ export function CatalogDetail({
             primary
             icon="pencil"
             label={"Editar " + singular}
-            onPress={() => open(path + "/editar/" + id)}
+            onPress={() => onEdit()}
           />
         </View>
         <View style={[s.section, { borderTopWidth: 1, borderColor: t.border }]}>
@@ -336,7 +333,7 @@ export function CatalogDetail({
                   row.minutos == null ? "Não informado" : row.minutos + " min"
                 }
               />
-              <PieceFile row={row} open={open} />
+              <PieceFile row={row} onEdit={() => onEdit()} />
               <Info>
                 O tempo e o consumo podem ser ajustados durante o cálculo.
               </Info>
@@ -387,7 +384,7 @@ export function CatalogDetail({
               <Action
                 icon="bag-plus"
                 label="Registrar compra"
-                onPress={() => open(path + "/compra/" + id)}
+                onPress={() => onEdit(true)}
               />
             </>
           ) : printer ? (

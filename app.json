@@ -7,8 +7,16 @@
     "icon": "./assets/images/icon.png",
     "scheme": "cost3d",
     "userInterfaceStyle": "light",
-    "ios": {},
+    "ios": {
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "O Cost3D usa sua localização para sugerir a cidade na consulta da tarifa de energia."
+      }
+    },
     "android": {
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#FAF6F2",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

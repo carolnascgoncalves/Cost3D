@@ -9,6 +9,46 @@
     { "url": "http://localhost", "description": "Generated server url" }
   ],
   "paths": {
+    "/api/v1/configuracao": {
+      "get": {
+        "tags": ["api-configuracao-controller"],
+        "operationId": "abrir",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ConfiguracaoRequest" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      },
+      "put": {
+        "tags": ["api-configuracao-controller"],
+        "operationId": "salvar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ConfiguracaoRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ConfiguracaoRequest" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
     "/api/v1/clientes/{id}": {
       "get": {
         "tags": ["api-clientes-controller"],
@@ -55,6 +95,218 @@
             "description": "OK",
             "content": {
               "*/*": { "schema": { "$ref": "#/components/schemas/Cliente" } }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/catalogo/pecas/{id}": {
+      "put": {
+        "tags": ["api-catalogo-edicao-controller"],
+        "operationId": "editarPeca",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PecaRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": { "204": { "description": "No Content" } },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/catalogo/impressoras/{id}": {
+      "put": {
+        "tags": ["api-catalogo-edicao-controller"],
+        "operationId": "editarImpressora",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ImpressoraRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": { "204": { "description": "No Content" } },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/catalogo/filamentos/{id}": {
+      "put": {
+        "tags": ["api-catalogo-edicao-controller"],
+        "operationId": "editarFilamento",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FilamentoDadosRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": { "204": { "description": "No Content" } },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/catalogo/embalagens/{id}": {
+      "put": {
+        "tags": ["api-catalogo-edicao-controller"],
+        "operationId": "editarEmbalagem",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/EmbalagemDadosRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": { "204": { "description": "No Content" } },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/vendas/{id}/venda": {
+      "post": {
+        "tags": ["api-lotes-controller"],
+        "operationId": "vender",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegistroVenda" }
+            }
+          },
+          "required": true
+        },
+        "responses": { "204": { "description": "No Content" } },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/vendas/{id}/producao": {
+      "post": {
+        "tags": ["api-lotes-controller"],
+        "operationId": "produzir",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": { "204": { "description": "No Content" } },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/vendas/{id}/perdas": {
+      "post": {
+        "tags": ["api-lotes-controller"],
+        "operationId": "perda",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegistroPerda" }
+            }
+          },
+          "required": true
+        },
+        "responses": { "204": { "description": "No Content" } },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/vendas/{id}/custos": {
+      "post": {
+        "tags": ["api-lotes-controller"],
+        "operationId": "custo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegistroCusto" }
+            }
+          },
+          "required": true
+        },
+        "responses": { "204": { "description": "No Content" } },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/configuracao/cidade": {
+      "post": {
+        "tags": ["api-configuracao-controller"],
+        "operationId": "cidade",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Localizacao" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": { "type": "string" }
+                }
+              }
             }
           }
         },
@@ -123,6 +375,62 @@
         "security": [{ "bearerAuth": [] }]
       }
     },
+    "/api/v1/catalogo/pecas/ler-arquivo": {
+      "post": {
+        "tags": ["api-catalogo-edicao-controller"],
+        "operationId": "ler",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "arquivo3mf": { "type": "string", "format": "binary" }
+                },
+                "required": ["arquivo3mf"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PecaModeloImportacaoRequest"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/catalogo/filamentos/{id}/compras": {
+      "post": {
+        "tags": ["api-catalogo-edicao-controller"],
+        "operationId": "comprar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CompraCatalogo" }
+            }
+          },
+          "required": true
+        },
+        "responses": { "204": { "description": "No Content" } },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
     "/api/v1/calculos": {
       "get": {
         "tags": ["api-calculos-controller"],
@@ -157,7 +465,7 @@
       },
       "post": {
         "tags": ["api-calculos-controller"],
-        "operationId": "salvar",
+        "operationId": "salvar_1",
         "requestBody": {
           "content": {
             "application/json": {
@@ -422,6 +730,31 @@
         "security": [{ "bearerAuth": [] }]
       }
     },
+    "/api/v1/vendas/{id}": {
+      "get": {
+        "tags": ["api-lotes-controller"],
+        "operationId": "abrir_1",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/DetalheLote" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
     "/api/v1/tenant": {
       "get": {
         "tags": ["api-tenant-controller"],
@@ -446,6 +779,23 @@
             "description": "OK",
             "content": {
               "*/*": { "schema": { "type": "string", "format": "byte" } }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/tenant/icone": {
+      "get": {
+        "tags": ["api-tenant-controller"],
+        "operationId": "icone",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/FotoCatalogo" }
+              }
             }
           }
         },
@@ -573,6 +923,28 @@
         "security": [{ "bearerAuth": [] }]
       }
     },
+    "/api/v1/configuracao/tarifas": {
+      "get": {
+        "tags": ["api-configuracao-controller"],
+        "operationId": "tarifas",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TarifaEnergiaReferenciaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
     "/api/v1/clientes/{id}/orcamentos": {
       "get": {
         "tags": ["api-clientes-controller"],
@@ -682,6 +1054,31 @@
         "security": [{ "bearerAuth": [] }]
       }
     },
+    "/api/v1/catalogo/pecas/{id}/edicao": {
+      "get": {
+        "tags": ["api-catalogo-edicao-controller"],
+        "operationId": "peca",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/PecaRequest" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
     "/api/v1/catalogo/pecas/{id}/arquivo": {
       "get": {
         "tags": ["api-painel-controller"],
@@ -733,6 +1130,31 @@
                 "schema": {
                   "$ref": "#/components/schemas/PaginaResponseImpressoraCatalogo"
                 }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/catalogo/impressoras/{id}/edicao": {
+      "get": {
+        "tags": ["api-catalogo-edicao-controller"],
+        "operationId": "impressora",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": { "$ref": "#/components/schemas/ImpressoraRequest" }
               }
             }
           }
@@ -798,6 +1220,33 @@
         "security": [{ "bearerAuth": [] }]
       }
     },
+    "/api/v1/catalogo/filamentos/{id}/edicao": {
+      "get": {
+        "tags": ["api-catalogo-edicao-controller"],
+        "operationId": "filamento",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilamentoDadosRequest"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
     "/api/v1/catalogo/embalagens": {
       "get": {
         "tags": ["api-painel-controller"],
@@ -823,6 +1272,33 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/PaginaResponseEmbalagemCatalogo"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/api/v1/catalogo/embalagens/{id}/edicao": {
+      "get": {
+        "tags": ["api-catalogo-edicao-controller"],
+        "operationId": "embalagem",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbalagemDadosRequest"
                 }
               }
             }
@@ -916,6 +1392,39 @@
   },
   "components": {
     "schemas": {
+      "ConfiguracaoRequest": {
+        "type": "object",
+        "properties": {
+          "markupPercentual": { "type": "number", "minimum": 0.0 },
+          "markupFixo": { "type": "boolean" },
+          "markupOpcao1": { "type": "number", "minimum": 0.0 },
+          "markupOpcao2": { "type": "number", "minimum": 0.0 },
+          "markupOpcao3": { "type": "number", "minimum": 0.0 },
+          "tarifaEnergiaKwh": { "type": "number", "minimum": 0.0 },
+          "embalagemFixa": { "type": "boolean" },
+          "custoEmbalagemFixa": { "type": "number", "minimum": 0.0 },
+          "formularioAvancado": { "type": "boolean" },
+          "maoObraAtivada": { "type": "boolean" },
+          "valorMaoObraHora": { "type": "number" },
+          "maoObraTempoFixo": { "type": "boolean" },
+          "tempoMaoObraFixoMinutos": { "type": "integer", "format": "int64" },
+          "depreciacaoAtivada": { "type": "boolean" },
+          "taxaFalhaAtivada": { "type": "boolean" },
+          "percentualFalha": { "type": "number" },
+          "purgaGramasPorImpressao": { "type": "number", "minimum": 0.0 },
+          "percentualFalhaValido": { "type": "boolean" },
+          "tempoMaoObraFixoValido": { "type": "boolean" },
+          "maoObraValida": { "type": "boolean" },
+          "markupFixoValido": { "type": "boolean" }
+        },
+        "required": [
+          "embalagemFixa",
+          "markupOpcao1",
+          "markupOpcao2",
+          "markupOpcao3",
+          "tarifaEnergiaKwh"
+        ]
+      },
       "Entrada": {
         "type": "object",
         "properties": {
@@ -943,6 +1452,204 @@
           "observacoes": { "type": "string" },
           "arquivado": { "type": "boolean" }
         }
+      },
+      "PecaRequest": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string", "maxLength": 150, "minLength": 2 },
+          "categoria": { "type": "string", "maxLength": 60, "minLength": 0 },
+          "quantidadeFilamentoGramas": { "type": "number", "minimum": 0.0 },
+          "tempoImpressaoMinutos": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "dadosArquivo3mf": { "type": "string" }
+        },
+        "required": [
+          "categoria",
+          "nome",
+          "quantidadeFilamentoGramas",
+          "tempoImpressaoMinutos"
+        ]
+      },
+      "ImpressoraRequest": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string", "maxLength": 150, "minLength": 2 },
+          "modelo": { "type": "string" },
+          "potenciaWatts": { "type": "number" },
+          "valorCompra": { "type": "number", "minimum": 0.0 },
+          "vidaUtilHoras": { "type": "number", "minimum": 0.0 },
+          "depreciacaoPorHora": { "type": "number", "minimum": 0.0 },
+          "depreciacaoOrigem": { "type": "string" },
+          "anunciosNovos": { "type": "integer", "format": "int32" },
+          "anunciosUsados": { "type": "integer", "format": "int32" },
+          "depreciacaoManual": { "type": "boolean" },
+          "horasMensaisUso": { "type": "number", "minimum": 0.0 },
+          "horasMensaisManual": { "type": "boolean" },
+          "tempoAquecimentoMinutos": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 10000,
+            "minimum": 0
+          }
+        },
+        "required": ["nome"]
+      },
+      "FilamentoDadosRequest": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string", "maxLength": 150, "minLength": 2 },
+          "cor": { "type": "string", "maxLength": 80, "minLength": 2 },
+          "codigoCor": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "marca": { "type": "string", "maxLength": 150, "minLength": 0 },
+          "pesoRoloGramas": { "type": "number", "minimum": 0.01 },
+          "estoqueGramas": { "type": "number", "minimum": 0.0 },
+          "precoRolo": { "type": "number", "minimum": 0.01 }
+        },
+        "required": ["codigoCor", "cor", "nome", "pesoRoloGramas", "precoRolo"]
+      },
+      "EmbalagemDadosRequest": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string", "maxLength": 150, "minLength": 2 },
+          "custoUnitario": { "type": "number", "minimum": 0.01 }
+        },
+        "required": ["custoUnitario", "nome"]
+      },
+      "RegistroVenda": {
+        "type": "object",
+        "properties": {
+          "unidades": { "type": "integer", "format": "int32", "minimum": 1 },
+          "preco": { "type": "number", "minimum": 0 },
+          "desconto": { "type": "number", "minimum": 0 },
+          "taxas": { "type": "number", "minimum": 0 },
+          "chave": { "type": "string", "format": "uuid" }
+        },
+        "required": ["chave"]
+      },
+      "RegistroPerda": {
+        "type": "object",
+        "properties": {
+          "filamentoId": { "type": "string", "format": "uuid" },
+          "unidades": { "type": "integer", "format": "int32", "minimum": 1 },
+          "gramas": { "type": "number", "exclusiveMinimum": 0 },
+          "minutos": { "type": "integer", "format": "int64", "minimum": 0 },
+          "observacao": { "type": "string", "maxLength": 250, "minLength": 0 },
+          "chave": { "type": "string", "format": "uuid" }
+        },
+        "required": ["chave", "filamentoId", "gramas"]
+      },
+      "RegistroCusto": {
+        "type": "object",
+        "properties": {
+          "descricao": { "type": "string", "maxLength": 150, "minLength": 2 },
+          "valor": { "type": "number", "exclusiveMinimum": 0 },
+          "chave": { "type": "string", "format": "uuid" }
+        },
+        "required": ["chave", "descricao", "valor"]
+      },
+      "Localizacao": {
+        "type": "object",
+        "properties": {
+          "latitude": { "type": "number", "format": "double" },
+          "longitude": { "type": "number", "format": "double" }
+        },
+        "required": ["latitude", "longitude"]
+      },
+      "Modelo3mfFilamentoResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int32" },
+          "material": { "type": "string" },
+          "cor": { "type": "string" },
+          "pesoGramas": { "type": "number", "format": "double" }
+        }
+      },
+      "Modelo3mfPlacaResponse": {
+        "type": "object",
+        "properties": {
+          "numero": { "type": "integer", "format": "int32" },
+          "imagemPreviewDataUri": { "type": "string" },
+          "tempoSegundos": { "type": "number", "format": "double" },
+          "pesoGramas": { "type": "number", "format": "double" },
+          "filamentos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Modelo3mfFilamentoResponse"
+            }
+          },
+          "quantidadePecas": { "type": "integer", "format": "int32" }
+        }
+      },
+      "Modelo3mfResponse": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string" },
+          "modeloImpressora": { "type": "string" },
+          "material": { "type": "string" },
+          "corMaterial": { "type": "string" },
+          "alturaCamada": { "type": "string" },
+          "diametroBico": { "type": "string" },
+          "perfil": { "type": "string" },
+          "fatiador": { "type": "string" },
+          "jaFatiado": { "type": "boolean" },
+          "temEstatisticas": { "type": "boolean" },
+          "estatisticasCompletas": { "type": "boolean" },
+          "numeroPlacasComEstatisticas": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tempoTotalSegundos": { "type": "number", "format": "double" },
+          "pesoTotalGramas": { "type": "number", "format": "double" },
+          "filamentosUsados": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Modelo3mfFilamentoResponse"
+            }
+          },
+          "numeroPlacas": { "type": "integer", "format": "int32" },
+          "placas": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Modelo3mfPlacaResponse" }
+          }
+        }
+      },
+      "PecaModeloImportacaoRequest": {
+        "type": "object",
+        "properties": {
+          "nomeArquivo": { "type": "string" },
+          "dados": { "$ref": "#/components/schemas/Modelo3mfResponse" }
+        }
+      },
+      "CompraCatalogo": {
+        "type": "object",
+        "properties": {
+          "chave": { "type": "string", "format": "uuid" },
+          "compra": { "$ref": "#/components/schemas/CompraFilamentoRequest" }
+        },
+        "required": ["chave", "compra"]
+      },
+      "CompraFilamentoRequest": {
+        "type": "object",
+        "properties": {
+          "unidadesCompra": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 10000,
+            "minimum": 1
+          },
+          "gramasCompradas": { "type": "number", "minimum": 0.01 },
+          "pesoRoloGramas": { "type": "number", "minimum": 0.01 },
+          "precoRolo": { "type": "number", "minimum": 0.01 },
+          "quantidadeTotalGramas": { "type": "number" }
+        },
+        "required": ["pesoRoloGramas", "precoRolo", "unidadesCompra"]
       },
       "ConfirmacaoCalculo": {
         "type": "object",
@@ -1051,6 +1758,16 @@
           "lucroLiquido": { "type": "number" }
         }
       },
+      "FilamentoResultado": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string" },
+          "cor": { "type": "string" },
+          "codigoCor": { "type": "string" },
+          "gramas": { "type": "number" },
+          "custo": { "type": "number" }
+        }
+      },
       "ValorCalculo": {
         "type": "object",
         "properties": {
@@ -1059,7 +1776,14 @@
           "custoUnitario": { "type": "number" },
           "precoUnitario": { "type": "number" },
           "unidades": { "type": "integer", "format": "int32" },
-          "custos": { "$ref": "#/components/schemas/CustosCalculo" }
+          "custos": { "$ref": "#/components/schemas/CustosCalculo" },
+          "plataforma": { "type": "string" },
+          "comissao": { "type": "number" },
+          "markup": { "type": "number" },
+          "filamentos": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/FilamentoResultado" }
+          }
         }
       },
       "ArquivoConsulta": {
@@ -1076,15 +1800,6 @@
             }
           },
           "completo": { "type": "boolean" }
-        }
-      },
-      "Modelo3mfFilamentoResponse": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "integer", "format": "int32" },
-          "material": { "type": "string" },
-          "cor": { "type": "string" },
-          "pesoGramas": { "type": "number", "format": "double" }
         }
       },
       "SessaoWeb": {
@@ -1151,6 +1866,8 @@
           "unidades": { "type": "integer", "format": "int32" },
           "vendidas": { "type": "integer", "format": "int32" },
           "disponiveis": { "type": "integer", "format": "int64" },
+          "reservadas": { "type": "integer", "format": "int64" },
+          "plataforma": { "type": "string" },
           "preco": { "type": "string" }
         }
       },
@@ -1166,6 +1883,72 @@
           "total": { "type": "integer", "format": "int64" }
         }
       },
+      "CustoLote": {
+        "type": "object",
+        "properties": {
+          "descricao": { "type": "string" },
+          "valor": { "type": "number" },
+          "cancelado": { "type": "boolean" }
+        }
+      },
+      "DetalheLote": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string" },
+          "impressora": { "type": "string" },
+          "produzido": { "type": "boolean" },
+          "unidades": { "type": "integer", "format": "int32" },
+          "vendidas": { "type": "integer", "format": "int32" },
+          "reservadas": { "type": "integer", "format": "int64" },
+          "disponiveis": { "type": "integer", "format": "int64" },
+          "custoUnitario": { "type": "number" },
+          "custoLote": { "type": "number" },
+          "preco": { "type": "number" },
+          "lucroPrevisto": { "type": "number" },
+          "lucroVendas": { "type": "number" },
+          "totalExtras": { "type": "number" },
+          "materiais": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Material" }
+          },
+          "incluidos": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CustoLote" }
+          },
+          "personalizados": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CustoLote" }
+          },
+          "vendas": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/VendaLote" }
+          }
+        }
+      },
+      "Material": {
+        "type": "object",
+        "properties": {
+          "nome": { "type": "string" },
+          "gramas": { "type": "number" },
+          "saldo": { "type": "number" },
+          "cor": { "type": "string" },
+          "codigoCor": { "type": "string" },
+          "custo": { "type": "number" },
+          "falta": { "type": "number" },
+          "corSegura": { "type": "string" },
+          "insuficiente": { "type": "boolean" }
+        }
+      },
+      "VendaLote": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "string", "format": "date-time" },
+          "unidades": { "type": "integer", "format": "int32" },
+          "canceladas": { "type": "integer", "format": "int32" },
+          "preco": { "type": "number" },
+          "lucro": { "type": "number" }
+        }
+      },
       "Tema": {
         "type": "object",
         "properties": {
@@ -1176,6 +1959,13 @@
           "corFundo": { "type": "string" },
           "versao": { "type": "integer", "format": "int64" },
           "logoUrl": { "type": "string" }
+        }
+      },
+      "FotoCatalogo": {
+        "type": "object",
+        "properties": {
+          "tipo": { "type": "string" },
+          "base64": { "type": "string" }
         }
       },
       "FilamentoCatalogo": {
@@ -1359,6 +2149,16 @@
           "cor": { "type": "string" }
         }
       },
+      "TarifaEnergiaReferenciaResponse": {
+        "type": "object",
+        "properties": {
+          "distribuidora": { "type": "string" },
+          "valorKwh": { "type": "number" },
+          "inicioVigencia": { "type": "string", "format": "date" },
+          "fimVigencia": { "type": "string", "format": "date" },
+          "unidade": { "type": "string" }
+        }
+      },
       "ClienteResumo": {
         "type": "object",
         "properties": {
@@ -1456,13 +2256,6 @@
           "material": { "type": "string" },
           "corHex": { "type": "string" },
           "pesoGramas": { "type": "number", "format": "double" }
-        }
-      },
-      "FotoCatalogo": {
-        "type": "object",
-        "properties": {
-          "tipo": { "type": "string" },
-          "base64": { "type": "string" }
         }
       },
       "ArquivoCatalogo": {
@@ -1617,9 +2410,14 @@
         "type": "object",
         "properties": {
           "embalagemFixa": { "type": "boolean" },
+          "custoEmbalagemFixa": { "type": "number" },
           "markupFixo": { "type": "boolean" },
           "markup": { "type": "number" },
-          "avancado": { "type": "boolean" }
+          "avancado": { "type": "boolean" },
+          "atalhosMarkup": { "type": "array", "items": { "type": "number" } },
+          "maoObraAtivada": { "type": "boolean" },
+          "maoObraTempoFixo": { "type": "boolean" },
+          "tempoMaoObraFixoMinutos": { "type": "integer", "format": "int64" }
         }
       },
       "Conta": {
