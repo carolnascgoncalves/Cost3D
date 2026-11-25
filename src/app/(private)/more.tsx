@@ -25,7 +25,7 @@ const sections: [string, MenuItem[]][] = [
     "Comercial",
     [
       { label: "Clientes", route: "/customers", icon: "person" },
-      { label: "Orçamentos e pedidos", site: "/orcamentos", icon: "file-text" },
+      { label: "Orçamentos e pedidos", route: "/budgets", icon: "file-text" },
       { label: "Outras vendas", site: "/outras-vendas", icon: "bag-plus" },
     ],
   ],

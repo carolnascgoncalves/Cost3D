@@ -140,6 +140,10 @@ export function SaleOptions({
     return (
       <Field
         label={label}
+        optional={
+          key !== "manual" &&
+          !(key === "commission" && s.channel === "MERCADO_LIVRE")
+        }
         value={s[key]}
         keyboardType="decimal-pad"
         onChangeText={(v) => change({ ...s, [key]: v })}

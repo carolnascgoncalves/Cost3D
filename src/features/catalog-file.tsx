@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Image, Modal, Pressable, ScrollView, View } from "react-native";
-import { Body, Button, Card, ValueRow } from "@/components/ui";
+import { OptionalBadge, Body, Button, Card, ValueRow } from "@/components/ui";
 import type { components } from "@/api/schema";
 import { useTheme } from "@/theme/provider";
 import { decimal } from "./format";
@@ -76,8 +76,11 @@ export function PieceImport({
   if (!file)
     return (
       <Card>
-        <Body strong>Importar do arquivo 3D</Body>
-        <Body muted>Opcional. Revise os valores preenchidos pelo arquivo.</Body>
+        <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+          <Body strong>Importar do arquivo 3D</Body>
+          <OptionalBadge />
+        </View>
+        <Body muted>Revise os valores preenchidos pelo arquivo.</Body>
         <Button
           label="Escolher arquivo .3mf"
           variant="secondary"

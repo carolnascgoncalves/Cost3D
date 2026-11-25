@@ -218,6 +218,7 @@ export default function CustomerDetail() {
                 autoCapitalize="words"
               />
               <Field
+                optional
                 label="Telefone"
                 value={form.telefone}
                 maxLength={150}
@@ -226,6 +227,7 @@ export default function CustomerDetail() {
                 onChangeText={(telefone) => setForm({ ...form, telefone })}
               />
               <Field
+                optional
                 label="E-mail"
                 value={form.email}
                 maxLength={150}
@@ -236,6 +238,7 @@ export default function CustomerDetail() {
                 onChangeText={(email) => setForm({ ...form, email })}
               />
               <Field
+                optional
                 label="Observações"
                 value={form.observacoes}
                 maxLength={500}

@@ -1,3 +1,4 @@
+import { FormScrollView } from "@/components/form-scroll";
 import { ModuleScreen } from "@/components/module-screen";
 import { CalculationPhoto } from "@/features/mobile-calculations";
 import { Icon } from "@/components/icon";
@@ -427,7 +428,7 @@ export default function Movements() {
                   onPress={() => setExpanded(false)}
                   style={{ flex: 1 }}
                 />
-                <ScrollView
+                <FormScrollView
                   keyboardShouldPersistTaps="handled"
                   style={{
                     flexGrow: 0,
@@ -445,7 +446,7 @@ export default function Movements() {
                   <Body strong>Filtros</Body>
                   {filterFields}
                   {!!error && <Notice message={error} />}
-                </ScrollView>
+                </FormScrollView>
               </View>
             </Modal>
           )}

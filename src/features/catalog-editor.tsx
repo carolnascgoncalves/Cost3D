@@ -341,7 +341,7 @@ function Form({
     }
   }
   const imported = file ? importedFields(file) : {};
-  function field([key, label, kind]: FieldSpec) {
+  function field([key, label, kind, required]: FieldSpec) {
     if (key === "codigoCor")
       return (
         <View key={key} style={{ gap: 8 }}>
@@ -378,6 +378,7 @@ function Form({
     return (
       <View key={key} style={{ gap: 4 }}>
         <Field
+          optional={!required}
           label={
             key === "estoqueGramas"
               ? "Disponível agora (g)"

@@ -7,7 +7,6 @@ import { readable } from "@/theme/colors";
 import { useTheme } from "@/theme/provider";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { LotOperation } from "@/features/lot-operation";
-import { openWebsite } from "@/features/website";
 import {
   Agenda,
   Job,
@@ -316,7 +315,7 @@ export default function Planning() {
                 .map(({ day, items }, index) => (
                   <View
                     key={day}
-                    style={{ gap: 8, marginTop: index > 0 ? 16 : 0 }}
+                    style={{ gap: 8, marginTop: index > 0 ? 28 : 0 }}
                   >
                     <Body strong>
                       {day === today
@@ -469,9 +468,10 @@ export default function Planning() {
             <Button
               label="Acompanhar pedido"
               onPress={() =>
-                void openWebsite("/orcamentos/" + job.pedidoId).catch(() =>
-                  setError("Não foi possível abrir o pedido."),
-                )
+                router.push({
+                  pathname: "/budgets",
+                  params: { id: job.pedidoId! },
+                })
               }
             />
           ) : (

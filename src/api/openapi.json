@@ -2493,6 +2493,314 @@
           }
         ]
       }
+    },
+    "/api/v1/orcamentos/{id}": {
+      "get": {
+        "tags": ["api-orcamentos-controller"],
+        "operationId": "abrir",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PedidoMobileDetalhe"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": ["api-orcamentos-controller"],
+        "operationId": "salvar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PedidoMobileEdicao"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PedidoMobileDetalhe"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orcamentos/{id}/previa": {
+      "put": {
+        "tags": ["api-orcamentos-controller"],
+        "operationId": "prever",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PedidoMobileEdicao"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PedidoMobileDetalhe"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orcamentos": {
+      "get": {
+        "tags": ["api-orcamentos-controller"],
+        "operationId": "listar",
+        "parameters": [
+          {
+            "name": "arquivados",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "RASCUNHO",
+                "ENVIADO",
+                "APROVADO",
+                "PRONTO",
+                "ENTREGUE",
+                "CANCELADO"
+              ]
+            }
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PedidoMobileLista"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["api-orcamentos-controller"],
+        "operationId": "iniciar",
+        "parameters": [
+          {
+            "name": "chave",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelecaoPedidoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PedidoMobileDetalhe"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orcamentos/{id}/{acao}": {
+      "post": {
+        "tags": ["api-orcamentos-controller"],
+        "operationId": "agir",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "acao",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revisao",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "item",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PedidoMobileDetalhe"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/orcamentos/pecas": {
+      "get": {
+        "tags": ["api-orcamentos-controller"],
+        "operationId": "pecas_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Referencia"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -3586,11 +3894,11 @@
           "falta": {
             "type": "number"
           },
-          "corSegura": {
-            "type": "string"
-          },
           "insuficiente": {
             "type": "boolean"
+          },
+          "corSegura": {
+            "type": "string"
           }
         }
       },
@@ -5001,6 +5309,598 @@
             "type": "string"
           }
         }
+      },
+      "Referencia": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "material": {
+            "type": "string"
+          },
+          "impressora": {
+            "type": "string"
+          },
+          "disponivel": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pecaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "preco": {
+            "type": "number"
+          }
+        }
+      },
+      "Ocupacao": {
+        "type": "object",
+        "properties": {
+          "inicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fim": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "impressoraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "impressora": {
+            "type": "string"
+          }
+        }
+      },
+      "Impressao": {
+        "type": "object",
+        "properties": {
+          "inicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fim": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "unidades": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minutosFolga": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RentabilidadePedido": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "lucro": {
+            "type": "number"
+          },
+          "margem": {
+            "type": "number"
+          }
+        }
+      },
+      "PedidoDadosRequest": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "cliente": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "compradorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contato": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "observacoes": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 0
+          },
+          "inicioPretendido": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "turnoInicio": {
+            "type": "string",
+            "format": "time-local"
+          },
+          "turnoFim": {
+            "type": "string",
+            "format": "time-local"
+          },
+          "dias": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "[1-7](,[1-7]){0,6}"
+          },
+          "intervalo": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 1440,
+            "minimum": 0
+          },
+          "folga": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 100,
+            "minimum": 0
+          },
+          "descontoInformado": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 0,
+            "pattern": "[0-9]{1,8}([.,][0-9]{1,2})?\\s*%?"
+          },
+          "desconto": {
+            "type": "number",
+            "maximum": 99999999,
+            "minimum": 0
+          },
+          "frete": {
+            "type": "number",
+            "maximum": 99999999,
+            "minimum": 0
+          },
+          "custoFrete": {
+            "type": "number",
+            "maximum": 99999999,
+            "minimum": 0
+          }
+        },
+        "required": [
+          "custoFrete",
+          "desconto",
+          "dias",
+          "frete",
+          "titulo",
+          "turnoFim",
+          "turnoInicio"
+        ]
+      },
+      "SelecaoPedidoRequest": {
+        "type": "object",
+        "properties": {
+          "cliente": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "compradorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "contato": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "titulo": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 0
+          },
+          "custosAtuais": {
+            "type": "boolean"
+          },
+          "embalagemAtualId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelecaoPedidoItem"
+            },
+            "maxItems": 100,
+            "minItems": 0
+          }
+        }
+      },
+      "LinhaEdicao": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "referencia": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantidade": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "estoque": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "preco": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        }
+      },
+      "PedidoMobileDetalhe": {
+        "type": "object",
+        "properties": {
+          "resumo": {
+            "$ref": "#/components/schemas/PedidoMobileResumo"
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PedidoMobileItem"
+            }
+          },
+          "dados": {
+            "$ref": "#/components/schemas/PedidoDadosRequest"
+          },
+          "subtotal": {
+            "type": "number"
+          },
+          "desconto": {
+            "type": "number"
+          },
+          "custo": {
+            "type": "number"
+          },
+          "taxas": {
+            "type": "number"
+          },
+          "resultado": {
+            "$ref": "#/components/schemas/RentabilidadePedido"
+          },
+          "previsao": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "linhas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PedidoPrevisaoLinha"
+            }
+          },
+          "ocupacoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Ocupacao"
+            }
+          },
+          "materiais": {
+            "$ref": "#/components/schemas/PedidoMateriais"
+          },
+          "aviso": {
+            "type": "string"
+          }
+        }
+      },
+      "PedidoMateriais": {
+        "type": "object",
+        "properties": {
+          "materiais": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PedidoMaterial"
+            }
+          },
+          "reposicao": {
+            "type": "number"
+          },
+          "precoIndisponivel": {
+            "type": "boolean"
+          },
+          "faltantes": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PedidoMaterial": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "cor": {
+            "type": "string"
+          },
+          "necessario": {
+            "type": "number"
+          },
+          "estoque": {
+            "type": "number"
+          },
+          "falta": {
+            "type": "number"
+          },
+          "rolos": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reposicao": {
+            "type": "number"
+          }
+        }
+      },
+      "PedidoPrevisaoLinha": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "inicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fim": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "impressoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Impressao"
+            }
+          },
+          "observacao": {
+            "type": "string"
+          }
+        }
+      },
+      "PedidoMobileItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "referencia": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "material": {
+            "type": "string"
+          },
+          "quantidade": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "estoque": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "livre": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "preco": {
+            "type": "number"
+          },
+          "subtotal": {
+            "type": "number"
+          },
+          "pronto": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PedidoMobileResumo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "cliente": {
+            "type": "string"
+          },
+          "contato": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "compradorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "situacao": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RASCUNHO",
+              "ENVIADO",
+              "APROVADO",
+              "PRONTO",
+              "ENTREGUE",
+              "CANCELADO"
+            ]
+          },
+          "arquivado": {
+            "type": "boolean"
+          },
+          "pago": {
+            "type": "boolean"
+          },
+          "revisao": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "criado": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "total": {
+            "type": "number"
+          }
+        }
+      },
+      "SelecaoPedidoItem": {
+        "type": "object",
+        "properties": {
+          "referencia": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "selecionado": {
+            "type": "boolean"
+          },
+          "quantidade": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "estoque": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PedidoMobileLista": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PedidoMobileResumo"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tamanho": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "receber": {
+            "type": "number"
+          },
+          "prontos": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "produzir": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PedidoMobileEdicao": {
+        "type": "object",
+        "properties": {
+          "revisao": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dados": {
+            "$ref": "#/components/schemas/PedidoDadosRequest"
+          },
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PedidoMobileLinhaEdicao"
+            },
+            "maxItems": 20,
+            "minItems": 0
+          },
+          "enviar": {
+            "type": "boolean"
+          }
+        },
+        "required": ["dados", "itens"]
+      },
+      "PedidoMobileLinhaEdicao": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "referencia": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantidade": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "estoque": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "preco": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": ["preco"]
       }
     },
     "securitySchemes": {

@@ -32,7 +32,7 @@ export const groups: [string, Link[]][] = [
     "Comercial",
     [
       { label: "Clientes", route: "/customers" },
-      { label: "Orçamentos e pedidos", site: "/orcamentos" },
+      { label: "Orçamentos e pedidos", route: "/budgets" },
       { label: "Vendas e estoque", route: "/sales" },
       { label: "Outras vendas", site: "/outras-vendas" },
     ],

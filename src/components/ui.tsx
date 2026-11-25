@@ -1,7 +1,11 @@
+import { FormScrollView, useRevealField } from "@/components/form-scroll";
 import { Icon, type IconName } from "./icon";
 import type { PropsWithChildren, ReactNode } from "react";
 import {
   ActivityIndicator,
+  Keyboard,
+  Platform,
+  InputAccessoryView,
   Pressable,
   ScrollView,
   useWindowDimensions,
@@ -13,7 +17,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { useState } from "react";
+import { useId, useState, useRef } from "react";
 import { useTheme } from "@/theme/provider";
 export function Screen({
   children,
@@ -32,13 +36,13 @@ export function Screen({
     </View>
   );
   return scroll ? (
-    <ScrollView
+    <FormScrollView
       keyboardShouldPersistTaps="handled"
-      automaticallyAdjustKeyboardInsets
+
       contentContainerStyle={styles.scroll}
     >
       {content}
-    </ScrollView>
+    </FormScrollView>
   ) : (
     <View style={styles.frame}>{content}</View>
   );
@@ -175,8 +179,29 @@ export function Button({
     </Pressable>
   );
 }
+export function OptionalBadge() {
+  const t = useTheme();
+  return (
+    <Text
+      style={{
+        alignSelf: "center",
+        backgroundColor: t.selectionTint,
+        color: t.primaryText,
+        fontSize: 11,
+        fontWeight: "600",
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 9,
+        overflow: "hidden",
+      }}
+    >
+      Opcional
+    </Text>
+  );
+}
 export function Field({
   label,
+  optional,
   labelColor,
   labelAction,
   trailing,
@@ -184,11 +209,25 @@ export function Field({
   ...props
 }: TextInputProps & {
   label: string;
+  optional?: boolean;
   labelColor?: string;
   labelAction?: ReactNode;
   trailing?: ReactNode;
 }) {
   const t = useTheme();
+  const accessory = useId();
+  const input = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const reveal = useRevealField();
+  const isOptional = optional || /\bopcional\b/i.test(label);
+  const displayLabel = label
+    .replace(/\s*\(opcional\)/i, "")
+    .replace(/, opcional\)/i, ")");
+  const numeric = [
+    "decimal-pad",
+    "number-pad",
+    "numeric",
+    "phone-pad",
+  ].includes(props.keyboardType || "");
   const [focused, setFocused] = useState(false);
   return (
     <View style={{ gap: 8 }}>
@@ -200,24 +239,62 @@ export function Field({
           gap: 8,
         }}
       >
-        <Text
+        <View
           style={{
-            color: labelColor ?? t.text,
-            fontSize: 14,
-            fontWeight: "600",
+            flexDirection: "row",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 6,
+            flexShrink: 1,
           }}
         >
-          {label}
-        </Text>
+          <Text
+            style={{
+              color: labelColor ?? t.text,
+              fontSize: 14,
+              fontWeight: "600",
+            }}
+          >
+            {displayLabel}
+          </Text>
+          {isOptional && <OptionalBadge />}
+        </View>
         {labelAction}
+        {Platform.OS === "android" && focused && numeric && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={Keyboard.dismiss}
+            hitSlop={5}
+            style={{
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              backgroundColor: t.selectionTint,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: t.primaryText, fontWeight: "600" }}>
+              Concluir
+            </Text>
+          </Pressable>
+        )}
       </View>
       <View>
         <TextInput
+          ref={input}
+          returnKeyType={props.multiline ? "default" : "done"}
+          submitBehavior={props.multiline ? "newline" : "blurAndSubmit"}
+          inputAccessoryViewID={
+            Platform.OS === "ios" && numeric ? accessory : undefined
+          }
           {...props}
-          accessibilityLabel={props.accessibilityLabel || label}
+          accessibilityLabel={
+            props.accessibilityLabel ||
+            (isOptional ? displayLabel + ", opcional" : label)
+          }
           placeholderTextColor={t.muted}
           onFocus={(e) => {
             setFocused(true);
+            if (input.current) reveal(input.current);
             props.onFocus?.(e);
           }}
           onBlur={(e) => {
@@ -235,6 +312,27 @@ export function Field({
             style,
           ]}
         />
+        {Platform.OS === "ios" && numeric && (
+          <InputAccessoryView nativeID={accessory}>
+            <View
+              style={{
+                backgroundColor: t.surface,
+                alignItems: "flex-end",
+                paddingHorizontal: 16,
+              }}
+            >
+              <Pressable
+                accessibilityRole="button"
+                onPress={Keyboard.dismiss}
+                style={{ padding: 12 }}
+              >
+                <Text style={{ color: t.primaryText, fontWeight: "700" }}>
+                  Concluir
+                </Text>
+              </Pressable>
+            </View>
+          </InputAccessoryView>
+        )}
         {trailing && (
           <View
             style={{

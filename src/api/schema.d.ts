@@ -281,8 +281,8 @@ export interface components {
       codigoCor?: string;
       custo?: number;
       falta?: number;
-      corSegura?: string;
       insuficiente?: boolean;
+      corSegura?: string;
     };
     VendaLote: {
       data?: string;
@@ -670,5 +670,168 @@ export interface components {
       fim?: string;
     };
     Maquina: { id?: string; nome?: string };
+    Referencia: {
+      id?: string;
+      nome?: string;
+      material?: string;
+      impressora?: string;
+      disponivel?: number;
+      pecaId?: string;
+      preco?: number;
+    };
+    Ocupacao: {
+      inicio?: string;
+      fim?: string;
+      nome?: string;
+      impressoraId?: string;
+      impressora?: string;
+    };
+    Impressao: {
+      inicio?: string;
+      fim?: string;
+      unidades?: number;
+      minutosFolga?: number;
+    };
+    RentabilidadePedido: {
+      estado?: string;
+      titulo?: string;
+      lucro?: number;
+      margem?: number;
+    };
+    PedidoDadosRequest: {
+      titulo: string;
+      cliente?: string;
+      compradorId?: string;
+      contato?: string;
+      email?: string;
+      observacoes?: string;
+      inicioPretendido?: string;
+      turnoInicio: string;
+      turnoFim: string;
+      dias: string;
+      intervalo?: number;
+      folga?: number;
+      descontoInformado?: string;
+      desconto: number;
+      frete: number;
+      custoFrete: number;
+    };
+    SelecaoPedidoRequest: {
+      cliente?: string;
+      compradorId?: string;
+      contato?: string;
+      email?: string;
+      titulo?: string;
+      custosAtuais?: boolean;
+      embalagemAtualId?: string;
+      itens?: Array<components["schemas"]["SelecaoPedidoItem"]>;
+    };
+    LinhaEdicao: {
+      id?: string;
+      referencia?: string;
+      quantidade?: number;
+      estoque?: number;
+      preco?: number;
+    };
+    PedidoMobileDetalhe: {
+      resumo?: components["schemas"]["PedidoMobileResumo"];
+      itens?: Array<components["schemas"]["PedidoMobileItem"]>;
+      dados?: components["schemas"]["PedidoDadosRequest"];
+      subtotal?: number;
+      desconto?: number;
+      custo?: number;
+      taxas?: number;
+      resultado?: components["schemas"]["RentabilidadePedido"];
+      previsao?: string;
+      linhas?: Array<components["schemas"]["PedidoPrevisaoLinha"]>;
+      ocupacoes?: Array<components["schemas"]["Ocupacao"]>;
+      materiais?: components["schemas"]["PedidoMateriais"];
+      aviso?: string;
+    };
+    PedidoMateriais: {
+      materiais?: Array<components["schemas"]["PedidoMaterial"]>;
+      reposicao?: number;
+      precoIndisponivel?: boolean;
+      faltantes?: number;
+    };
+    PedidoMaterial: {
+      id?: string;
+      nome?: string;
+      cor?: string;
+      necessario?: number;
+      estoque?: number;
+      falta?: number;
+      rolos?: number;
+      reposicao?: number;
+    };
+    PedidoPrevisaoLinha: {
+      itemId?: string;
+      nome?: string;
+      inicio?: string;
+      fim?: string;
+      impressoes?: Array<components["schemas"]["Impressao"]>;
+      observacao?: string;
+    };
+    PedidoMobileItem: {
+      id?: string;
+      referencia?: string;
+      nome?: string;
+      material?: string;
+      quantidade?: number;
+      estoque?: number;
+      livre?: number;
+      preco?: number;
+      subtotal?: number;
+      pronto?: boolean;
+    };
+    PedidoMobileResumo: {
+      id?: string;
+      codigo?: string;
+      titulo?: string;
+      cliente?: string;
+      contato?: string;
+      email?: string;
+      compradorId?: string;
+      situacao?: string;
+      status?:
+        | "RASCUNHO"
+        | "ENVIADO"
+        | "APROVADO"
+        | "PRONTO"
+        | "ENTREGUE"
+        | "CANCELADO";
+      arquivado?: boolean;
+      pago?: boolean;
+      revisao?: number;
+      criado?: string;
+      total?: number;
+    };
+    SelecaoPedidoItem: {
+      referencia?: string;
+      selecionado?: boolean;
+      quantidade?: number;
+      estoque?: number;
+    };
+    PedidoMobileLista: {
+      itens?: Array<components["schemas"]["PedidoMobileResumo"]>;
+      total?: number;
+      tamanho?: number;
+      receber?: number;
+      prontos?: number;
+      produzir?: number;
+    };
+    PedidoMobileEdicao: {
+      revisao?: number;
+      dados: components["schemas"]["PedidoDadosRequest"];
+      itens: Array<components["schemas"]["PedidoMobileLinhaEdicao"]>;
+      enviar?: boolean;
+    };
+    PedidoMobileLinhaEdicao: {
+      id?: string;
+      referencia?: string;
+      quantidade?: number;
+      estoque?: number;
+      preco: number;
+    };
   };
 }

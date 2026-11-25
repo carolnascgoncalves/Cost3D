@@ -1,3 +1,4 @@
+import { FormScrollView } from "@/components/form-scroll";
 import { useState, useRef, type PropsWithChildren } from "react";
 import {
   Modal,
@@ -78,12 +79,12 @@ export function PlanningSheet({
               <Text style={{ fontSize: 25, color: t.muted }}>×</Text>
             </Pressable>
           </View>
-          <ScrollView
+          <FormScrollView
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ gap: 12 }}
           >
             {children}
-          </ScrollView>
+          </FormScrollView>
         </View>
       </View>
     </Modal>

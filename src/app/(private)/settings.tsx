@@ -6,7 +6,14 @@ import { request } from "@/api/session";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { ModuleScreen } from "@/components/module-screen";
 import { Icon, type IconName } from "@/components/icon";
-import { Body, Button, Card, Field, Notice } from "@/components/ui";
+import {
+  Body,
+  Button,
+  Card,
+  Field,
+  Notice,
+  OptionalBadge,
+} from "@/components/ui";
 import { useTheme } from "@/theme/provider";
 import { EnergyReference } from "@/features/settings-energy";
 
@@ -137,7 +144,17 @@ function SettingsForm({
     return (
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
         <View style={{ flex: 1 }}>
-          <Body strong>{label}</Body>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 6,
+            }}
+          >
+            <Body strong>{label}</Body>
+            {label.startsWith("Incluir ") && <OptionalBadge />}
+          </View>
           <Body muted>{effects[key]}</Body>
         </View>
         <Switch

@@ -1,3 +1,4 @@
+import { FormScrollView } from "@/components/form-scroll";
 import { Icon } from "@/components/icon";
 import { useState } from "react";
 import { Redirect } from "expo-router";
@@ -42,7 +43,7 @@ export default function Login() {
   if (!wide && auth.offline)
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
-        <ScrollView
+        <FormScrollView
           contentContainerStyle={{
             flexGrow: 1,
             justifyContent: "center",
@@ -72,7 +73,7 @@ export default function Login() {
               onPress={() => void auth.restore()}
             />
           </View>
-        </ScrollView>
+        </FormScrollView>
       </SafeAreaView>
     );
   if (auth.account) return <Redirect href="/home" />;
@@ -98,7 +99,7 @@ export default function Login() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView
+        <FormScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[s.container, !wide && { padding: 16 }]}
         >
@@ -270,7 +271,7 @@ export default function Login() {
               )}
             </View>
           </View>
-        </ScrollView>
+        </FormScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

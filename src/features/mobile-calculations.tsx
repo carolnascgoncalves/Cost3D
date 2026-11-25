@@ -1,3 +1,4 @@
+import { FormScrollView } from "@/components/form-scroll";
 import { pickCalculationPhoto } from "./pick-calculation-photo";
 import {
   calculationFilaments,
@@ -32,6 +33,7 @@ import {
   Badge,
   Chip,
   Body,
+  OptionalBadge,
   Button,
   Card,
   Field,
@@ -613,7 +615,7 @@ export function Picker({
                 setPage(0);
               }}
             />
-            <ScrollView
+            <FormScrollView
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={{ gap: 4 }}
             >
@@ -676,7 +678,7 @@ export function Picker({
                   onPress={() => choose()}
                 />
               )}
-            </ScrollView>
+            </FormScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -1277,7 +1279,16 @@ export function CalculationForm({
                 )}
                 {!quick && (
                   <View style={{ gap: 8 }}>
-                    <Body muted>Foto do cálculo (opcional)</Body>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        gap: 6,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Body muted>Foto do cálculo</Body>
+                      <OptionalBadge />
+                    </View>
                     {photo && (
                       <Image
                         accessibilityLabel="Foto escolhida para este cálculo"
@@ -1587,9 +1598,11 @@ export function CalculationForm({
                         <Text style={{ fontSize: 24, color: t.muted }}>×</Text>
                       </Pressable>
                     </View>
-                    <ScrollView contentContainerStyle={{ paddingVertical: 10 }}>
+                    <FormScrollView
+                      contentContainerStyle={{ paddingVertical: 10 }}
+                    >
                       <Breakdown result={result} />
-                    </ScrollView>
+                    </FormScrollView>
                   </View>
                 </View>
               </Modal>

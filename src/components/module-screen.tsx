@@ -1,3 +1,4 @@
+import { FormScrollView } from "@/components/form-scroll";
 import { useFocusEffect, router, type Href } from "expo-router";
 import { useCallback, useState, type PropsWithChildren } from "react";
 import {
@@ -117,7 +118,7 @@ export function ModuleScreen({
         onBack={onBack}
         lightHeader={lightHeader}
       />
-      <ScrollView
+      <FormScrollView
         refreshControl={refreshControl}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
@@ -131,7 +132,7 @@ export function ModuleScreen({
         }}
       >
         {children}
-      </ScrollView>
+      </FormScrollView>
     </View>
   );
 }

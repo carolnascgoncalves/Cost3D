@@ -1,3 +1,4 @@
+import { FormScrollView } from "@/components/form-scroll";
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -406,6 +407,7 @@ export function LotOperation({
                   {advanced && (
                     <>
                       <Field
+                        optional
                         label="Preço por unidade (R$)"
                         placeholder={money(d.preco)}
                         keyboardType="decimal-pad"
@@ -413,12 +415,14 @@ export function LotOperation({
                         onChangeText={setPrice}
                       />
                       <Field
+                        optional
                         label="Desconto por unidade (R$)"
                         keyboardType="decimal-pad"
                         value={discount}
                         onChangeText={setDiscount}
                       />
                       <Field
+                        optional
                         label="Taxas, impostos e frete por unidade (R$)"
                         keyboardType="decimal-pad"
                         value={fees}
@@ -580,7 +584,7 @@ export function LotOperation({
                       />
                     </View>
                     {!!error && <Notice message={error} />}
-                    <ScrollView
+                    <FormScrollView
                       keyboardShouldPersistTaps="handled"
                       contentContainerStyle={{ gap: 8, paddingBottom: 16 }}
                     >
@@ -679,6 +683,7 @@ export function LotOperation({
                             onChangeText={setLossUnits}
                           />
                           <Field
+                            optional
                             label="Tempo perdido (min)"
                             keyboardType="number-pad"
                             value={minutes}
@@ -697,7 +702,7 @@ export function LotOperation({
                           />
                         </>
                       )}
-                    </ScrollView>
+                    </FormScrollView>
                   </View>
                 </KeyboardAvoidingView>
               </Modal>

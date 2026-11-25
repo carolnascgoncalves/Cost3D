@@ -69,6 +69,7 @@ export default function PrivateLayout() {
       "/sales",
       "/calculate",
       "/dashboard",
+      "/budgets",
       "/planning",
       "/extra-costs",
       "/settings",
@@ -116,6 +117,7 @@ function Shell({
           [
             "/customers",
             "/movements",
+            "/budgets",
             "/planning",
             "/extra-costs",
             "/account",
