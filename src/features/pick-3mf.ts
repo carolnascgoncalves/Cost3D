@@ -4,11 +4,9 @@ export async function pick3mf(): Promise<FormData | null> {
   if (picked.canceled) return null;
   const file = picked.result;
   if (!/\.3mf$/i.test(file.name)) throw new Error("Selecione um arquivo .3mf.");
+  if (file.size > 50 * 1024 * 1024)
+    throw new Error("O arquivo deve ter até 50 MB.");
   const body = new FormData();
-  body.append("arquivo3mf", {
-    uri: file.uri,
-    name: file.name,
-    type: "application/octet-stream",
-  } as unknown as Blob);
+  body.append("arquivo3mf", file, file.name);
   return body;
 }

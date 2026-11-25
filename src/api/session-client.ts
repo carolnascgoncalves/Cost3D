@@ -15,6 +15,11 @@ type Options = {
   web: boolean;
   url: string;
   fetch: typeof fetch;
+  upload?: (
+    url: string,
+    body: FormData,
+    headers: HeadersInit,
+  ) => Promise<Pick<Response, "ok" | "status" | "json">>;
   exclusive?: <T>(action: () => Promise<T>) => Promise<T>;
   storage: {
     get: () => Promise<string | null>;
@@ -31,23 +36,30 @@ export function createSession(options: Options) {
   let epoch = 0;
   let expired = () => {};
   async function raw(path: string, init: RequestInit = {}) {
-    let response: Response;
+    let response: Pick<Response, "ok" | "status" | "json">;
     try {
-      response = await options.fetch(`${options.url}/api/v1${path}`, {
-        ...init,
-        credentials: web ? "include" : "omit",
-        headers: {
-          ...(typeof FormData !== "undefined" && init.body instanceof FormData
-            ? {}
-            : { "Content-Type": "application/json" }),
-          ...(web ? { "X-Cost3D-Web": "1" } : {}),
-          ...init.headers,
-        },
-      });
+      const url = options.url + "/api/v1" + path;
+      response =
+        options.upload && init.body instanceof FormData
+          ? await options.upload(url, init.body, init.headers ?? {})
+          : await options.fetch(url, {
+              ...init,
+              credentials: web ? "include" : "omit",
+              headers: {
+                ...(typeof FormData !== "undefined" &&
+                init.body instanceof FormData
+                  ? {}
+                  : { "Content-Type": "application/json" }),
+                ...(web ? { "X-Cost3D-Web": "1" } : {}),
+                ...init.headers,
+              },
+            });
     } catch {
       throw new ApiError(
         0,
-        "Não foi possível conectar à API. Confira a conexão e o endereço do servidor.",
+        init.body instanceof FormData
+          ? "Não foi possível enviar o arquivo. Confira se ele está disponível no aparelho e se o servidor está acessível."
+          : "Não foi possível conectar à API. Confira a conexão e o endereço do servidor.",
       );
     }
     if (!response.ok) {
@@ -96,7 +108,7 @@ export function createSession(options: Options) {
         ...init,
         headers: { ...init.headers, Authorization: `Bearer ${access}` },
       });
-    let response: Response;
+    let response: Pick<Response, "ok" | "status" | "json">;
     try {
       response = await send();
     } catch (error) {

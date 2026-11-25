@@ -3,7 +3,6 @@ import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import { ModuleScreen } from "@/components/module-screen";
 import {
-  Badge,
   Body,
   Button,
   Card,
@@ -177,7 +176,24 @@ export default function Sales() {
                     : (l.unidades ?? 1) + " un. para produzir"}
               </Body>
               {!!l.reservadas && (
-                <Badge>{l.reservadas} un. reservadas para pedidos</Badge>
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  style={{
+                    alignSelf: "flex-start",
+                    maxWidth: "100%",
+                    textAlign: "left",
+                    color: t.text,
+                    backgroundColor: t.accentTint,
+                    borderRadius: 12,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    fontSize: 13,
+                  }}
+                >
+                  {l.reservadas} un.{" "}
+                  {l.reservadas === 1 ? "reservada" : "reservadas"} para pedidos
+                </Text>
               )}
               <Button
                 variant="secondary"

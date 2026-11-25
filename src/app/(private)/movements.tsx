@@ -1,8 +1,10 @@
-import { ModuleHeader } from "@/components/module-screen";
-import { useState } from "react";
+import { ModuleScreen } from "@/components/module-screen";
+import { CalculationPhoto } from "@/features/mobile-calculations";
+import { Icon } from "@/components/icon";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
+  RefreshControl,
   Modal,
   Pressable,
   TextInput,
@@ -13,14 +15,12 @@ import {
 } from "react-native";
 import { useAuth } from "@/auth/provider";
 import {
-  Badge,
   Body,
   Button,
   Card,
   Chip,
   Empty,
   Field,
-  Heading,
   Notice,
   Pagination,
   Screen,
@@ -47,6 +47,7 @@ export default function Movements() {
   const { account } = useAuth();
   const { movements: filter, setMovements } = useWorkspace();
   const [draft, setDraft] = useState(filter);
+  const [pull, setPull] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState("");
   const { width } = useWindowDimensions();
@@ -67,7 +68,11 @@ export default function Movements() {
   }
   const query = useApiQuery<Statement>(
     account?.tenantId ? "/extrato?" + params : null,
+    true,
   );
+  useEffect(() => {
+    if (!query.loading) setPull(false);
+  }, [query.loading]);
   const grams = query.data?.resumo?.find((row) => row.medida === "g");
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
@@ -221,292 +226,294 @@ export default function Movements() {
       </Screen>
     );
   return (
-    <Screen scroll={false}>
-      <FlatList
-        style={layout.list}
-        contentContainerStyle={layout.listContent}
-        data={query.data?.movimentacoes?.itens || []}
-        keyExtractor={(item, index) => item.id || String(index)}
-        keyboardShouldPersistTaps="handled"
-        refreshing={query.loading}
-        onRefresh={query.retry}
-        ListHeaderComponent={
-          <View style={{ gap: 20, marginBottom: 8 }}>
-            {mobile ? (
-              <ModuleHeader section="Gestão" title="Movimentações" />
-            ) : (
-              <Heading
-                title="Movimentações"
-                subtitle="Materiais, produção e vendas no mesmo extrato."
-              />
-            )}
-            {mobile ? (
-              <>
-                <View style={layout.row}>
-                  {[
-                    [7, "7 dias"],
-                    [30, "30 dias"],
-                    [0, "Este mês"],
-                  ].map(([days, label]) => {
-                    const inicio = periodStart(Number(days));
-                    const selected =
-                      !filter.tudo &&
-                      ((toIsoDate(filter.inicio) === inicio &&
-                        toIsoDate(filter.fim) === today) ||
-                        (days === 30 && !filter.inicio && !filter.fim));
-                    return (
-                      <Chip
-                        key={label}
-                        label={String(label)}
-                        selected={selected}
-                        onPress={() => {
-                          const next = {
-                            ...filter,
-                            inicio: displayDate(inicio),
-                            fim: displayDate(today),
-                            tudo: false,
-                            pagina: 0,
-                          };
-                          setDraft(next);
-                          setMovements(next);
-                        }}
-                      />
-                    );
-                  })}
-                </View>
-                <Card style={{ flexDirection: "row", gap: 6 }}>
-                  {[
-                    [quantity(grams?.entrou, "g", true), "Entrou"],
-                    [quantity(grams?.saldo, "g", true), "Saldo"],
-                    [quantity(query.data?.pecasVendidas), "Vendidas"],
-                  ].map(([value, label]) => (
-                    <View key={label} style={{ flex: 1, alignItems: "center" }}>
-                      <Body strong>{query.data ? value : "—"}</Body>
-                      <Body muted>{label}</Body>
-                    </View>
-                  ))}
-                </Card>
-              </>
-            ) : (
-              <Card>
-                <View
-                  style={{ flexDirection: "row", flexWrap: "wrap", gap: 20 }}
-                >
-                  <View style={{ flex: 1, minWidth: 130, gap: 5 }}>
-                    <Body muted>Peças vendidas</Body>
-                    <Text
-                      style={{ fontSize: 25, fontWeight: "700", color: t.text }}
-                    >
-                      {query.data ? decimal(query.data.pecasVendidas) : "—"} un.
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1, minWidth: 130, gap: 5 }}>
-                    <Body muted>Registros no filtro</Body>
-                    <Text
-                      style={{ fontSize: 25, fontWeight: "700", color: t.text }}
-                    >
-                      {query.data ? total : "—"}
-                    </Text>
-                  </View>
-                </View>
-                {query.data?.resumo?.map((summary, index) => (
-                  <View key={summary.medida || index} style={layout.row}>
-                    <Text style={{ color: t.success, fontSize: 13 }}>
-                      Entradas: {quantity(summary.entrou, summary.medida)}
-                    </Text>
-                    <Text style={{ color: t.danger, fontSize: 13 }}>
-                      Saídas: {quantity(summary.saiu, summary.medida)}
-                    </Text>
-                  </View>
-                ))}
-              </Card>
-            )}
-            <View style={{ gap: 8 }}>
-              {mobile ? (
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                  <TextInput
-                    accessibilityLabel="Pesquisar no extrato"
-                    placeholder="Pesquisar"
-                    placeholderTextColor={t.muted}
-                    style={{
-                      flex: 1,
-                      color: t.text,
-                      backgroundColor: t.surface,
-                      borderColor: t.border,
-                      borderWidth: 1,
-                      borderRadius: 12,
-                      paddingHorizontal: 12,
-                    }}
-                    value={draft.busca}
-                    maxLength={150}
-                    onChangeText={(busca) => setDraft({ ...draft, busca })}
-                    returnKeyType="search"
-                    onSubmitEditing={apply}
-                  />
-                  <Button
-                    label="Filtros"
-                    variant="secondary"
+    <ModuleScreen
+      section="Gestão"
+      title="Movimentações"
+      refreshControl={
+        <RefreshControl
+          refreshing={pull && query.loading}
+          onRefresh={() => {
+            setPull(true);
+            query.retry();
+          }}
+        />
+      }
+    >
+      <View style={{ gap: 20, marginBottom: 8 }}>
+        {mobile ? (
+          <>
+            <View style={layout.row}>
+              {[
+                [7, "7 dias"],
+                [30, "30 dias"],
+                [0, "Este mês"],
+              ].map(([days, label]) => {
+                const inicio = periodStart(Number(days));
+                const selected =
+                  !filter.tudo &&
+                  ((toIsoDate(filter.inicio) === inicio &&
+                    toIsoDate(filter.fim) === today) ||
+                    (days === 30 && !filter.inicio && !filter.fim));
+                return (
+                  <Chip
+                    key={label}
+                    label={String(label)}
+                    selected={selected}
                     onPress={() => {
-                      setDraft({ ...filter, busca: draft.busca });
-                      setError("");
-                      setExpanded(true);
+                      const next = {
+                        ...filter,
+                        inicio: displayDate(inicio),
+                        fim: displayDate(today),
+                        tudo: false,
+                        pagina: 0,
+                      };
+                      setDraft(next);
+                      setMovements(next);
                     }}
                   />
-                </View>
-              ) : (
-                <Card>
-                  <Field
-                    label="Buscar no extrato"
-                    placeholder="Material, peça ou descrição"
-                    value={draft.busca}
-                    maxLength={150}
-                    onChangeText={(busca) => setDraft({ ...draft, busca })}
-                    returnKeyType="search"
-                    onSubmitEditing={apply}
-                  />
-                  <View style={layout.row}>
-                    <Button label="Buscar" onPress={apply} />
-                    <Button
-                      label={
-                        mobile
-                          ? "Filtros"
-                          : expanded
-                            ? "Recolher filtros"
-                            : "Mais filtros"
-                      }
-                      variant="secondary"
-                      onPress={() => {
-                        if (mobile) {
-                          setDraft({ ...filter, busca: draft.busca });
-                          setError("");
-                        }
-                        setExpanded(!expanded);
-                      }}
-                    />
-                    {!mobile && (
-                      <Button
-                        label="Limpar filtros"
-                        variant="ghost"
-                        onPress={clear}
-                      />
-                    )}
-                  </View>
-                  {expanded && !mobile && filterFields}
-                </Card>
-              )}
-              {mobile && (
-                <Modal
-                  visible={expanded}
-                  transparent
-                  animationType="slide"
-                  onRequestClose={() => setExpanded(false)}
-                >
-                  <View
+                );
+              })}
+            </View>
+            <Card style={{ flexDirection: "row", gap: 6 }}>
+              {[
+                [quantity(grams?.entrou, "g", true), "Entrou"],
+                [quantity(grams?.saldo, "g", true), "Saldo"],
+                [quantity(query.data?.pecasVendidas), "Vendidas"],
+              ].map(([value, label]) => (
+                <View key={label} style={{ flex: 1, alignItems: "center" }}>
+                  <Text
                     style={{
-                      flex: 1,
-                      justifyContent: "flex-end",
-                      backgroundColor: "#24183580",
+                      fontWeight: "700",
+                      fontSize: 17,
+                      color:
+                        label === "Entrou"
+                          ? t.success
+                          : label === "Saldo" && grams?.saldo?.startsWith("-")
+                            ? t.danger
+                            : t.primaryText,
                     }}
                   >
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Fechar filtros"
-                      onPress={() => setExpanded(false)}
-                      style={{ flex: 1 }}
-                    />
-                    <ScrollView
-                      keyboardShouldPersistTaps="handled"
-                      style={{
-                        flexGrow: 0,
-                        maxHeight: "85%",
-                        borderTopLeftRadius: 20,
-                        borderTopRightRadius: 20,
-                        backgroundColor: t.surface,
-                      }}
-                      contentContainerStyle={{
-                        padding: 20,
-                        paddingBottom: 32,
-                        gap: 12,
-                      }}
-                    >
-                      <Body strong>Filtros</Body>
-                      {filterFields}
-                      {!!error && <Notice message={error} />}
-                    </ScrollView>
-                  </View>
-                </Modal>
-              )}
-              {!!error && (!mobile || !expanded) && <Notice message={error} />}
+                    {query.data ? value : "—"}
+                  </Text>
+                  <Body muted>{label}</Body>
+                </View>
+              ))}
+            </Card>
+          </>
+        ) : (
+          <Card>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 20 }}>
+              <View style={{ flex: 1, minWidth: 130, gap: 5 }}>
+                <Body muted>Peças vendidas</Body>
+                <Text
+                  style={{ fontSize: 25, fontWeight: "700", color: t.text }}
+                >
+                  {query.data ? decimal(query.data.pecasVendidas) : "—"} un.
+                </Text>
+              </View>
+              <View style={{ flex: 1, minWidth: 130, gap: 5 }}>
+                <Body muted>Registros no filtro</Body>
+                <Text
+                  style={{ fontSize: 25, fontWeight: "700", color: t.text }}
+                >
+                  {query.data ? total : "—"}
+                </Text>
+              </View>
             </View>
-            {!mobile && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 8 }}
-                keyboardShouldPersistTaps="handled"
-              >
-                {movementTypes.map(([value, label]) => (
-                  <Chip
-                    key={value}
-                    label={label}
-                    selected={filter.tipo === value}
-                    onPress={() => type(value)}
-                  />
-                ))}
-              </ScrollView>
-            )}
-            <Text style={{ color: t.pageMuted, fontSize: 12, lineHeight: 19 }}>
-              {filter.tudo
-                ? "Todo o período"
-                : filter.inicio || filter.fim
-                  ? `${filter.inicio || "30 dias atrás"} até ${filter.fim || "hoje"}`
-                  : "Últimos 30 dias"}
-              {filter.direcao
-                ? ` · ${filter.direcao === "entrada" ? "Só entradas" : "Só saídas"}`
-                : ""}
-              {filter.saldo ? " · Com saldos iniciais" : ""}
-              {filter.busca ? ` · Busca: ${filter.busca}` : ""}
-            </Text>
-            {!!query.data?.abertura?.registros && (
-              <Card>
-                <Body muted>
-                  Estoque de abertura:{" "}
-                  {quantity(query.data.abertura.gramas, "g")} em{" "}
-                  {query.data.abertura.registros} registro(s).
-                </Body>
-              </Card>
-            )}
-            {!!query.error && (
-              <Notice message={query.error} onRetry={query.retry} />
-            )}
-            {query.loading && (
-              <ActivityIndicator
-                color={t.primaryText}
-                accessibilityLabel="Carregando movimentações"
+            {query.data?.resumo?.map((summary, index) => (
+              <View key={summary.medida || index} style={layout.row}>
+                <Text style={{ color: t.success, fontSize: 13 }}>
+                  Entradas: {quantity(summary.entrou, summary.medida)}
+                </Text>
+                <Text style={{ color: t.danger, fontSize: 13 }}>
+                  Saídas: {quantity(summary.saiu, summary.medida)}
+                </Text>
+              </View>
+            ))}
+          </Card>
+        )}
+        <View style={{ gap: 8 }}>
+          {mobile ? (
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <TextInput
+                accessibilityLabel="Pesquisar no extrato"
+                placeholder="Pesquisar"
+                placeholderTextColor={t.muted}
+                style={{
+                  flex: 1,
+                  color: t.text,
+                  backgroundColor: t.surface,
+                  borderColor: t.border,
+                  borderWidth: 1,
+                  borderRadius: 12,
+                  paddingHorizontal: 12,
+                }}
+                value={draft.busca}
+                maxLength={150}
+                onChangeText={(busca) => setDraft({ ...draft, busca })}
+                returnKeyType="search"
+                onSubmitEditing={apply}
               />
-            )}
-          </View>
-        }
-        renderItem={({ item }) => <MovementItem item={item} />}
-        ListEmptyComponent={
-          !query.loading && !query.error ? (
-            <Empty
-              title="Nenhuma movimentação encontrada"
-              description="Tente outro período ou limpe os filtros."
-            />
-          ) : undefined
-        }
-        ListFooterComponent={
-          !query.loading && !query.error && total > 0 ? (
-            <Pagination
-              page={filter.pagina}
-              total={total}
-              onPage={(pagina) => setMovements({ ...filter, pagina })}
-            />
-          ) : undefined
-        }
-      />
-    </Screen>
+              <Button
+                label="Filtros"
+                variant="secondary"
+                onPress={() => {
+                  setDraft({ ...filter, busca: draft.busca });
+                  setError("");
+                  setExpanded(true);
+                }}
+              />
+            </View>
+          ) : (
+            <Card>
+              <Field
+                label="Buscar no extrato"
+                placeholder="Material, peça ou descrição"
+                value={draft.busca}
+                maxLength={150}
+                onChangeText={(busca) => setDraft({ ...draft, busca })}
+                returnKeyType="search"
+                onSubmitEditing={apply}
+              />
+              <View style={layout.row}>
+                <Button label="Buscar" onPress={apply} />
+                <Button
+                  label={
+                    mobile
+                      ? "Filtros"
+                      : expanded
+                        ? "Recolher filtros"
+                        : "Mais filtros"
+                  }
+                  variant="secondary"
+                  onPress={() => {
+                    if (mobile) {
+                      setDraft({ ...filter, busca: draft.busca });
+                      setError("");
+                    }
+                    setExpanded(!expanded);
+                  }}
+                />
+                {!mobile && (
+                  <Button
+                    label="Limpar filtros"
+                    variant="ghost"
+                    onPress={clear}
+                  />
+                )}
+              </View>
+              {expanded && !mobile && filterFields}
+            </Card>
+          )}
+          {mobile && (
+            <Modal
+              visible={expanded}
+              transparent
+              animationType="slide"
+              onRequestClose={() => setExpanded(false)}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: "flex-end",
+                  backgroundColor: "#24183580",
+                }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Fechar filtros"
+                  onPress={() => setExpanded(false)}
+                  style={{ flex: 1 }}
+                />
+                <ScrollView
+                  keyboardShouldPersistTaps="handled"
+                  style={{
+                    flexGrow: 0,
+                    maxHeight: "85%",
+                    borderTopLeftRadius: 20,
+                    borderTopRightRadius: 20,
+                    backgroundColor: t.surface,
+                  }}
+                  contentContainerStyle={{
+                    padding: 20,
+                    paddingBottom: 32,
+                    gap: 12,
+                  }}
+                >
+                  <Body strong>Filtros</Body>
+                  {filterFields}
+                  {!!error && <Notice message={error} />}
+                </ScrollView>
+              </View>
+            </Modal>
+          )}
+          {!!error && (!mobile || !expanded) && <Notice message={error} />}
+        </View>
+        {!mobile && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {movementTypes.map(([value, label]) => (
+              <Chip
+                key={value}
+                label={label}
+                selected={filter.tipo === value}
+                onPress={() => type(value)}
+              />
+            ))}
+          </ScrollView>
+        )}
+        <Text style={{ color: t.pageMuted, fontSize: 12, lineHeight: 19 }}>
+          {filter.tudo
+            ? "Todo o período"
+            : filter.inicio || filter.fim
+              ? `${filter.inicio || "30 dias atrás"} até ${filter.fim || "hoje"}`
+              : "Últimos 30 dias"}
+          {filter.direcao
+            ? ` · ${filter.direcao === "entrada" ? "Só entradas" : "Só saídas"}`
+            : ""}
+          {filter.saldo ? " · Com saldos iniciais" : ""}
+          {filter.busca ? ` · Busca: ${filter.busca}` : ""}
+        </Text>
+        {!!query.data?.abertura?.registros && (
+          <Card>
+            <Body muted>
+              Estoque de abertura: {quantity(query.data.abertura.gramas, "g")}{" "}
+              em {query.data.abertura.registros} registro(s).
+            </Body>
+          </Card>
+        )}
+        {!!query.error && (
+          <Notice message={query.error} onRetry={query.retry} />
+        )}
+        {query.loading && !query.data && (
+          <ActivityIndicator
+            color={t.primaryText}
+            accessibilityLabel="Carregando movimentações"
+          />
+        )}
+      </View>
+      {query.data?.movimentacoes?.itens?.map((item, index) => (
+        <MovementItem key={item.id ?? index} item={item} />
+      ))}
+      {!total && !query.loading && !query.error ? (
+        <Empty
+          title="Nenhuma movimentação encontrada"
+          description="Tente outro período ou limpe os filtros."
+        />
+      ) : undefined}
+      {!query.error && total > 0 ? (
+        <Pagination
+          disabled={query.loading}
+          page={filter.pagina}
+          total={total}
+          onPage={(pagina) => setMovements({ ...filter, pagina })}
+        />
+      ) : undefined}
+    </ModuleScreen>
   );
 }
 function MovementItem({ item }: { item: Movement }) {
@@ -514,95 +521,106 @@ function MovementItem({ item }: { item: Movement }) {
   const mobile = useWindowDimensions().width < 900;
   const negative = item.quantidade?.startsWith("-");
   const { title, detail } = productionDescription(item.descricao, item.tipo);
-  const color = negative ? t.danger : t.success;
-  if (mobile)
-    return (
-      <Card>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            gap: 12,
-          }}
-        >
-          <View style={{ flex: 1 }}>
-            <Body strong>{title || "Movimentação"}</Body>
-          </View>
-          <Text selectable style={{ color, fontWeight: "700" }}>
-            {quantity(item.quantidade, item.medida, true)}
-          </Text>
-        </View>
-        {!!detail && <Body muted>{detail}</Body>}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <Body muted>{dateTime(item.data)}</Body>
-          <Badge>{movementLabels[item.tipo || ""] || item.tipo}</Badge>
-        </View>
-        {item.saldoApos != null && (
-          <Body muted>Saldo após: {quantity(item.saldoApos, "g")}</Body>
-        )}
-      </Card>
-    );
+  const color =
+    item.tipo === "SALDO_INICIAL" ? t.muted : negative ? t.danger : t.success;
+  const swatch =
+    item.codigoCor && /^#[0-9a-f]{6}$/i.test(item.codigoCor)
+      ? item.codigoCor
+      : null;
+  const hasPhoto = item.origem === "lote" && !!item.referencia;
   return (
     <Card>
-      <View style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
-        <View
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 16,
-            backgroundColor: t.accentTint,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Text style={{ color, fontSize: 20 }}>{negative ? "↗" : "↙"}</Text>
-        </View>
-        <View style={{ flex: 1, gap: 8 }}>
-          <View style={layout.row}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        {hasPhoto ? (
+          <CalculationPhoto id={item.referencia} name={detail || title} />
+        ) : (
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: t.accentTint,
+            }}
+          >
+            {swatch ? (
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  backgroundColor: swatch,
+                  borderWidth: 1,
+                  borderColor: t.border,
+                }}
+              />
+            ) : (
+              <Icon
+                name={
+                  item.tipo?.includes("VENDA")
+                    ? "shop"
+                    : item.medida === "g"
+                      ? "palette"
+                      : "arrow-switch"
+                }
+                color={t.primaryText}
+              />
+            )}
+          </View>
+        )}
+        <View style={{ flex: 1, gap: 3 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            {hasPhoto && swatch && (
+              <View
+                style={{
+                  width: 13,
+                  height: 13,
+                  borderRadius: 7,
+                  borderWidth: 1,
+                  borderColor: t.border,
+                  backgroundColor: swatch,
+                }}
+              />
+            )}
             <Text
               style={{
-                color: t.text,
+                flexShrink: 1,
                 fontSize: 16,
                 fontWeight: "700",
-                flexShrink: 1,
+                color: t.text,
               }}
             >
               {title || "Movimentação"}
             </Text>
-            <Text
-              style={{
-                color: t.text,
-                backgroundColor: t.accentTint,
-                fontSize: 11,
-                paddingHorizontal: 8,
-                paddingVertical: 4,
-                borderRadius: 5,
-              }}
-            >
-              {movementLabels[item.tipo || ""] || item.tipo}
-            </Text>
           </View>
-          <Text style={{ color: t.muted, fontSize: 12, lineHeight: 19 }}>
-            {detail ? detail + " · " : ""}
-            {dateTime(item.data)}
-          </Text>
-          <Text selectable style={{ color, fontSize: 18, fontWeight: "700" }}>
-            {quantity(item.quantidade, item.medida, true)}
-          </Text>
-          {item.saldoApos != null && (
-            <Text style={{ color: t.muted, fontSize: 12 }}>
-              Saldo após: {quantity(item.saldoApos, "g")}
-            </Text>
-          )}
+          {!!detail && <Body muted>{detail}</Body>}
+          <Body muted>{movementLabels[item.tipo || ""] || item.tipo}</Body>
         </View>
+        <Text
+          selectable
+          style={{ fontSize: mobile ? 15 : 18, fontWeight: "700", color }}
+        >
+          {quantity(item.quantidade, item.medida, true)}
+        </Text>
+      </View>
+      <View
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+          gap: 6,
+          borderTopWidth: 1,
+          borderColor: t.border,
+          paddingTop: 8,
+        }}
+      >
+        <Body muted>{dateTime(item.data)}</Body>
+        {item.saldoApos != null && (
+          <Text style={{ color: t.primaryText, fontWeight: "600" }}>
+            Saldo após · {quantity(item.saldoApos, "g")}
+          </Text>
+        )}
       </View>
     </Card>
   );

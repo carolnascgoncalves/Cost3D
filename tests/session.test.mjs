@@ -172,3 +172,41 @@ test("web session mutations run through the supplied browser lock", async () => 
   await session.logout();
   assert.equal(locks, 3);
 });
+
+test("envio nativo mantém o arquivo 3MF e a autenticação no multipart", async () => {
+  const data = new FormData();
+  data.append("arquivo3mf", new Blob(["PK-3MF"]), "modelo.gcode.3mf");
+  const session = createSession({
+    web: false,
+    url: "http://api.test",
+    storage: {
+      get: async () => "refresh",
+      set: async () => {},
+      clear: async () => {},
+    },
+    fetch: async () => json({ accessToken: "token" }),
+    upload: async (url, body, headers) => {
+      assert.equal(url, "http://api.test/api/v1/catalogo/pecas/ler-arquivo");
+      assert.equal(headers.Authorization, "Bearer token");
+      const multipart = new Request(url, { method: "POST", body, headers });
+      assert.match(
+        multipart.headers.get("content-type"),
+        /multipart\/form-data; boundary=/,
+      );
+      const file = (await multipart.formData()).get("arquivo3mf");
+      assert.equal(file.name, "modelo.gcode.3mf");
+      assert.equal(await file.text(), "PK-3MF");
+      return json({ nomeArquivo: file.name });
+    },
+  });
+  await session.refreshSession();
+  assert.equal(
+    (
+      await session.request("/catalogo/pecas/ler-arquivo", {
+        method: "POST",
+        body: data,
+      })
+    ).nomeArquivo,
+    "modelo.gcode.3mf",
+  );
+});

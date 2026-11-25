@@ -1,3 +1,4 @@
+import { fetch as expoFetch } from "expo/fetch";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { createSession } from "./session-client";
@@ -21,6 +22,11 @@ const session = createSession({
   web: Platform.OS === "web",
   url: apiUrl,
   exclusive,
+  upload:
+    Platform.OS === "web"
+      ? undefined
+      : (url, body, headers) =>
+          expoFetch(url, { method: "POST", headers, body }),
   fetch: (...args) => fetch(...args),
   storage: {
     get: () => SecureStore.getItemAsync("cost3d.refresh"),

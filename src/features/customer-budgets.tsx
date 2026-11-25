@@ -33,7 +33,7 @@ export function CustomerBudgets({ id }: { id: string }) {
   }
   return (
     <View style={{ gap: 12 }}>
-      {!mobile && <Heading title="Orçamentos" />}
+      {mobile ? <Body strong>Orçamentos</Body> : <Heading title="Orçamentos" />}
       <View style={layout.row}>
         <Chip
           label="Atuais"

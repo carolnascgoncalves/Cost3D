@@ -42,7 +42,7 @@ export const groups: [string, Link[]][] = [
     "Gestão",
     [
       { label: "Movimentações", route: "/movements" },
-      { label: "Custos extras", site: "/custos-loja" },
+      { label: "Custos extras", route: "/extra-costs" },
       { label: "Mais", route: "/more" },
     ],
   ],

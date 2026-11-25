@@ -64,9 +64,14 @@ export default function PrivateLayout() {
     return <Redirect href="/account" />;
   if (
     !account.tenantId &&
-    ["/catalog", "/sales", "/calculate", "/dashboard", "/settings"].includes(
-      path,
-    )
+    [
+      "/catalog",
+      "/sales",
+      "/calculate",
+      "/dashboard",
+      "/extra-costs",
+      "/settings",
+    ].includes(path)
   )
     return <Redirect href="/account" />;
   return (
@@ -107,9 +112,13 @@ function Shell({
         path === item.path ||
         (item.path === "/home" && path === "/dashboard") ||
         (item.path === "/more" &&
-          ["/customers", "/movements", "/account", "/settings"].some(
-            (prefix) => path === prefix || path.startsWith(prefix + "/"),
-          ));
+          [
+            "/customers",
+            "/movements",
+            "/extra-costs",
+            "/account",
+            "/settings",
+          ].some((prefix) => path === prefix || path.startsWith(prefix + "/")));
       return (
         <Pressable
           key={item.path}

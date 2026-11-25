@@ -86,7 +86,9 @@ function Choice({
           : reais(item.custo));
   return (
     <>
-      {inSheet && category !== "filamentos" ? null : category === "pecas" &&
+      {inSheet &&
+      category !== "filamentos" &&
+      category !== "pecas" ? null : category === "pecas" &&
         item?.placaMiniatura ? (
         <PiecePhoto key={item.id} row={item} compact />
       ) : (
@@ -185,6 +187,24 @@ export function CalculationIdentity({
   name?: string;
   large?: boolean;
 }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+      <CalculationPhoto id={id} name={name} size={large ? 88 : 66} />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Body strong>{name || "Peça"}</Body>
+      </View>
+    </View>
+  );
+}
+export function CalculationPhoto({
+  id,
+  name,
+  size = 44,
+}: {
+  id?: string;
+  name?: string;
+  size?: number;
+}) {
   const t = useTheme(),
     photo = useApiQuery<Schema["FotoCatalogo"]>(
       id ? "/calculos/" + encodeURIComponent(id) + "/foto" : null,
@@ -193,54 +213,49 @@ export function CalculationIdentity({
   const uri = photo.data?.base64
     ? "data:" + photo.data.tipo + ";base64," + photo.data.base64
     : "";
-  const size = large ? 88 : 66;
+
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-      <View
-        style={{
-          width: size,
-          height: size,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: t.accentTint,
-          borderRadius: 12,
-          overflow: "hidden",
-        }}
-      >
-        {photo.loading ? (
-          <ActivityIndicator color={t.primaryText} />
-        ) : photo.error || (uri && failedUri === uri) ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={"Tentar carregar novamente a foto de " + name}
-            onPress={() => {
-              setFailedUri("");
-              photo.retry();
-            }}
-            style={{
-              minWidth: 44,
-              minHeight: 44,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Icon name="arrow-repeat" color={t.primaryText} />
-          </Pressable>
-        ) : uri ? (
-          <Image
-            accessibilityLabel={"Foto de " + name}
-            resizeMode="contain"
-            style={{ width: size, height: size }}
-            source={{ uri }}
-            onError={() => setFailedUri(uri)}
-          />
-        ) : (
-          <Icon name="box" color={t.primaryText} />
-        )}
-      </View>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Body strong>{name || "Peça"}</Body>
-      </View>
+    <View
+      style={{
+        width: size,
+        height: size,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: t.accentTint,
+        borderRadius: 12,
+        overflow: "hidden",
+      }}
+    >
+      {photo.loading ? (
+        <ActivityIndicator color={t.primaryText} />
+      ) : photo.error || (uri && failedUri === uri) ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={"Tentar carregar novamente a foto de " + name}
+          onPress={() => {
+            setFailedUri("");
+            photo.retry();
+          }}
+          style={{
+            minWidth: 44,
+            minHeight: 44,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Icon name="arrow-repeat" color={t.primaryText} />
+        </Pressable>
+      ) : uri ? (
+        <Image
+          accessibilityLabel={"Foto de " + name}
+          resizeMode="contain"
+          style={{ width: size, height: size }}
+          source={{ uri }}
+          onError={() => setFailedUri(uri)}
+        />
+      ) : (
+        <Icon name="box" color={t.primaryText} />
+      )}
     </View>
   );
 }
@@ -837,6 +852,7 @@ export function CalculationForm({
   quick: boolean;
   initial?: Selection;
 }) {
+  const insets = useSafeAreaInsets();
   const t = useTheme(),
     [step, setStep] = useState(0);
   const stages = ["Materiais", "Impressão", "Embalagem", "Venda e markup"];
@@ -1224,6 +1240,18 @@ export function CalculationForm({
                     />
                     {file && (
                       <>
+                        {file.imagemPreviewDataUri && (
+                          <Image
+                            accessibilityLabel="Prévia da peça importada"
+                            source={{ uri: file.imagemPreviewDataUri }}
+                            resizeMode="contain"
+                            style={{
+                              width: "100%",
+                              height: 110,
+                              borderRadius: 8,
+                            }}
+                          />
+                        )}
                         <Body strong>{file.nome}</Body>
                         <Body muted>
                           {file.placas} placa(s)
@@ -1509,11 +1537,62 @@ export function CalculationForm({
               />
             )}
             {quick && quickKey === payload && result && (
-              <Card>
-                <Body strong>Resultado da consulta</Body>
-
-                <Breakdown result={result} />
-              </Card>
+              <Modal
+                transparent
+                animationType="slide"
+                visible
+                onRequestClose={() => setResult(undefined)}
+              >
+                <View
+                  style={{
+                    flex: 1,
+                    justifyContent: "flex-end",
+                    backgroundColor: "rgba(32,22,52,0.46)",
+                  }}
+                >
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Fechar consulta"
+                    style={{ flex: 1 }}
+                    onPress={() => setResult(undefined)}
+                  />
+                  <View
+                    accessibilityViewIsModal
+                    style={{
+                      width: "100%",
+                      maxWidth: 640,
+                      alignSelf: "center",
+                      maxHeight: "82%",
+                      backgroundColor: t.surface,
+                      borderTopLeftRadius: 22,
+                      borderTopRightRadius: 22,
+                      padding: 16,
+                      paddingBottom: Math.max(16, insets.bottom),
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Body strong>Resultado da consulta</Body>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Fechar resultado"
+                        onPress={() => setResult(undefined)}
+                        style={{ padding: 10 }}
+                      >
+                        <Text style={{ fontSize: 24, color: t.muted }}>×</Text>
+                      </Pressable>
+                    </View>
+                    <ScrollView contentContainerStyle={{ paddingVertical: 10 }}>
+                      <Breakdown result={result} />
+                    </ScrollView>
+                  </View>
+                </View>
+              </Modal>
             )}
           </View>
         )}

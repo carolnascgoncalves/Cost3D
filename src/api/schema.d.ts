@@ -219,6 +219,7 @@ export interface components {
       gramas?: number;
       materiais?: Array<components["schemas"]["Modelo3mfFilamentoResponse"]>;
       completo?: boolean;
+      imagemPreviewDataUri?: string;
     };
     SessaoWeb: { accessToken?: string; tokenType?: string; expiresIn?: number };
     Login: { email: string; senha: string };
@@ -289,6 +290,8 @@ export interface components {
       canceladas?: number;
       preco?: number;
       lucro?: number;
+      id?: string;
+      vinculadaPedido?: boolean;
     };
     Tema: {
       id?: string;
@@ -340,6 +343,7 @@ export interface components {
       origem?: string;
       referencia?: string;
       filamentoId?: string;
+      codigoCor?: string;
       saldoApos?: string;
       data?: string;
     };
@@ -568,6 +572,79 @@ export interface components {
       email?: string;
       perfil?: string;
       trocaSenhaObrigatoria?: boolean;
+    };
+    CancelamentoVenda: { vendaId: string; unidades?: number; chave: string };
+    CustoResumo: {
+      id?: string;
+      descricao?: string;
+      inicio?: string;
+      tipo?: "VALOR_UNIDADE" | "PERCENTUAL" | "RATEIO_MENSAL";
+      valor?: number;
+      unidadesPrevistas?: number;
+      ativo?: boolean;
+      meta?: number;
+      recuperado?: number;
+      restante?: number;
+      excedente?: number;
+    };
+    PecaRateada: {
+      calculoId?: string;
+      nome?: string;
+      valorUnitario?: number;
+      unidades?: number;
+      vendidas?: number;
+      recuperado?: number;
+    };
+    CustoDetalhe: {
+      custo?: components["schemas"]["CustoResumo"];
+      pecas?: Array<components["schemas"]["PecaRateada"]>;
+      total?: number;
+    };
+    CustoLojaEntrada: {
+      descricao: string;
+      inicio: string;
+      meta: number;
+      tipo: "VALOR_UNIDADE" | "PERCENTUAL" | "RATEIO_MENSAL";
+      valor?: number;
+      unidadesPrevistas?: number;
+    };
+    FilamentoRequest: {
+      nome: string;
+      cor: string;
+      codigoCor: string;
+      marca?: string;
+      pesoRoloGramas: number;
+      estoqueGramas?: number;
+      precoRolo: number;
+    };
+    EmbalagemRequest: { nome: string; custoUnitario: number };
+    SelecaoCatalogo: { ids: Array<string> };
+    Estimativa: {
+      horasAteSubstituicao?: number;
+      horasMensais?: number;
+      horasMensaisPadrao?: boolean;
+    };
+    EstimativaDepreciacaoResponse: {
+      disponivel?: boolean;
+      mensagem?: string;
+      modelo?: string;
+      precoNovoMediano?: number;
+      anunciosNovos?: number;
+      precoUsadoMediano?: number;
+      anunciosUsados?: number;
+      horasAteSubstituicao?: number;
+      horasMensais?: number;
+      horasMensaisPadrao?: boolean;
+      depreciacaoPorHora?: number;
+      fallback?: boolean;
+      confianca?: string;
+    };
+    Modelo: {
+      nome?: string;
+      potenciaMediaPLA?: number;
+      potenciasOutrosMateriais?: { [key: string]: number };
+      potenciaMaxima?: string;
+      fonte?: string;
     };
   };
 }

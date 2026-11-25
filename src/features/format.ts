@@ -78,3 +78,11 @@ export function productionDescription(description = "", type = "") {
         detail: description.slice(separator.index + separator[0].length),
       };
 }
+
+export function phone(raw?: string) {
+  if (!raw) return "Sem telefone";
+  const digits = raw.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+  return /^(\d{2})(\d{4,5})(\d{4})$/.test(digits)
+    ? digits.replace(/^(\d{2})(\d{4,5})(\d{4})$/, "($1) $2-$3")
+    : raw;
+}

@@ -1,3 +1,5 @@
+import { Icon, type IconName } from "@/components/icon";
+import { phone } from "@/features/format";
 import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import {
@@ -10,7 +12,6 @@ import { request, ApiError } from "@/api/session";
 import { useAuth } from "@/auth/provider";
 import {
   Body,
-  Chip,
   Button,
   Card,
   Empty,
@@ -28,7 +29,6 @@ import { CustomerBudgets } from "@/features/customer-budgets";
 export default function CustomerDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const mobile = useWindowDimensions().width < 900;
-  const [showContact, setShowContact] = useState(false);
   const isNew = id === "new";
   const { account } = useAuth();
   const t = useTheme();
@@ -271,49 +271,56 @@ export default function CustomerDetail() {
             </Card>
           ) : (
             <>
-              {mobile && (
+              <Card>
+                <Body strong>Dados do cliente</Body>
+                {(
+                  [
+                    ["telephone", "Telefone", phone(query.data?.telefone)],
+                    [
+                      "envelope",
+                      "E-mail",
+                      query.data?.email || "Não informado",
+                    ],
+                    [
+                      "file-text",
+                      "Observações",
+                      query.data?.observacoes || "Nenhuma observação",
+                    ],
+                  ] satisfies [IconName, string, string][]
+                ).map(([icon, label, value]) => (
+                  <View
+                    key={label}
+                    style={{
+                      flexDirection: "row",
+                      gap: 12,
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <Icon name={icon} color={t.primaryText} size={19} />
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Body strong>{label}</Body>
+                      <Body>{value}</Body>
+                    </View>
+                  </View>
+                ))}
                 <View style={layout.row}>
-                  <Chip
-                    label="Orçamentos"
-                    selected={!showContact}
-                    onPress={() => setShowContact(false)}
+                  <Button
+                    label="Editar cliente"
+                    disabled={busy}
+                    onPress={() => {
+                      setEditing(true);
+                      setSuccess("");
+                    }}
                   />
-                  <Chip
-                    label="Dados do cliente"
-                    selected={showContact}
-                    onPress={() => setShowContact(true)}
+                  <Button
+                    label={query.data?.arquivado ? "Restaurar" : "Arquivar"}
+                    variant="secondary"
+                    disabled={busy}
+                    onPress={() => setConfirm(true)}
                   />
                 </View>
-              )}
-              {(!mobile || showContact) && (
-                <Card>
-                  <Body>Telefone</Body>
-                  <Body muted>{query.data?.telefone || "Não informado"}</Body>
-                  <Body>E-mail</Body>
-                  <Body muted>{query.data?.email || "Não informado"}</Body>
-                  <Body>Observações</Body>
-                  <Body muted>
-                    {query.data?.observacoes || "Nenhuma observação"}
-                  </Body>
-                  <View style={layout.row}>
-                    <Button
-                      label="Editar cliente"
-                      disabled={busy}
-                      onPress={() => {
-                        setEditing(true);
-                        setSuccess("");
-                      }}
-                    />
-                    <Button
-                      label={query.data?.arquivado ? "Restaurar" : "Arquivar"}
-                      variant="secondary"
-                      disabled={busy}
-                      onPress={() => setConfirm(true)}
-                    />
-                  </View>
-                </Card>
-              )}
-              {(!mobile || showContact) && confirm && (
+              </Card>
+              {confirm && (
                 <Card>
                   <Body>
                     {query.data?.arquivado
@@ -340,9 +347,7 @@ export default function CustomerDetail() {
                   </View>
                 </Card>
               )}
-              {(!mobile || !showContact) && query.data?.id === id && (
-                <CustomerBudgets key={id} id={id} />
-              )}
+              {query.data?.id === id && <CustomerBudgets key={id} id={id} />}
             </>
           )}
         </View>

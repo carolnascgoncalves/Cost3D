@@ -2,15 +2,17 @@ import { ListSearch } from "@/components/list-search";
 import { CatalogEditor } from "@/features/catalog-editor";
 import { pieceCalculation } from "@/features/calculation-route";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
+  Pressable,
   ScrollView,
   Text,
   View,
   useWindowDimensions,
 } from "react-native";
-import { ModuleScreen, MenuRows, SiteButton } from "@/components/module-screen";
+import { ModuleScreen, MenuRows } from "@/components/module-screen";
 import {
   Body,
   Button,
@@ -22,6 +24,7 @@ import {
 } from "@/components/ui";
 import { CatalogDetail } from "@/components/catalog-detail";
 import { useApiQuery } from "@/hooks/use-api-query";
+import { request } from "@/api/session";
 import { useTheme } from "@/theme/provider";
 import { decimal, quantity, reais } from "@/features/format";
 import {
@@ -31,24 +34,21 @@ import {
 } from "@/components/catalog-card";
 
 const categories = [
-  { label: "Peças", key: "pecas", create: "Nova peça", site: "/peca/novo" },
+  { label: "Peças", key: "pecas", create: "Nova peça" },
   {
     label: "Filamentos",
     key: "filamentos",
     create: "Novo filamento",
-    site: "/filamento/novo",
   },
   {
     label: "Impressoras",
     key: "impressoras",
     create: "Nova impressora",
-    site: "/impressora/novo",
   },
   {
     label: "Embalagens",
     key: "embalagens",
     create: "Nova embalagem",
-    site: "/embalagem/novo",
   },
 ] as const;
 type Category = (typeof categories)[number];
@@ -62,11 +62,65 @@ export default function Catalog() {
 function Listings({ category }: { category: Category }) {
   const mobile = useWindowDimensions().width < 900;
   const t = useTheme();
-  const [editor, setEditor] = useState<{ id: string; purchase: boolean }>();
+  const [editor, setEditor] = useState<{ id?: string; purchase: boolean }>();
+  const [created, setCreated] = useState(false);
   const [piece, setPiece] = useState<Row>();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [lowOnly, setLowOnly] = useState(false);
+  const [selecting, setSelecting] = useState(false),
+    [selected, setSelected] = useState<string[]>([]),
+    [confirm, setConfirm] = useState(false),
+    [busy, setBusy] = useState(false),
+    [result, setResult] = useState("");
+  const lock = useRef(false);
+  function toggle(id: string) {
+    setResult("");
+    setSelected((old) =>
+      old.includes(id) ? old.filter((x) => x !== id) : [...old, id],
+    );
+  }
+  function cancelSelection() {
+    setSelecting(false);
+    setSelected([]);
+    setConfirm(false);
+    setResult("");
+  }
+  async function remove() {
+    if (lock.current || !selected.length) return;
+    lock.current = true;
+    setBusy(true);
+    try {
+      const blocked = await request<string[]>(
+        "/catalogo/" + category.key + "/remover-lote",
+        { method: "POST", body: JSON.stringify({ ids: selected }) },
+      );
+      setSelected(blocked);
+      setSelecting(!!blocked.length);
+      setPage(0);
+      q.retry();
+      setResult(
+        blocked.length
+          ? blocked.length +
+              " em uso. Os cadastros vinculados foram preservados."
+          : "Exclusão concluída.",
+      );
+    } catch (e) {
+      setResult(e instanceof Error ? e.message : "Não foi possível apagar.");
+    } finally {
+      setConfirm(false);
+      lock.current = false;
+      setBusy(false);
+    }
+  }
+  const singular =
+    category.key === "pecas"
+      ? "peça"
+      : category.key === "filamentos"
+        ? "filamento"
+        : category.key === "impressoras"
+          ? "impressora"
+          : "embalagem";
   const q = useApiQuery<{ itens?: Row[]; total?: number; tamanho?: number }>(
     "/catalogo/" +
       category.key +
@@ -92,6 +146,10 @@ function Listings({ category }: { category: Category }) {
         {...editor}
         onBack={() => setEditor(undefined)}
         onSaved={() => {
+          if (!editor.id) {
+            setPage(0);
+            setCreated(true);
+          }
           setEditor(undefined);
           setPiece(undefined);
           q.retry();
@@ -109,20 +167,22 @@ function Listings({ category }: { category: Category }) {
     );
   return (
     <ModuleScreen section="Seu catálogo" title={category.label}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 6 }}
-      >
-        {categories.map((c) => (
-          <Chip
-            key={c.key}
-            label={c.label}
-            selected={category === c}
-            onPress={() => router.setParams({ categoria: c.key })}
-          />
-        ))}
-      </ScrollView>
+      {!selecting && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 6 }}
+        >
+          {categories.map((c) => (
+            <Chip
+              key={c.key}
+              label={c.label}
+              selected={category === c}
+              onPress={() => router.setParams({ categoria: c.key })}
+            />
+          ))}
+        </ScrollView>
+      )}
       {mobile && (
         <ListSearch
           accessibilityLabel={"Pesquisar em " + category.label}
@@ -134,11 +194,103 @@ function Listings({ category }: { category: Category }) {
           }}
         />
       )}
-      {mobile ? (
-        <SiteButton label={"+ " + category.create} site={category.site} />
-      ) : (
-        <MenuRows entries={[{ label: category.create, site: category.site }]} />
-      )}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        {selecting ? (
+          <>
+            <Button
+              variant="secondary"
+              label="Cancelar"
+              onPress={cancelSelection}
+            />
+            <View style={{ flex: 1 }}>
+              <Body strong>{selected.length} na seleção</Body>
+            </View>
+            <Button
+              variant="danger"
+              label="Apagar"
+              disabled={!selected.length || busy}
+              onPress={() => setConfirm(true)}
+            />
+          </>
+        ) : (
+          <>
+            <View style={{ flex: 1 }}>
+              <Button
+                label={"+ " + category.create}
+                onPress={() => {
+                  setCreated(false);
+                  setResult("");
+                  setEditor({ purchase: false });
+                }}
+              />
+            </View>
+            <Button
+              variant="secondary"
+              label="Selecionar"
+              onPress={() => {
+                setCreated(false);
+                setResult("");
+                setSelecting(true);
+              }}
+            />
+          </>
+        )}
+      </View>
+      {!!result && <Body>{result}</Body>}
+      <Modal
+        visible={confirm}
+        animationType="fade"
+        transparent
+        onRequestClose={() => {
+          if (!busy) setConfirm(false);
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+            backgroundColor: "#24183580",
+          }}
+        >
+          <View style={{ width: "100%", maxWidth: 400 }}>
+            <Card>
+              <Body strong>
+                Apagar {selected.length}{" "}
+                {selected.length === 1
+                  ? singular
+                  : category.label.toLowerCase()}
+                ?
+              </Body>
+              <Body muted>
+                Esta ação não pode ser desfeita. Cadastros em uso serão
+                preservados.
+              </Body>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    label="Cancelar"
+                    variant="secondary"
+                    disabled={busy}
+                    onPress={() => setConfirm(false)}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    variant="danger"
+                    label="Apagar"
+                    busy={busy}
+                    disabled={busy}
+                    onPress={() => void remove()}
+                  />
+                </View>
+              </View>
+            </Card>
+          </View>
+        </View>
+      </Modal>
+      {created && <Body>Cadastro salvo.</Body>}
       {q.loading ? (
         <ActivityIndicator color={t.primaryText} />
       ) : q.error ? (
@@ -171,7 +323,39 @@ function Listings({ category }: { category: Category }) {
             </Card>
           )}
           {visible.map((row) =>
-            mobile ? (
+            selecting ? (
+              <Pressable
+                key={row.id}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected.includes(row.id!) }}
+                accessibilityLabel={row.nome}
+                disabled={!row.id}
+                onPress={() => toggle(row.id!)}
+              >
+                <Card
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    backgroundColor: selected.includes(row.id!)
+                      ? t.accentTint
+                      : t.surface,
+                  }}
+                >
+                  <Text style={{ fontSize: 23, color: t.primaryText }}>
+                    {selected.includes(row.id!) ? "☑" : "☐"}
+                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Body strong>{row.nome}</Body>
+                    {!!(row.cor || row.categoria || row.modelo) && (
+                      <Body muted>
+                        {row.cor || row.categoria || row.modelo}
+                      </Body>
+                    )}
+                  </View>
+                </Card>
+              </Pressable>
+            ) : mobile ? (
               <CatalogCard
                 onEdit={(purchase) => edit(row, purchase)}
                 key={row.id}
