@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Body, Button, Card, Notice, ValueRow } from "@/components/ui";
+import { Body, Button, Card, Chip, Notice, ValueRow } from "@/components/ui";
 import { ModuleScreen } from "@/components/module-screen";
+import { readable } from "@/theme/colors";
 import { useTheme } from "@/theme/provider";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { LotOperation } from "@/features/lot-operation";
@@ -38,18 +39,23 @@ function Toggle({
       accessibilityState={{ selected: active }}
       onPress={press}
       style={{
-        flexGrow: 1,
+        flex: 1,
         minHeight: 42,
         paddingHorizontal: 8,
         borderRadius: 11,
         borderWidth: 1,
-        borderColor: active ? "#44315f" : t.border,
-        backgroundColor: active ? "#44315f" : t.surface,
+        borderColor: active ? t.header : t.border,
+        backgroundColor: active ? t.header : t.surface,
         justifyContent: "center",
         alignItems: "center",
       }}
     >
-      <Text style={{ fontWeight: "700", color: active ? "#ffffff" : t.text }}>
+      <Text
+        style={{
+          fontWeight: "700",
+          color: active ? readable(t.header) : t.text,
+        }}
+      >
         {label}
       </Text>
     </Pressable>
@@ -197,12 +203,20 @@ export default function Planning() {
           }}
         >
           <View style={{ flexDirection: "row", gap: 5 }}>
-            <Toggle
+            <Chip
+              secondary
+              icon="file-text"
               label="Agenda"
-              active={!week}
-              press={() => setWeek(false)}
+              selected={!week}
+              onPress={() => setWeek(false)}
             />
-            <Toggle label="Semana" active={week} press={() => setWeek(true)} />
+            <Chip
+              secondary
+              icon="calendar3"
+              label="Semana"
+              selected={week}
+              onPress={() => setWeek(true)}
+            />
           </View>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             {shift(-7)}
@@ -299,8 +313,11 @@ export default function Planning() {
               </View>
               {groups
                 .filter((g) => g.items.length || (g.day === selected && picked))
-                .map(({ day, items }) => (
-                  <View key={day} style={{ gap: 8 }}>
+                .map(({ day, items }, index) => (
+                  <View
+                    key={day}
+                    style={{ gap: 8, marginTop: index > 0 ? 16 : 0 }}
+                  >
                     <Body strong>
                       {day === today
                         ? "Hoje · "

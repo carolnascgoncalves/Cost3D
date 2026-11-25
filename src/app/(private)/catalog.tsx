@@ -300,6 +300,8 @@ function Listings({ category }: { category: Category }) {
           {mobile && category.key === "filamentos" && (
             <View style={layout.row}>
               <Chip
+                secondary
+                icon="disc"
                 label={"Acabando (" + lowStock.length + ")"}
                 selected={lowOnly}
                 onPress={() => setLowOnly(!lowOnly)}

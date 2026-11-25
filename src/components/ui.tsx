@@ -1,3 +1,4 @@
+import { Icon, type IconName } from "./icon";
 import type { PropsWithChildren, ReactNode } from "react";
 import {
   ActivityIndicator,
@@ -327,34 +328,61 @@ export function Badge({
 export function Chip({
   label,
   selected,
+  secondary = false,
+  icon,
   onPress,
 }: {
   label: string;
   selected: boolean;
+  secondary?: boolean;
+  icon?: IconName;
   onPress: () => void;
 }) {
   const mobile = useWindowDimensions().width < 900;
   const t = useTheme();
+  const ink = secondary
+    ? t.text
+    : selected
+      ? mobile
+        ? t.onPrimary
+        : t.onAccent
+      : t.text;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
+      hitSlop={secondary ? { top: 4, bottom: 4 } : undefined}
       onPress={onPress}
       style={({ pressed }) => ({
-        minHeight: 44,
+        minHeight: secondary ? 34 : 44,
         justifyContent: "center",
-        borderRadius: 24,
+        alignItems: "center",
+        flexDirection: "row",
+        gap: 5,
+        borderRadius: secondary ? 9 : 24,
         paddingHorizontal: mobile ? 10 : 16,
-        paddingVertical: 10,
+        paddingVertical: secondary ? 5 : 10,
         borderWidth: 1,
-        borderColor: selected ? (mobile ? t.primary : t.accent) : t.border,
-        backgroundColor: selected ? (mobile ? t.primary : t.accent) : t.surface,
+        borderColor: selected
+          ? secondary
+            ? t.guide
+            : mobile
+              ? t.primary
+              : t.accent
+          : t.border,
+        backgroundColor: selected
+          ? secondary
+            ? t.selectionTint
+            : mobile
+              ? t.primary
+              : t.accent
+          : t.surface,
         opacity: pressed ? 0.7 : 1,
       })}
     >
       <Text
         style={{
-          color: selected ? (mobile ? t.onPrimary : t.onAccent) : t.text,
+          color: ink,
           fontSize: mobile ? 12 : 13,
           fontWeight: selected ? "700" : "400",
         }}

@@ -36,11 +36,15 @@ export function CustomerBudgets({ id }: { id: string }) {
       {mobile ? <Body strong>Orçamentos</Body> : <Heading title="Orçamentos" />}
       <View style={layout.row}>
         <Chip
+          secondary
+          icon="file-text"
           label="Atuais"
           selected={!archived}
           onPress={() => selectArchive(false)}
         />
         <Chip
+          secondary
+          icon="box"
           label="Arquivados"
           selected={archived}
           onPress={() => selectArchive(true)}

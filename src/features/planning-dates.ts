@@ -77,3 +77,22 @@ export function barRange(job: Job, start: string) {
     Math.max(0, Math.min(1, (stampMs(s) - begin) / (7 * dayMs)));
   return { left: fraction(job.inicio), right: fraction(job.fim) };
 }
+
+export function weekPrinters(agenda: Agenda) {
+  const groups = new Map<string, { id: string; nome: string; jobs: Job[] }>();
+  for (const printer of agenda.impressoras)
+    groups.set(printer.id, { ...printer, jobs: [] });
+  for (const job of agenda.trabalhos) {
+    let group = groups.get(job.impressoraId);
+    if (!group) {
+      group = { id: job.impressoraId, nome: job.impressora, jobs: [] };
+      groups.set(group.id, group);
+    }
+    group.jobs.push(job);
+  }
+  const printers = [...groups.values()];
+  return {
+    active: printers.filter((p) => p.jobs.length),
+    idle: printers.filter((p) => !p.jobs.length),
+  };
+}

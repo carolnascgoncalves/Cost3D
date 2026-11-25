@@ -32,3 +32,28 @@ test("a barra respeita os limites da semana e a posição dos horários", () => 
     0.5 / 7,
   );
 });
+
+test("impressoras livres ficam juntas após os trabalhos, inclusive quando há uma impressora arquivada na agenda", async () => {
+  const { weekPrinters } = await import("../src/features/planning-dates.ts");
+  const printer = (id) => ({ id, nome: id });
+  const job = (id, impressoraId) => ({
+    id,
+    impressoraId,
+    impressora: impressoraId,
+  });
+  const { active, idle } = weekPrinters({
+    impressoras: ["A", "B", "C"].map(printer),
+    trabalhos: [job("1", "B"), job("2", "D"), job("3", "B")],
+  });
+  assert.deepEqual(
+    active.map((p) => [p.id, p.jobs.map((j) => j.id)]),
+    [
+      ["B", ["1", "3"]],
+      ["D", ["2"]],
+    ],
+  );
+  assert.deepEqual(
+    idle.map((p) => p.id),
+    ["A", "C"],
+  );
+});

@@ -256,6 +256,8 @@ export default function Movements() {
                     (days === 30 && !filter.inicio && !filter.fim));
                 return (
                   <Chip
+                    secondary
+                    icon="calendar3"
                     key={label}
                     label={String(label)}
                     selected={selected}

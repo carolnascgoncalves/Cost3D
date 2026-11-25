@@ -64,10 +64,10 @@ export function createTheme(input?: {
   const surface = dark
     ? mix(background, "#FFFFFF", 0.92)
     : mix(background, "#FFFFFF", 0.08);
-  const text =
-    contrast(surface, "#422329") >= 4.5 ? "#422329" : readable(surface);
+  const ink = mix(primary, dark ? "#ffffff" : "#17151a", dark ? 0.25 : 0.52);
+  const text = contrast(surface, ink) >= 4.5 ? ink : readable(surface);
   const pageText =
-    contrast(background, "#422329") >= 4.5 ? "#422329" : readable(background);
+    contrast(background, ink) >= 4.5 ? ink : readable(background);
   return {
     header: primary,
     navInactive: mix(text, surface, 0.2),
@@ -84,6 +84,10 @@ export function createTheme(input?: {
     onAccent: readable(accent),
     primaryText: contrast(primary, surface) >= 4.5 ? primary : text,
     accentTint: mix(accent, surface, 0.2),
+    selectionTint: mix(primary, surface, 0.18),
+    guide: mix(primary, surface, 0.32),
+    chartColor:
+      contrast(primary, surface) >= 3 ? primary : mix(text, surface, 0.76),
     success: dark ? "#91D6A2" : "#27613A",
     danger: dark ? "#FFAAA5" : "#A23C37",
     dangerBackground: dark ? "#572626" : "#FBECEB",
