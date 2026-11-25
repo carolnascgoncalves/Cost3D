@@ -32,7 +32,7 @@ const sections: [string, MenuItem[]][] = [
   [
     "Produção e gestão",
     [
-      { label: "Planejar produção", site: "/simulacao", icon: "calendar3" },
+      { label: "Planejar produção", route: "/planning", icon: "calendar3" },
       { label: "Movimentações", route: "/movements", icon: "arrow-switch" },
       { label: "Custos extras", route: "/extra-costs", icon: "cash-coin" },
     ],

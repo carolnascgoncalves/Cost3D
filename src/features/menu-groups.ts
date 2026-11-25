@@ -37,7 +37,7 @@ export const groups: [string, Link[]][] = [
       { label: "Outras vendas", site: "/outras-vendas" },
     ],
   ],
-  ["Produção", [{ label: "Planejar produção", site: "/simulacao" }]],
+  ["Produção", [{ label: "Planejar produção", route: "/planning" }]],
   [
     "Gestão",
     [

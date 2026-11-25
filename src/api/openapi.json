@@ -2407,6 +2407,92 @@
           }
         ]
       }
+    },
+    "/api/v1/planejamentos": {
+      "get": {
+        "tags": ["api-planejamento-controller"],
+        "operationId": "semana",
+        "parameters": [
+          {
+            "name": "inicio",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "concluidos",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Agenda"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": ["api-planejamento-controller"],
+        "operationId": "criar",
+        "parameters": [
+          {
+            "name": "chave",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Novo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "date"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -4815,6 +4901,103 @@
             "type": "string"
           },
           "fonte": {
+            "type": "string"
+          }
+        }
+      },
+      "Novo": {
+        "type": "object",
+        "properties": {
+          "calculoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "unidades": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "capacidade": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "intervalo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "folga": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "Agenda": {
+        "type": "object",
+        "properties": {
+          "inicio": {
+            "type": "string",
+            "format": "date"
+          },
+          "impressoras": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Maquina"
+            }
+          },
+          "trabalhos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Trabalho"
+            }
+          }
+        }
+      },
+      "Trabalho": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "loteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pedidoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "impressoraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "impressora": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "inicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fim": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Maquina": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
             "type": "string"
           }
         }

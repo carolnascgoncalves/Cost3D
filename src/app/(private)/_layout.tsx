@@ -69,6 +69,7 @@ export default function PrivateLayout() {
       "/sales",
       "/calculate",
       "/dashboard",
+      "/planning",
       "/extra-costs",
       "/settings",
     ].includes(path)
@@ -115,6 +116,7 @@ function Shell({
           [
             "/customers",
             "/movements",
+            "/planning",
             "/extra-costs",
             "/account",
             "/settings",

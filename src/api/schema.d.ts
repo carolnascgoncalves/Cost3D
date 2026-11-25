@@ -646,5 +646,29 @@ export interface components {
       potenciaMaxima?: string;
       fonte?: string;
     };
+    Novo: {
+      calculoId?: string;
+      unidades?: number;
+      capacidade?: number;
+      inicio?: string;
+      intervalo?: number;
+      folga?: number;
+    };
+    Agenda: {
+      inicio?: string;
+      impressoras?: Array<components["schemas"]["Maquina"]>;
+      trabalhos?: Array<components["schemas"]["Trabalho"]>;
+    };
+    Trabalho: {
+      id?: string;
+      loteId?: string;
+      pedidoId?: string;
+      impressoraId?: string;
+      impressora?: string;
+      nome?: string;
+      inicio?: string;
+      fim?: string;
+    };
+    Maquina: { id?: string; nome?: string };
   };
 }
