@@ -5669,6 +5669,9 @@
           },
           "reposicao": {
             "type": "number"
+          },
+          "codigoCor": {
+            "type": "string"
           }
         }
       },

@@ -1,5 +1,9 @@
 import { Image } from "react-native";
 const icons = {
+  send: require("../../assets/images/catalogo/send.png"),
+  copy: require("../../assets/images/catalogo/copy.png"),
+  chat: require("../../assets/images/catalogo/chat.png"),
+
   envelope: require("../../assets/images/catalogo/envelope.png"),
   telephone: require("../../assets/images/catalogo/telephone.png"),
   "bar-chart": require("../../assets/images/catalogo/bar-chart.png"),

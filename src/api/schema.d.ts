@@ -763,6 +763,7 @@ export interface components {
       falta?: number;
       rolos?: number;
       reposicao?: number;
+      codigoCor?: string;
     };
     PedidoPrevisaoLinha: {
       itemId?: string;

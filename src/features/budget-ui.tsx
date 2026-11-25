@@ -68,11 +68,17 @@ export type Detail = {
   linhas: {
     impressoes: { inicio: string; fim: string; minutosFolga: number }[];
   }[];
-  ocupacoes: { inicio: string; fim: string }[];
+  ocupacoes: {
+    nome: string;
+    impressora: string;
+    inicio: string;
+    fim: string;
+  }[];
   materiais?: {
     materiais: {
       nome: string;
       cor: string;
+      codigoCor?: string;
       necessario: number;
       falta: number;
     }[];
@@ -198,16 +204,16 @@ export function Steps({ step }: { step: number }) {
                 left: "50%",
                 width: "100%",
                 height: 2,
-                top: 14,
+                top: 18,
                 backgroundColor: i < step ? t.header : t.border,
               }}
             />
           )}
           <View
             style={{
-              width: 29,
-              height: 29,
-              borderRadius: 15,
+              width: 37,
+              height: 37,
+              borderRadius: 19,
               borderWidth: i === step ? 2 : 0,
               borderColor: t.header,
               backgroundColor: i < step ? t.header : t.accentTint,
@@ -218,7 +224,7 @@ export function Steps({ step }: { step: number }) {
             {i < step ? (
               <Text style={{ color: t.onPrimary }}>✓</Text>
             ) : (
-              <Icon name={icon} size={13} color={t.text} />
+              <Icon name={icon} size={18} color={t.text} />
             )}
           </View>
           <Text

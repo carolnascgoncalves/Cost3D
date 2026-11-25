@@ -32,7 +32,6 @@ import { operationKey } from "./operation-key";
 import {
   Avatar,
   Metric,
-  PieceMark,
   Stepper,
   Steps,
   money,
@@ -43,6 +42,9 @@ import {
   type Line,
   type RefPiece,
 } from "./budget-ui";
+import { Icon, type IconName } from "@/components/icon";
+import { CalculationPhoto } from "./mobile-calculations";
+import { openProposal } from "./proposal-file";
 import { phone } from "./format";
 
 function initial(): DataForm {
@@ -79,6 +81,7 @@ function Amount({
     <Field
       label={label}
       optional={optional}
+      selectTextOnFocus
       keyboardType="decimal-pad"
       value={text}
       onChangeText={(s) => {
@@ -94,11 +97,14 @@ function Expand({
   title,
   note,
   children,
+  icon,
 }: {
   title: string;
+  icon?: IconName;
   note?: string;
   children: React.ReactNode;
 }) {
+  const t = useTheme();
   const [shown, set] = useState(false);
   return (
     <Card>
@@ -108,6 +114,7 @@ function Expand({
         onPress={() => set(!shown)}
         style={row}
       >
+        {icon && <Icon name={icon} color={t.primaryText} size={22} />}
         <View style={{ flex: 1 }}>
           <Body strong>{title}</Body>
           {!!note && <Body muted>{note}</Body>}
@@ -118,14 +125,46 @@ function Expand({
     </Card>
   );
 }
-function Duration({ minutes }: { minutes: number }) {
+function HourField({
+  label,
+  value,
+  change,
+}: {
+  label: string;
+  value: string;
+  change: (s: string) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
   return (
-    <Body strong>
-      {Math.floor(minutes / 60)} h {minutes % 60} min
-    </Body>
+    <Field
+      label={label}
+      keyboardType="number-pad"
+      selectTextOnFocus
+      placeholder="07:00"
+      value={draft ?? value.slice(0, 5)}
+      onChangeText={(s) => {
+        const digits = s.replace(/\D/g, "").slice(0, 4);
+        const padded = digits.padStart(4, "0");
+        const next = padded.slice(0, 2) + ":" + padded.slice(2);
+        setDraft(
+          digits.length > 2
+            ? digits.slice(0, -2) + ":" + digits.slice(-2)
+            : digits,
+        );
+        change(
+          digits.length >= 3 &&
+            Number(padded.slice(0, 2)) < 24 &&
+            Number(padded.slice(2)) < 60
+            ? next
+            : "",
+        );
+      }}
+      onBlur={() => {
+        if (value) setDraft(null);
+      }}
+    />
   );
 }
-
 export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
   const t = useTheme(),
     [saved, setSaved] = useState<Detail>(),
@@ -139,6 +178,10 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
     [confirmation, confirm] = useState(""),
     [customerSheet, customers] = useState(false),
     [search, find] = useState(""),
+    [selection, selectPieces] = useState<Line[] | null>(null),
+    [priceEdit, editPrice] = useState<{ i: number; value: number } | null>(
+      null,
+    ),
     [pieceSearch, findPiece] = useState(""),
     [page, setPage] = useState(0),
     [week, setWeek] = useState(() =>
@@ -342,12 +385,9 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
     void run(async () => {
       const d = readonly ? saved! : await persist();
       const msg = summaryText();
-      if (kind === "PDF" || kind === "frete")
-        return await openWebsite(
-          "/orcamentos/" +
-            d.resumo.id +
-            (kind === "PDF" ? "/proposta" : "/frete"),
-        );
+      if (kind === "PDF") return await openProposal(d);
+      if (kind === "frete")
+        return await openWebsite("/orcamentos/" + d.resumo.id + "/frete");
       if (kind === "Copiar mensagem") {
         if (Platform.OS === "web") await navigator.clipboard.writeText(msg);
         else Clipboard.setString(msg);
@@ -371,6 +411,20 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
     });
   const day = form.inicioPretendido.slice(0, 10),
     end = preview?.previsao,
+    occupied = preview?.ocupacoes ?? saved?.ocupacoes ?? [],
+    occupiedOn = (d: string) =>
+      occupied.filter(
+        (o) =>
+          o.inicio < addDays(d, 1) + "T00:00" &&
+          o.fim.slice(0, 19) > d + "T00:00:00",
+      ),
+    profit = preview?.resultado,
+    tone =
+      profit?.estado === "prejuizo"
+        ? ["#fff0ef", "#c15b54", "#8b2e28"]
+        : profit?.estado === "boa"
+          ? ["#e9f6eb", "#68a478", "#205b32"]
+          : ["#fff7de", "#c39a32", "#795618"],
     prints = preview?.linhas.flatMap((l) => l.impressoes ?? []) ?? [],
     duration = prints.reduce(
       (n, p) =>
@@ -490,53 +544,28 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                 </View>
               </Card>
             </Pressable>
-            <Field
-              label="Qual peça o cliente quer?"
-              value={pieceSearch}
-              onChangeText={findPiece}
-              placeholder="Nome, material ou impressora"
+            <Button
+              label={
+                lines.length ? "Alterar peças selecionadas" : "Selecionar peças"
+              }
+              variant="secondary"
+              onPress={() => {
+                findPiece("");
+                selectPieces([...lines]);
+              }}
             />
-            {refs.loading ? (
-              <ActivityIndicator />
-            ) : refs.error ? (
-              <Notice message={refs.error} onRetry={refs.retry} />
-            ) : !candidates.length ? (
-              <Body muted>Nenhuma peça encontrada.</Body>
-            ) : null}
-            {candidates.map(({ l, i, selected }) => (
-              <Card
-                key={l.id || l.referencia}
-                style={{ borderColor: selected ? t.primary : t.border }}
-              >
-                <Pressable
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: selected }}
-                  onPress={() =>
-                    selected
-                      ? setLines(lines.filter((_, k) => k !== i))
-                      : setLines([...lines, l])
-                  }
-                  style={row}
-                >
-                  <Text
-                    style={{
-                      backgroundColor: selected ? t.header : t.accentTint,
-                      color: t.onPrimary,
-                      width: 23,
-                      height: 23,
-                      lineHeight: 23,
-                      textAlign: "center",
-                      borderRadius: 5,
-                    }}
-                  >
-                    {selected ? "✓" : ""}
-                  </Text>
-                  <PieceMark />
+            {lines.map((l, i) => (
+              <Card key={l.id || l.referencia}>
+                <View style={row}>
+                  <CalculationPhoto
+                    id={l.referencia ?? undefined}
+                    name={l.nome}
+                  />
                   <View style={{ flex: 1 }}>
                     <Body strong>{l.nome}</Body>
                     <Body muted>{l.material}</Body>
                   </View>
-                </Pressable>
+                </View>
                 <Text
                   style={{
                     color: l.livre ? t.success : t.muted,
@@ -548,52 +577,50 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                 >
                   {l.livre} un. {l.livre === 1 ? "livre" : "livres"}
                 </Text>
-                {selected && (
-                  <>
-                    <Stepper
-                      label="Quantidade que o cliente quer"
-                      min={1}
-                      max={500}
-                      value={l.quantidade}
-                      change={(n) =>
-                        update(i, {
-                          quantidade: n,
-                          estoque: Math.min(l.estoque, n),
-                        })
-                      }
-                    />
-                    <Stepper
-                      label={
-                        "Usar do estoque (máx. " +
-                        Math.min(l.livre, l.quantidade) +
-                        ")"
-                      }
-                      value={l.estoque}
-                      max={Math.min(l.livre, l.quantidade)}
-                      change={(n) => update(i, { estoque: n })}
-                    />
+                <>
+                  <Stepper
+                    label="Quantidade que o cliente quer"
+                    min={1}
+                    max={500}
+                    value={l.quantidade}
+                    change={(n) =>
+                      update(i, {
+                        quantidade: n,
+                        estoque: Math.min(l.estoque, n),
+                      })
+                    }
+                  />
+                  <Stepper
+                    label={
+                      "Usar do estoque (máx. " +
+                      Math.min(l.livre, l.quantidade) +
+                      ")"
+                    }
+                    value={l.estoque}
+                    max={Math.min(l.livre, l.quantidade)}
+                    change={(n) => update(i, { estoque: n })}
+                  />
+                  <View
+                    style={{
+                      height: 5,
+                      backgroundColor: "#dba437",
+                      borderRadius: 4,
+                    }}
+                  >
                     <View
                       style={{
+                        width: ((l.estoque / l.quantidade) * 100 +
+                          "%") as `${number}%`,
                         height: 5,
-                        backgroundColor: "#dba437",
-                        borderRadius: 4,
+                        backgroundColor: t.success,
                       }}
-                    >
-                      <View
-                        style={{
-                          width: ((l.estoque / l.quantidade) * 100 +
-                            "%") as `${number}%`,
-                          height: 5,
-                          backgroundColor: t.success,
-                        }}
-                      />
-                    </View>
-                    <Body muted>
-                      {l.estoque} do estoque · {l.quantidade - l.estoque} a
-                      produzir
-                    </Body>
-                  </>
-                )}
+                    />
+                  </View>
+                  <Body muted>
+                    {l.estoque} do estoque · {l.quantidade - l.estoque} a
+                    produzir
+                  </Body>
+                </>
               </Card>
             ))}
           </>
@@ -654,13 +681,7 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                           color: d === day ? t.onPrimary : t.primary,
                         }}
                       >
-                        {preview?.ocupacoes.some(
-                          (o) =>
-                            o.inicio.slice(0, 10) <= d &&
-                            o.fim.slice(0, 10) >= d,
-                        )
-                          ? "●"
-                          : " "}
+                        {occupiedOn(d).length ? "●" : " "}
                       </Text>
                     </Pressable>
                   ),
@@ -672,11 +693,34 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                   <Body>›</Body>
                 </Pressable>
               </View>
-              <Field
+              <Body strong>Agenda de {dateLabel(day)}</Body>
+              {occupiedOn(day).length ? (
+                occupiedOn(day).map((o, i) => (
+                  <View
+                    key={i}
+                    style={{
+                      padding: 10,
+                      borderLeftWidth: 3,
+                      borderColor: t.primary,
+                      backgroundColor: t.accentTint,
+                    }}
+                  >
+                    <Body strong>{o.nome}</Body>
+                    <Body muted>
+                      {stamp(o.inicio)} até {stamp(o.fim)}
+                    </Body>
+                  </View>
+                ))
+              ) : (
+                <Body muted>
+                  Nenhuma produção agendada neste dia para as impressoras das
+                  peças.
+                </Body>
+              )}
+              <HourField
                 label="Horário de início"
                 value={form.inicioPretendido.slice(11)}
-                onChangeText={(v) => field("inicioPretendido", day + "T" + v)}
-                placeholder="08:00"
+                change={(v) => field("inicioPretendido", day + "T" + v)}
               />
             </Card>
             <Card>
@@ -716,32 +760,47 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
               </View>
               <Body muted>Dia 6h–18h · Impressão · Folga</Body>
             </Card>
-            <View style={row}>
-              <Card style={{ flex: 1 }}>
-                <Duration minutes={duration} />
-                <Body muted>Duração total</Body>
-              </Card>
-              <Card style={{ flex: 1 }}>
-                <Duration minutes={duration - buffer} />
-                <Body muted>Impressão</Body>
-              </Card>
-              <Metric label="Folga" value={form.folga + "%"} />
+            <View style={{ ...row, alignItems: "stretch" }}>
+              {[
+                ["Duração total", duration, t.accentTint],
+                ["Impressão", duration - buffer, t.selectionTint],
+                ["Folga", null, t.accentTint],
+              ].map(([label, mins, bg]) => (
+                <Card
+                  key={label}
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    padding: 9,
+                    backgroundColor: String(bg),
+                    justifyContent: "center",
+                  }}
+                >
+                  <Body strong>
+                    {typeof mins === "number"
+                      ? Math.floor(mins / 60) + " h " + (mins % 60) + " min"
+                      : form.folga + "%"}
+                  </Body>
+                  <Body muted>{label}</Body>
+                </Card>
+              ))}
             </View>
             <Expand
+              icon="clock-history"
               title="Expediente e início"
               note={
                 form.turnoInicio.slice(0, 5) + " – " + form.turnoFim.slice(0, 5)
               }
             >
-              <Field
+              <HourField
                 label="Início do expediente"
                 value={form.turnoInicio}
-                onChangeText={(v) => field("turnoInicio", v)}
+                change={(v) => field("turnoInicio", v)}
               />
-              <Field
+              <HourField
                 label="Fim do expediente"
                 value={form.turnoFim}
-                onChangeText={(v) => field("turnoFim", v)}
+                change={(v) => field("turnoFim", v)}
               />
               <View style={{ ...row, flexWrap: "wrap" }}>
                 {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map(
@@ -771,6 +830,7 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
               </View>
             </Expand>
             <Expand
+              icon="gear"
               title="Ajustes de segurança"
               note={
                 form.intervalo +
@@ -800,39 +860,67 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
             <Card>
               <Body strong>Desconto e frete</Body>
               <View style={row}>
-                <View style={{ flex: 1 }}>
-                  <Field
-                    optional
-                    label="Desconto (R$ ou %)"
-                    value={form.descontoInformado}
-                    onChangeText={(v) => field("descontoInformado", v)}
+                {["R$", "%"].map((unit) => (
+                  <Chip
+                    key={unit}
+                    label={unit}
+                    selected={
+                      (unit === "%") === form.descontoInformado.endsWith("%")
+                    }
+                    onPress={() =>
+                      field(
+                        "descontoInformado",
+                        form.descontoInformado.replace("%", "") +
+                          (unit === "%" ? "%" : ""),
+                      )
+                    }
                   />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Amount
-                    optional
-                    label="Frete cobrado (R$)"
-                    value={form.frete}
-                    change={(v) => field("frete", v)}
-                  />
-                </View>
+                ))}
               </View>
-              <Body muted>15 = R$ 15,00 · 15% = porcentagem</Body>
+              <Field
+                optional
+                label={
+                  form.descontoInformado.endsWith("%")
+                    ? "Desconto (%)"
+                    : "Desconto (R$)"
+                }
+                keyboardType="decimal-pad"
+                selectTextOnFocus
+                value={form.descontoInformado.replace("%", "")}
+                onChangeText={(v) => {
+                  if (/^\d{0,8}([.,]\d{0,2})?$/.test(v))
+                    field(
+                      "descontoInformado",
+                      v + (form.descontoInformado.endsWith("%") ? "%" : ""),
+                    );
+                }}
+              />
+              <Amount
+                optional
+                label="Frete cobrado (R$)"
+                value={form.frete}
+                change={(v) => field("frete", v)}
+              />
             </Card>
             {lines.map((l, i) => (
               <Card key={l.id || i}>
                 <View style={row}>
-                  <PieceMark />
+                  <CalculationPhoto
+                    id={l.referencia ?? undefined}
+                    name={l.nome}
+                  />
                   <View style={{ flex: 1 }}>
                     <Body strong>{l.nome}</Body>
                   </View>
                 </View>
                 <View style={row}>
                   <View style={{ flex: 1 }}>
-                    <Amount
-                      label="Preço por unidade (R$)"
-                      value={l.preco}
-                      change={(n) => update(i, { preco: n })}
+                    <Body muted>Preço por unidade</Body>
+                    <Button
+                      label={money(l.preco)}
+                      icon="pencil"
+                      variant="secondary"
+                      onPress={() => editPrice({ i, value: l.preco })}
                     />
                   </View>
                   <View>
@@ -889,11 +977,31 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                 </View>
               ))}
             </View>
-            {preview && <Body strong>{preview.resultado.titulo}</Body>}
-            <Body muted>
-              Vermelho: lucro ≤ 0 · amarelo: margem abaixo de 15% · verde: a
-              partir de 15%.
-            </Body>
+            {profit && (
+              <Card
+                style={{
+                  backgroundColor: tone[0],
+                  borderColor: tone[1],
+                  borderLeftWidth: 3,
+                }}
+              >
+                <Text style={{ color: tone[2], fontWeight: "700" }}>
+                  {profit.titulo}
+                </Text>
+                <Text style={{ color: tone[2] }}>
+                  Lucro estimado: {money(profit.lucro)} · Margem:{" "}
+                  {profit.margem.toLocaleString("pt-BR", {
+                    maximumFractionDigits: 1,
+                  })}
+                  %
+                </Text>
+                <Text style={{ color: tone[2] }}>
+                  Com os custos do cálculo, taxas, desconto e envio. Vermelho:
+                  lucro igual ou abaixo de zero. Amarelo: margem abaixo de 15%.
+                  Verde: a partir de 15%.
+                </Text>
+              </Card>
+            )}
             <Expand
               title="Meu custo de envio e cotação"
               note="Quanto você paga pelo transporte"
@@ -929,7 +1037,10 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
             </View>
             {lines.map((l, i) => (
               <Card key={l.id || i} style={row}>
-                <PieceMark />
+                <CalculationPhoto
+                  id={l.referencia ?? undefined}
+                  name={l.nome}
+                />
                 <View style={{ flex: 1 }}>
                   <Body strong>{l.nome}</Body>
                   <Body muted>
@@ -943,7 +1054,22 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
               <ValueRow label="Peças" value={money(subtotal)} />
               <ValueRow label="Desconto" value={money(discount)} />
               <ValueRow label="Frete cobrado" value={money(form.frete)} />
-              <ValueRow label="Total ao cliente" value={money(total)} />
+              <View
+                style={{
+                  ...row,
+                  justifyContent: "space-between",
+                  borderTopWidth: 1,
+                  borderColor: t.border,
+                  paddingTop: 10,
+                }}
+              >
+                <Body>Total ao cliente</Body>
+                <Text
+                  style={{ fontSize: 22, fontWeight: "700", color: t.text }}
+                >
+                  {money(total)}
+                </Text>
+              </View>
             </Card>
             <Card>
               <Body strong>Para onde vai o dinheiro</Body>
@@ -952,10 +1078,28 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                 value={money(preview?.custo ?? 0)}
               />
               <ValueRow label="Taxas" value={money(preview?.taxas ?? 0)} />
-              <ValueRow
-                label="Lucro estimado"
-                value={money(preview?.resultado.lucro ?? 0)}
-              />
+              <View
+                style={{
+                  ...row,
+                  justifyContent: "space-between",
+                  padding: 12,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: (profit?.lucro ?? 0) < 0 ? "#c15b54" : "#68a478",
+                  backgroundColor:
+                    (profit?.lucro ?? 0) < 0 ? "#fff0ef" : "#e9f6eb",
+                }}
+              >
+                <Body>Lucro estimado</Body>
+                <Text
+                  style={{
+                    fontWeight: "bold",
+                    color: (profit?.lucro ?? 0) < 0 ? "#8b2e28" : "#205b32",
+                  }}
+                >
+                  {money(profit?.lucro ?? 0)}
+                </Text>
+              </View>
             </Card>
             <Card>
               <Field
@@ -969,11 +1113,15 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
               />
             </Card>
             <Card>
-              <Body strong>Compartilhar com o cliente</Body>
+              <View style={row}>
+                <Icon name="send" size={21} color={t.primaryText} />
+                <Body strong>Compartilhar com o cliente</Body>
+              </View>
               <View style={row}>
                 {["WhatsApp", "PDF"].map((k, i) => (
                   <View key={k} style={{ flex: 1 }}>
                     <Button
+                      icon={i ? "file-text" : "chat"}
                       label={k}
                       variant={i ? "secondary" : "primary"}
                       disabled={busy}
@@ -986,29 +1134,56 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                 Abrir o WhatsApp não marca a proposta como enviada.
               </Body>
             </Card>
-            <Expand title="Outros canais" note="E-mail e copiar mensagem">
-              <Button
-                label="E-mail"
-                variant="secondary"
-                onPress={() => outbound("E-mail")}
-              />
-              <Button
-                label={copied ? "Mensagem copiada" : "Copiar mensagem"}
-                variant="secondary"
-                onPress={() => outbound("Copiar mensagem")}
-              />
+            <Expand
+              icon="send"
+              title="Outros canais"
+              note="E-mail e copiar mensagem"
+            >
+              <View style={{ ...row, alignItems: "stretch" }}>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    stretch
+                    icon="envelope"
+                    label="E-mail"
+                    variant="secondary"
+                    onPress={() => outbound("E-mail")}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    stretch
+                    icon="copy"
+                    label={copied ? "Copiado" : "Copiar mensagem"}
+                    variant="secondary"
+                    onPress={() => outbound("Copiar mensagem")}
+                  />
+                </View>
+              </View>
             </Expand>
-            <Expand title="Materiais e reposição" note="Uso interno">
+            <Expand icon="box" title="Materiais e reposição" note="Uso interno">
               {preview?.materiais?.materiais.map((m, i) => (
-                <ValueRow
-                  key={i}
-                  label={m.nome + " · " + m.cor}
-                  value={
-                    m.necessario +
-                    " g" +
-                    (m.falta > 0 ? " · faltam " + m.falta + " g" : "")
-                  }
-                />
+                <View key={i} style={row}>
+                  <View
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderWidth: 1,
+                      borderRadius: 8,
+                      borderColor: t.border,
+                      backgroundColor: m.codigoCor || t.accentTint,
+                    }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <ValueRow
+                      label={m.nome + " · " + m.cor}
+                      value={
+                        m.necessario +
+                        " g" +
+                        (m.falta > 0 ? " · faltam " + m.falta + " g" : "")
+                      }
+                    />
+                  </View>
+                </View>
               ))}
               {preview?.materiais ? (
                 <ValueRow
@@ -1094,9 +1269,17 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
             <Body>Total do orçamento</Body>
             <Body strong>{money(total)}</Body>
           </View>
-          <View style={{ ...row, paddingHorizontal: 16, paddingVertical: 9 }}>
+          <View
+            style={{
+              ...row,
+              alignItems: "stretch",
+              paddingHorizontal: 16,
+              paddingVertical: 9,
+            }}
+          >
             <View style={{ flex: 1 }}>
               <Button
+                stretch
                 variant="secondary"
                 disabled={busy}
                 label={
@@ -1120,9 +1303,16 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
             </View>
             <View style={{ flex: 1 }}>
               <Button
+                stretch
                 label={stage === 4 ? "Marcar como enviada" : "Continuar"}
                 busy={busy}
-                disabled={stage === 1 && !lines.length}
+                disabled={
+                  (stage === 1 && !lines.length) ||
+                  (stage === 2 &&
+                    (!form.turnoInicio ||
+                      !form.turnoFim ||
+                      !form.inicioPretendido.slice(11)))
+                }
                 onPress={() =>
                   stage === 4
                     ? void run(async () => {
@@ -1135,6 +1325,99 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
             </View>
           </View>
         </View>
+      )}
+      {selection && (
+        <PlanningSheet
+          title="Selecionar peças"
+          close={() => selectPieces(null)}
+          footer={
+            <Button
+              label={"Confirmar seleção (" + selection.length + ")"}
+              onPress={() => {
+                setLines(selection);
+                selectPieces(null);
+              }}
+            />
+          }
+        >
+          <Field
+            label="Buscar peça"
+            value={pieceSearch}
+            onChangeText={findPiece}
+            placeholder="Nome, material ou impressora"
+          />
+          {refs.loading && <ActivityIndicator />}
+          {refs.error && <Notice message={refs.error} onRetry={refs.retry} />}
+          {!refs.loading && !refs.error && !candidates.length && (
+            <Body muted>Nenhuma peça encontrada.</Body>
+          )}
+          {candidates.map(({ l }) => {
+            const key = l.id || l.referencia;
+            const checked = selection.some(
+              (x) => (x.id || x.referencia) === key,
+            );
+            return (
+              <Pressable
+                key={key}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked }}
+                disabled={!checked && selection.length >= 20}
+                onPress={() =>
+                  selectPieces(
+                    checked
+                      ? selection.filter((x) => (x.id || x.referencia) !== key)
+                      : [...selection, l],
+                  )
+                }
+                style={{
+                  ...row,
+                  padding: 10,
+                  borderRadius: 12,
+                  backgroundColor: checked ? t.selectionTint : t.surface,
+                }}
+              >
+                <CalculationPhoto
+                  id={l.referencia ?? undefined}
+                  name={l.nome}
+                />
+                <View style={{ flex: 1 }}>
+                  <Body strong>{l.nome}</Body>
+                  <Body muted>{l.material}</Body>
+                </View>
+                <Text style={{ color: t.primaryText, fontSize: 21 }}>
+                  {checked ? "☑" : "☐"}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </PlanningSheet>
+      )}
+      {priceEdit && (
+        <PlanningSheet
+          title="Editar preço por unidade"
+          close={() => editPrice(null)}
+        >
+          <Body strong>{lines[priceEdit.i].nome}</Body>
+          <Body muted>Preço atual · {money(lines[priceEdit.i].preco)}</Body>
+          <Amount
+            label="Novo preço por unidade (R$)"
+            value={priceEdit.value}
+            change={(v) => editPrice({ ...priceEdit, value: v })}
+          />
+          <Button
+            label="Confirmar novo preço"
+            disabled={priceEdit.value <= 0}
+            onPress={() => {
+              update(priceEdit.i, { preco: priceEdit.value });
+              editPrice(null);
+            }}
+          />
+          <Button
+            label="Cancelar"
+            variant="secondary"
+            onPress={() => editPrice(null)}
+          />
+        </PlanningSheet>
       )}
       {customerSheet && (
         <PlanningSheet title="Buscar cliente" close={() => customers(false)}>

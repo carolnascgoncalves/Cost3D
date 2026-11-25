@@ -20,7 +20,12 @@ export function PlanningSheet({
   title,
   close,
   children,
-}: PropsWithChildren<{ title: string; close: () => void }>) {
+  footer,
+}: PropsWithChildren<{
+  title: string;
+  close: () => void;
+  footer?: React.ReactNode;
+}>) {
   const t = useTheme(),
     insets = useSafeAreaInsets();
   return (
@@ -85,6 +90,7 @@ export function PlanningSheet({
           >
             {children}
           </FormScrollView>
+          {footer && <View style={{ paddingTop: 10 }}>{footer}</View>}
         </View>
       </View>
     </Modal>
