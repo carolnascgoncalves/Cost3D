@@ -1,6 +1,22 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { proposalDocument } from "../src/features/proposal-document.ts";
+import { proposalDocument, proposalMessage } from "../src/features/proposal-document.ts";
+
+test("mensagens usam os totais da proposta e só o WhatsApp recebe negrito", () => {
+  const proposal = {
+    resumo: { codigo: "0020", cliente: "Ana", total: 45 },
+    itens: [{ nome: "Suporte", quantidade: 2, preco: 20 }],
+    dados: { frete: 7, observacoes: "Retirada combinada." },
+    subtotal: 40, desconto: 2, custo: 11.99, previsao: "2026-12-02T14:30",
+  };
+  const whatsapp = proposalMessage(proposal, "Loja Exemplo", true);
+  const email = proposalMessage(proposal, "Loja Exemplo", false);
+  assert.match(whatsapp, /\*Total: R\$\s45,00\*/);
+  assert.match(email, /02\/12\/2026 às 14:30/);
+  assert.match(email, /Loja Exemplo/);
+  assert.match(email, /Desconto: −R\$\s2,00/);
+  assert.doesNotMatch(email, /\*|11,99/);
+});
 
 test("PDF de várias páginas preserva valores, texto acentuado e referências das páginas", () => {
   const bytes = proposalDocument({

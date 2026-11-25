@@ -2,6 +2,9 @@ import { FormScrollView } from "@/components/form-scroll";
 import { useState, useRef, type PropsWithChildren } from "react";
 import {
   Modal,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
   Pressable,
   ScrollView,
   Text,
@@ -21,16 +24,20 @@ export function PlanningSheet({
   close,
   children,
   footer,
+  header,
 }: PropsWithChildren<{
   title: string;
   close: () => void;
   footer?: React.ReactNode;
+  header?: React.ReactNode;
 }>) {
   const t = useTheme(),
     insets = useSafeAreaInsets();
   return (
     <Modal transparent animationType="slide" onRequestClose={close}>
-      <View
+      <KeyboardAvoidingView
+        enabled={Platform.OS === "ios"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{
           flex: 1,
           justifyContent: "flex-end",
@@ -38,7 +45,7 @@ export function PlanningSheet({
         }}
       >
         <Pressable
-          style={{ flex: 1 }}
+          style={StyleSheet.absoluteFill}
           accessibilityRole="button"
           accessibilityLabel="Fechar"
           onPress={close}
@@ -46,7 +53,9 @@ export function PlanningSheet({
         <View
           accessibilityViewIsModal
           style={{
-            maxHeight: "88%",
+            maxHeight: "90%",
+            height: header ? "88%" : undefined,
+            flexShrink: 1,
             backgroundColor: t.surface,
             borderTopLeftRadius: 22,
             borderTopRightRadius: 22,
@@ -84,7 +93,10 @@ export function PlanningSheet({
               <Text style={{ fontSize: 25, color: t.muted }}>×</Text>
             </Pressable>
           </View>
+          {header && <View style={{ paddingBottom: 8 }}>{header}</View>}
           <FormScrollView
+            automaticallyAdjustKeyboardInsets={false}
+            style={{ flexGrow: header ? 1 : 0, flexShrink: 1, minHeight: 0 }}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ gap: 12 }}
           >
@@ -92,7 +104,7 @@ export function PlanningSheet({
           </FormScrollView>
           {footer && <View style={{ paddingTop: 10 }}>{footer}</View>}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

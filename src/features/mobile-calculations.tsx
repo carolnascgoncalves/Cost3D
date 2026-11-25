@@ -1,3 +1,4 @@
+import { SearchEmpty } from "@/components/ui";
 import { FormScrollView } from "@/components/form-scroll";
 import { pickCalculationPhoto } from "./pick-calculation-photo";
 import {
@@ -546,7 +547,7 @@ export function Picker({
         onRequestClose={() => setOpen(false)}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={{
             flex: 1,
             justifyContent: "flex-end",
@@ -565,7 +566,7 @@ export function Picker({
               width: "100%",
               maxWidth: 640,
               alignSelf: "center",
-              maxHeight: "82%",
+              height: "80%",
               backgroundColor: t.surface,
               borderTopLeftRadius: 22,
               borderTopRightRadius: 22,
@@ -659,7 +660,16 @@ export function Picker({
                       ),
                   )}
                   {!q.data?.itens.length && (
-                    <Body muted>Nenhum item encontrado.</Body>
+                    <SearchEmpty
+                      message={
+                        {
+                          pecas: "Nenhuma peça encontrada.",
+                          filamentos: "Nenhum filamento encontrado.",
+                          impressoras: "Nenhuma impressora encontrada.",
+                          embalagens: "Nenhuma embalagem encontrada.",
+                        }[category]
+                      }
+                    />
                   )}
                   {(q.data?.total ?? 0) > 12 && (
                     <Pagination
@@ -820,11 +830,13 @@ export function CalculationHistory() {
             </Card>
           ))}
           {!q.data?.itens?.length && (
-            <Body muted>
-              {search
-                ? "Nenhum cálculo encontrado."
-                : "Você ainda não tem cálculos salvos."}
-            </Body>
+            <SearchEmpty
+              message={
+                search
+                  ? "Nenhum cálculo encontrado."
+                  : "Você ainda não tem cálculos salvos."
+              }
+            />
           )}
           {(q.data?.total ?? 0) > 12 && (
             <Pagination
@@ -1573,7 +1585,7 @@ export function CalculationForm({
                       width: "100%",
                       maxWidth: 640,
                       alignSelf: "center",
-                      maxHeight: "82%",
+                      height: "80%",
                       backgroundColor: t.surface,
                       borderTopLeftRadius: 22,
                       borderTopRightRadius: 22,

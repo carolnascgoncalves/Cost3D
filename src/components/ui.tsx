@@ -1,11 +1,11 @@
 import { FormScrollView, useRevealField } from "@/components/form-scroll";
 import { Icon, type IconName } from "./icon";
+import { BudgetKeyboard } from "./budget-keyboard";
 import type { PropsWithChildren, ReactNode } from "react";
 import {
   ActivityIndicator,
   Keyboard,
   Platform,
-  InputAccessoryView,
   Pressable,
   ScrollView,
   useWindowDimensions,
@@ -17,7 +17,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { useId, useState, useRef } from "react";
+import { useContext, useState, useRef } from "react";
 import { useTheme } from "@/theme/provider";
 export function Screen({
   children,
@@ -223,8 +223,9 @@ export function Field({
   trailing?: ReactNode;
 }) {
   const t = useTheme();
-  const accessory = useId();
+
   const input = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const { active: budget, onFieldFocus } = useContext(BudgetKeyboard);
   const reveal = useRevealField();
   const isOptional = optional || /\bopcional\b/i.test(label);
   const displayLabel = label
@@ -268,7 +269,7 @@ export function Field({
           {isOptional && <OptionalBadge />}
         </View>
         {labelAction}
-        {Platform.OS === "android" && focused && numeric && (
+        {Platform.OS !== "web" && focused && numeric && !budget && (
           <Pressable
             accessibilityRole="button"
             onPress={Keyboard.dismiss}
@@ -289,10 +290,10 @@ export function Field({
       <View>
         <TextInput
           ref={input}
-          returnKeyType={props.multiline ? "default" : "done"}
-          submitBehavior={props.multiline ? "newline" : "blurAndSubmit"}
-          inputAccessoryViewID={
-            Platform.OS === "ios" && numeric ? accessory : undefined
+          inputAccessoryViewButtonLabel={budget && numeric ? "↵" : undefined}
+          returnKeyType={props.multiline && !budget ? "default" : "done"}
+          submitBehavior={
+            props.multiline && !budget ? "newline" : "blurAndSubmit"
           }
           {...props}
           accessibilityLabel={
@@ -301,6 +302,7 @@ export function Field({
           }
           placeholderTextColor={t.muted}
           onFocus={(e) => {
+            onFieldFocus();
             setFocused(true);
             if (input.current) reveal(input.current);
             props.onFocus?.(e);
@@ -320,27 +322,6 @@ export function Field({
             style,
           ]}
         />
-        {Platform.OS === "ios" && numeric && (
-          <InputAccessoryView nativeID={accessory}>
-            <View
-              style={{
-                backgroundColor: t.surface,
-                alignItems: "flex-end",
-                paddingHorizontal: 16,
-              }}
-            >
-              <Pressable
-                accessibilityRole="button"
-                onPress={Keyboard.dismiss}
-                style={{ padding: 12 }}
-              >
-                <Text style={{ color: t.primaryText, fontWeight: "700" }}>
-                  Concluir
-                </Text>
-              </Pressable>
-            </View>
-          </InputAccessoryView>
-        )}
         {trailing && (
           <View
             style={{
@@ -498,6 +479,23 @@ export function Chip({
     </Pressable>
   );
 }
+export function SearchEmpty({ message }: { message: string }) {
+  const t = useTheme();
+  return (
+    <View
+      accessibilityLiveRegion="polite"
+      style={{
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+        gap: 8,
+      }}
+    >
+      <Icon name="search" size={24} color={t.muted} />
+      <Body muted>{message}</Body>
+    </View>
+  );
+}
 export function Empty({
   title,
   description,
@@ -508,6 +506,7 @@ export function Empty({
   const t = useTheme();
   return (
     <Card style={{ alignItems: "center", paddingVertical: 36 }}>
+      <Icon name="search" size={24} color={t.muted} />
       <Text
         style={{
           color: t.text,

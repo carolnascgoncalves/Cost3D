@@ -22,6 +22,7 @@ export function FormScrollView({
   children,
   onScroll,
   onLayout,
+  automaticallyAdjustKeyboardInsets = true,
   ...props
 }: ScrollViewProps) {
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null),
@@ -39,7 +40,7 @@ export function FormScrollView({
         if (delta > 0)
           scroll.current?.scrollTo({
             y: offset.current + delta,
-            animated: true,
+            animated: automaticallyAdjustKeyboardInsets,
           });
       });
     });
@@ -59,7 +60,7 @@ export function FormScrollView({
       <ScrollView
         ref={scroll}
         keyboardShouldPersistTaps="handled"
-        automaticallyAdjustKeyboardInsets
+        automaticallyAdjustKeyboardInsets={automaticallyAdjustKeyboardInsets}
         scrollEventThrottle={16}
         {...props}
         onScroll={(e) => {

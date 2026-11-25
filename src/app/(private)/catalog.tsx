@@ -1,3 +1,4 @@
+import { SearchEmpty } from "@/components/ui";
 import { ListSearch } from "@/components/list-search";
 import { CatalogEditor } from "@/features/catalog-editor";
 import { pieceCalculation } from "@/features/calculation-route";
@@ -315,13 +316,15 @@ function Listings({ category }: { category: Category }) {
           )}
           {!visible.length && (
             <Card>
-              <Body muted>
-                {lowOnly
-                  ? "Nenhum filamento acabando nesta página."
-                  : search
-                    ? "Nenhum cadastro encontrado."
-                    : "Nenhum cadastro nesta categoria."}
-              </Body>
+              <SearchEmpty
+                message={
+                  lowOnly
+                    ? "Nenhum filamento acabando nesta página."
+                    : search
+                      ? "Nenhum cadastro encontrado."
+                      : "Nenhum cadastro nesta categoria."
+                }
+              />
             </Card>
           )}
           {visible.map((row) =>

@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { formatHourInput } from "./budget-time";
+import { proposalMessage } from "./proposal-document";
+import { useStoreName } from "@/theme/provider";
+import { SearchEmpty } from "@/components/ui";
+import { useContext, useEffect, useRef, useState } from "react";
+import { BudgetKeyboard } from "@/components/budget-keyboard";
 import {
   ActivityIndicator,
   Clipboard,
@@ -143,21 +148,9 @@ function HourField({
       placeholder="07:00"
       value={draft ?? value.slice(0, 5)}
       onChangeText={(s) => {
-        const digits = s.replace(/\D/g, "").slice(0, 4);
-        const padded = digits.padStart(4, "0");
-        const next = padded.slice(0, 2) + ":" + padded.slice(2);
-        setDraft(
-          digits.length > 2
-            ? digits.slice(0, -2) + ":" + digits.slice(-2)
-            : digits,
-        );
-        change(
-          digits.length >= 3 &&
-            Number(padded.slice(0, 2)) < 24 &&
-            Number(padded.slice(2)) < 60
-            ? next
-            : "",
-        );
+        const result = formatHourInput(s, draft);
+        setDraft(result.display);
+        change(result.value);
       }}
       onBlur={() => {
         if (value) setDraft(null);
@@ -165,10 +158,22 @@ function HourField({
     />
   );
 }
-export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
+export function BudgetWizard({
+  id,
+  close,
+  startInDetails = false,
+}: {
+  id: string;
+  close: () => void;
+  startInDetails?: boolean;
+}) {
+  const { hidesFooter } = useContext(BudgetKeyboard);
   const t = useTheme(),
+    storeName = useStoreName(),
+    [confirmPrice, setConfirmPrice] = useState(false),
     [saved, setSaved] = useState<Detail>(),
     [preview, setPreview] = useState<Detail>(),
+    [detailOnly, setDetailOnly] = useState(startInDetails),
     [stage, setStage] = useState(0),
     [form, setForm] = useState<DataForm>(initial),
     [lines, setLines] = useState<Line[]>([]),
@@ -176,6 +181,7 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
     [busy, working] = useState(false),
     lock = useRef(false),
     [confirmation, confirm] = useState(""),
+    [editingPhase, setEditingPhase] = useState(false),
     [customerSheet, customers] = useState(false),
     [search, find] = useState(""),
     [selection, selectPieces] = useState<Line[] | null>(null),
@@ -196,7 +202,10 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
     id === "new" ? null : "/orcamentos/" + id,
   );
   const readonly =
-    !!saved && (saved.resumo.status !== "RASCUNHO" || saved.resumo.arquivado);
+    !!saved &&
+    (detailOnly ||
+      saved.resumo.status !== "RASCUNHO" ||
+      saved.resumo.arquivado);
   const refs = useApiQuery<RefPiece[]>(
     !readonly && stage === 1 ? "/orcamentos/pecas" : null,
   );
@@ -227,9 +236,14 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
     if (initialQuery.data) {
       apply(initialQuery.data);
       setStage(
-        initialQuery.data.resumo.status === "RASCUNHO" &&
+        !detailOnly &&
+          initialQuery.data.resumo.status === "RASCUNHO" &&
           !initialQuery.data.resumo.arquivado
-          ? 1
+          ? initialQuery.data.dados.cliente?.trim() &&
+            (initialQuery.data.dados.email?.trim() ||
+              initialQuery.data.dados.contato?.trim())
+            ? 1
+            : 0
           : 4,
       );
       setWeek(
@@ -245,7 +259,11 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
   }
   const body = JSON.stringify({
     revisao: saved?.resumo.revisao,
-    dados: form,
+    dados: {
+      ...form,
+      descontoInformado:
+        form.descontoInformado.trim().replace(/^R\$\s*/i, "") || "0",
+    },
     itens: lines.map((l) => ({
       id: l.id,
       referencia: l.referencia,
@@ -257,7 +275,16 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
   });
   const savedId = saved?.resumo.id;
   useEffect(() => {
-    if (!savedId || readonly || stage < 2 || stage > 3) return;
+    if (
+      !savedId ||
+      readonly ||
+      stage < 2 ||
+      stage > 3 ||
+      !form.turnoInicio ||
+      !form.turnoFim ||
+      !form.inicioPretendido.slice(11)
+    )
+      return;
     let active = true;
     const timer = setTimeout(() => {
       request<Detail>("/orcamentos/" + savedId + "/previa", {
@@ -284,12 +311,28 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
   }, [body, savedId, stage, readonly]);
   const subtotal = lines.reduce((n, l) => n + l.preco * l.quantidade, 0);
   const rawDiscount =
-      parseFloat((form.descontoInformado || "0").replace(",", ".")) || 0,
-    discount = form.descontoInformado?.endsWith("%")
+      parseFloat(
+        (form.descontoInformado || "0")
+          .replace(/^\s*R\$\s*/i, "")
+          .replace(",", "."),
+      ) || 0,
+    discount = form.descontoInformado?.trim().endsWith("%")
       ? Math.round(subtotal * rawDiscount) / 100
       : rawDiscount;
   const total = subtotal - discount + Number(form.frete || 0);
+  function requireClient() {
+    if (
+      !form.cliente.trim() ||
+      !(form.email.trim() || form.contato.replace(/\D/g, ""))
+    ) {
+      setStage(0);
+      throw Error(
+        "Informe o nome e pelo menos um contato: telefone ou e-mail.",
+      );
+    }
+  }
   async function persist(send = false) {
+    requireClient();
     if (!saved) {
       const data = JSON.stringify({
         cliente: form.cliente,
@@ -336,6 +379,7 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
   }
   function advance() {
     void run(async () => {
+      requireClient();
       if (stage > 0) {
         if (!lines.length) throw Error("Selecione ao menos uma peça.");
         await persist();
@@ -344,6 +388,8 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
     });
   }
   function back() {
+    editPrice(null);
+    setConfirmPrice(false);
     if (readonly || stage === 0) {
       close();
       return;
@@ -364,28 +410,18 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
     );
     confirm("");
     apply(d);
-    if (name === "revisar") setStage(1);
+    if (d.resumo.status === "RASCUNHO") {
+      setDetailOnly(false);
+      setStage(0);
+    }
+    setEditingPhase(false);
     if (name === "cancelar") close();
   }
-  const summaryText = () =>
-    [
-      saved?.resumo.titulo,
-      form.cliente,
-      ...lines.map(
-        (l) =>
-          l.quantidade + " × " + l.nome + " · " + money(l.preco * l.quantidade),
-      ),
-      "Total " + money(total),
-      "Previsão " + stamp(preview?.previsao),
-      form.observacoes,
-    ]
-      .filter(Boolean)
-      .join("\n");
   const outbound = (kind: string) =>
     void run(async () => {
       const d = readonly ? saved! : await persist();
-      const msg = summaryText();
-      if (kind === "PDF") return await openProposal(d);
+      const msg = proposalMessage(d, storeName, kind === "WhatsApp");
+      if (kind === "PDF") return await openProposal(d, storeName);
       if (kind === "frete")
         return await openWebsite("/orcamentos/" + d.resumo.id + "/frete");
       if (kind === "Copiar mensagem") {
@@ -404,7 +440,12 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
           : "mailto:" +
               encodeURIComponent(form.email || "") +
               "?subject=" +
-              encodeURIComponent(d.resumo.titulo) +
+              encodeURIComponent(
+                "Proposta #" +
+                  d.resumo.codigo.replace(/^#/, "") +
+                  " · " +
+                  storeName,
+              ) +
               "&body=" +
               encodeURIComponent(msg),
       );
@@ -435,6 +476,34 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
       0,
     ),
     buffer = prints.reduce((n, p) => n + p.minutosFolga, 0);
+  const phases = [
+    ["rascunho", "Rascunho"],
+    ["enviado", "Enviada ao cliente"],
+    ["produzir", "A produzir"],
+    ["pronto", "Pronto para entregar"],
+    ["pago", "Pago"],
+  ];
+  const rank =
+    saved?.resumo.status === "ENTREGUE"
+      ? 5
+      : saved?.resumo.pago
+        ? 4
+        : saved?.resumo.status === "ENVIADO"
+          ? 1
+          : lines.every((l) => l.pronto)
+            ? 3
+            : 2;
+  const earlier = phases
+    .slice(0, rank)
+    .filter(
+      ([key]) =>
+        (key !== "pago" || saved?.resumo.pago) &&
+        (key !== "produzir" || lines.some((l) => l.quantidade > l.estoque)) &&
+        (key !== "pronto" || lines.every((l) => l.pronto)),
+    );
+  const expected = preview?.linhas.find(
+    (l) => l.itemId === confirmation.split("/")[1],
+  )?.fim;
   const view = stage === 0 || stage === 1 ? 0 : stage - 1;
   const candidates = [
     ...lines.map((l, i) => ({ l, i, selected: true })),
@@ -477,6 +546,7 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
     <View style={{ flex: 1 }}>
       <ModuleScreen
         key={stage}
+        automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
         lightHeader
         section="Orçamentos"
         title={
@@ -494,7 +564,9 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
           <>
             <Card>
               <Body strong>Para quem é o orçamento?</Body>
-              <Body muted>Busque um cliente ou preencha abaixo.</Body>
+              <Body muted>
+                Informe o nome e pelo menos um contato: telefone ou e-mail.
+              </Body>
               <Button
                 label="Buscar cliente"
                 variant="secondary"
@@ -503,14 +575,12 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
             </Card>
             <Card>
               <Field
-                optional
                 label="Nome do cliente"
                 value={form.cliente}
                 onChangeText={(v) => field("cliente", v)}
-                placeholder="Pode preencher depois"
+                placeholder="Nome do cliente"
               />
               <Field
-                optional
                 label="Telefone / WhatsApp"
                 value={form.contato}
                 onChangeText={(v) => field("contato", v)}
@@ -518,7 +588,6 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                 placeholder="Telefone com DDD"
               />
               <Field
-                optional
                 label="E-mail"
                 value={form.email}
                 onChangeText={(v) => field("email", v)}
@@ -693,7 +762,10 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                   <Body>›</Body>
                 </Pressable>
               </View>
-              <Body strong>Agenda de {dateLabel(day)}</Body>
+              <View style={row}>
+                <Icon name="calendar3" color={t.primaryText} />
+                <Body strong>Agenda de {dateLabel(day)}</Body>
+              </View>
               {occupiedOn(day).length ? (
                 occupiedOn(day).map((o, i) => (
                   <View
@@ -705,7 +777,12 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                       backgroundColor: t.accentTint,
                     }}
                   >
-                    <Body strong>{o.nome}</Body>
+                    <View style={row}>
+                      <Icon name="printer" color={t.primaryText} size={17} />
+                      <View style={{ flex: 1 }}>
+                        <Body strong>{o.nome}</Body>
+                      </View>
+                    </View>
                     <Body muted>
                       {stamp(o.inicio)} até {stamp(o.fim)}
                     </Body>
@@ -722,6 +799,9 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                 value={form.inicioPretendido.slice(11)}
                 change={(v) => field("inicioPretendido", day + "T" + v)}
               />
+              <Body muted>
+                A previsão considera o expediente e os trabalhos já agendados.
+              </Body>
             </Card>
             <Card>
               <Body muted>Previsão concluída</Body>
@@ -859,42 +939,18 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
           <>
             <Card>
               <Body strong>Desconto e frete</Body>
-              <View style={row}>
-                {["R$", "%"].map((unit) => (
-                  <Chip
-                    key={unit}
-                    label={unit}
-                    selected={
-                      (unit === "%") === form.descontoInformado.endsWith("%")
-                    }
-                    onPress={() =>
-                      field(
-                        "descontoInformado",
-                        form.descontoInformado.replace("%", "") +
-                          (unit === "%" ? "%" : ""),
-                      )
-                    }
-                  />
-                ))}
-              </View>
               <Field
                 optional
-                label={
-                  form.descontoInformado.endsWith("%")
-                    ? "Desconto (%)"
-                    : "Desconto (R$)"
-                }
-                keyboardType="decimal-pad"
+                label="Desconto (R$ ou %)"
+                value={form.descontoInformado}
                 selectTextOnFocus
-                value={form.descontoInformado.replace("%", "")}
-                onChangeText={(v) => {
-                  if (/^\d{0,8}([.,]\d{0,2})?$/.test(v))
-                    field(
-                      "descontoInformado",
-                      v + (form.descontoInformado.endsWith("%") ? "%" : ""),
-                    );
-                }}
+                placeholder="Ex.: R$ 15 ou 15%"
+                onChangeText={(v) => field("descontoInformado", v)}
               />
+              <Body muted>
+                Digite R$ 15 para um valor fixo ou 15% para um desconto
+                percentual.
+              </Body>
               <Amount
                 optional
                 label="Frete cobrado (R$)"
@@ -916,18 +972,43 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                 <View style={row}>
                   <View style={{ flex: 1 }}>
                     <Body muted>Preço por unidade</Body>
-                    <Button
-                      label={money(l.preco)}
-                      icon="pencil"
-                      variant="secondary"
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={"Editar preço de " + l.nome}
                       onPress={() => editPrice({ i, value: l.preco })}
-                    />
+                      style={{ ...row, minHeight: 44 }}
+                    >
+                      <Body strong>{money(l.preco)}</Body>
+                      <Icon name="pencil" color={t.primaryText} size={17} />
+                    </Pressable>
                   </View>
                   <View>
                     <Body muted>Subtotal</Body>
                     <Body strong>{money(l.preco * l.quantidade)}</Body>
                   </View>
                 </View>
+                {priceEdit?.i === i && (
+                  <View style={{ gap: 8 }}>
+                    <Amount
+                      label="Novo preço por unidade (R$)"
+                      value={priceEdit.value}
+                      change={(v) => editPrice({ i, value: v })}
+                    />
+                    <Button
+                      label="Revisar alteração"
+                      disabled={priceEdit.value <= 0}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        setConfirmPrice(true);
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      label="Cancelar edição"
+                      onPress={() => editPrice(null)}
+                    />
+                  </View>
+                )}
               </Card>
             ))}
             <View style={row}>
@@ -1149,7 +1230,7 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                     onPress={() => outbound("E-mail")}
                   />
                 </View>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1.65 }}>
                   <Button
                     stretch
                     icon="copy"
@@ -1205,30 +1286,96 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
             )}
             {readonly && saved && !saved.resumo.arquivado && (
               <Card>
-                <Body strong>{saved.resumo.situacao}</Body>
+                <View style={{ ...row, justifyContent: "space-between" }}>
+                  <Body strong>{saved.resumo.situacao}</Body>
+                  {saved.resumo.status === "RASCUNHO" && (
+                    <Button
+                      label="Editar proposta"
+                      icon="pencil"
+                      onPress={() => {
+                        setDetailOnly(false);
+                        setStage(0);
+                      }}
+                    />
+                  )}
+                  {saved.resumo.status !== "RASCUNHO" &&
+                    saved.resumo.status !== "CANCELADO" && (
+                      <Button
+                        label="Editar fase"
+                        icon="pencil"
+                        variant="secondary"
+                        onPress={() => setEditingPhase(true)}
+                      />
+                    )}
+                </View>
                 {saved.resumo.status === "ENVIADO" && (
                   <>
                     <Button
                       label="Aprovar pedido"
                       onPress={() => confirm("aprovar")}
                     />
-                    <Button
-                      label="Revisar proposta"
-                      variant="secondary"
-                      onPress={() => confirm("revisar")}
-                    />
                   </>
                 )}
-                {["APROVADO", "PRONTO"].includes(saved.resumo.status) &&
-                  lines
-                    .filter((l) => !l.pronto)
-                    .map((l) => (
-                      <Button
-                        key={l.id}
-                        label={"Registrar produção · " + l.nome}
-                        onPress={() => confirm("produzir/" + l.id)}
-                      />
-                    ))}
+                {["APROVADO", "PRONTO", "ENTREGUE"].includes(
+                  saved.resumo.status,
+                ) && (
+                  <>
+                    <Card style={{ backgroundColor: t.accentTint }}>
+                      <Body strong>Peças para produzir</Body>
+                      {lines
+                        .filter((l) => !l.pronto)
+                        .map((l, index) => (
+                          <View
+                            key={l.id}
+                            style={{
+                              gap: 6,
+                              borderTopWidth: index ? 1 : 0,
+                              borderColor: t.border,
+                              paddingTop: index ? 12 : 0,
+                              paddingBottom: 4,
+                            }}
+                          >
+                            <Body>
+                              {l.nome} · {l.quantidade - l.estoque} un.
+                            </Body>
+                            <Button
+                              label="Registrar produção"
+                              icon="printer"
+                              disabled={busy}
+                              onPress={() => confirm("produzir/" + l.id)}
+                            />
+                          </View>
+                        ))}
+                      {lines.every((l) => l.pronto) && (
+                        <Body muted>Nenhuma peça pendente.</Body>
+                      )}
+                    </Card>
+                    <Card>
+                      <Body strong>Peças produzidas</Body>
+                      {lines
+                        .filter((l) => l.pronto || l.estoque > 0)
+                        .map((l, index) => (
+                          <View
+                            key={l.id}
+                            style={{
+                              borderTopWidth: index ? 1 : 0,
+                              borderColor: t.border,
+                              paddingTop: index ? 10 : 0,
+                              paddingBottom: 4,
+                            }}
+                          >
+                            <Body>
+                              {l.nome} · {l.pronto ? l.quantidade : l.estoque}{" "}
+                              un.
+                            </Body>
+                          </View>
+                        ))}
+                      {lines.every((l) => !l.pronto && !l.estoque) && (
+                        <Body muted>Nenhuma peça produzida ainda.</Body>
+                      )}
+                    </Card>
+                  </>
+                )}
                 {saved.resumo.situacao === "Pronto para entregar" && (
                   <Button
                     label="Registrar entrega"
@@ -1240,7 +1387,9 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                     saved.resumo.status,
                   ) && (
                     <Button
+                      icon="cash-coin"
                       label="Registrar pagamento"
+                      disabled={!lines.length || lines.some((l) => !l.pronto)}
                       onPress={() => confirm("pagar")}
                     />
                   )}
@@ -1249,7 +1398,7 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
           </>
         )}
       </ModuleScreen>
-      {!readonly && (
+      {!readonly && !hidesFooter && (
         <View
           style={{
             backgroundColor: t.surface,
@@ -1304,9 +1453,10 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
             <View style={{ flex: 1 }}>
               <Button
                 stretch
-                label={stage === 4 ? "Marcar como enviada" : "Continuar"}
+                label={stage === 4 ? "Já enviei ao cliente" : "Continuar"}
                 busy={busy}
                 disabled={
+                  (stage === 3 && priceEdit !== null) ||
                   (stage === 1 && !lines.length) ||
                   (stage === 2 &&
                     (!form.turnoInicio ||
@@ -1328,6 +1478,14 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
       )}
       {selection && (
         <PlanningSheet
+          header={
+            <Field
+              label="Buscar peça"
+              value={pieceSearch}
+              onChangeText={findPiece}
+              placeholder="Nome, material ou impressora"
+            />
+          }
           title="Selecionar peças"
           close={() => selectPieces(null)}
           footer={
@@ -1340,16 +1498,10 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
             />
           }
         >
-          <Field
-            label="Buscar peça"
-            value={pieceSearch}
-            onChangeText={findPiece}
-            placeholder="Nome, material ou impressora"
-          />
           {refs.loading && <ActivityIndicator />}
           {refs.error && <Notice message={refs.error} onRetry={refs.retry} />}
           {!refs.loading && !refs.error && !candidates.length && (
-            <Body muted>Nenhuma peça encontrada.</Body>
+            <SearchEmpty message="Nenhuma peça encontrada." />
           )}
           {candidates.map(({ l }) => {
             const key = l.id || l.referencia;
@@ -1392,43 +1544,47 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
           })}
         </PlanningSheet>
       )}
-      {priceEdit && (
+      {priceEdit && confirmPrice && (
         <PlanningSheet
+          footer={
+            <Button
+              label="Confirmar novo preço"
+              disabled={priceEdit.value <= 0}
+              onPress={() => {
+                update(priceEdit.i, { preco: priceEdit.value });
+                editPrice(null);
+                setConfirmPrice(false);
+              }}
+            />
+          }
           title="Editar preço por unidade"
-          close={() => editPrice(null)}
+          close={() => setConfirmPrice(false)}
         >
           <Body strong>{lines[priceEdit.i].nome}</Body>
           <Body muted>Preço atual · {money(lines[priceEdit.i].preco)}</Body>
-          <Amount
-            label="Novo preço por unidade (R$)"
-            value={priceEdit.value}
-            change={(v) => editPrice({ ...priceEdit, value: v })}
-          />
-          <Button
-            label="Confirmar novo preço"
-            disabled={priceEdit.value <= 0}
-            onPress={() => {
-              update(priceEdit.i, { preco: priceEdit.value });
-              editPrice(null);
-            }}
-          />
+          <Body strong>Novo preço · {money(priceEdit.value)}</Body>
           <Button
             label="Cancelar"
             variant="secondary"
-            onPress={() => editPrice(null)}
+            onPress={() => setConfirmPrice(false)}
           />
         </PlanningSheet>
       )}
       {customerSheet && (
-        <PlanningSheet title="Buscar cliente" close={() => customers(false)}>
-          <Field
-            label="Nome, telefone ou e-mail"
-            value={search}
-            onChangeText={(v) => {
-              find(v);
-              setPage(0);
-            }}
-          />
+        <PlanningSheet
+          header={
+            <Field
+              label="Nome, telefone ou e-mail"
+              value={search}
+              onChangeText={(v) => {
+                find(v);
+                setPage(0);
+              }}
+            />
+          }
+          title="Buscar cliente"
+          close={() => customers(false)}
+        >
           {clients.loading ? (
             <ActivityIndicator />
           ) : clients.error ? (
@@ -1449,7 +1605,12 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                         contato: c.telefone || "",
                       });
                       customers(false);
-                      setStage(1);
+                      setStage(
+                        c.nome?.trim() &&
+                          (c.email?.trim() || c.telefone?.trim())
+                          ? 1
+                          : 0,
+                      );
                     }}
                   >
                     <Avatar name={c.nome} />
@@ -1461,6 +1622,11 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
                 ),
             )
           )}
+          {!clients.loading &&
+            !clients.error &&
+            !clients.data?.clientes?.itens?.length && (
+              <SearchEmpty message="Nenhum cliente encontrado." />
+            )}
           <Pagination
             page={page}
             total={clients.data?.clientes?.total ?? 0}
@@ -1468,21 +1634,56 @@ export function BudgetWizard({ id, close }: { id: string; close: () => void }) {
           />
         </PlanningSheet>
       )}
+      {editingPhase && !confirmation && saved && (
+        <PlanningSheet
+          title="Voltar para uma fase anterior"
+          close={() => setEditingPhase(false)}
+        >
+          {earlier.map(([key, label]) => (
+            <Button
+              key={key}
+              label={label}
+              variant="secondary"
+              onPress={() => confirm("voltar-" + key)}
+            />
+          ))}
+        </PlanningSheet>
+      )}
       {!!confirmation && (
         <PlanningSheet title="Confirmar alteração" close={() => confirm("")}>
           <Body>
-            {
-              (
-                {
-                  cancelar: "Cancelar este rascunho?",
-                  aprovar: "Aprovar o pedido e reservar as peças?",
-                  revisar: "Voltar esta proposta para rascunho?",
-                  entregar: "Registrar a entrega do pedido?",
-                  pagar: "Registrar o pagamento do pedido?",
-                  produzir: "Confirmar a produção deste item?",
-                } as Record<string, string>
-              )[confirmation.split("/")[0]]
-            }
+            {confirmation.startsWith("voltar-")
+              ? "Voltar para " +
+                phases.find(([k]) => "voltar-" + k === confirmation)?.[1] +
+                "? " +
+                (confirmation === "voltar-pago"
+                  ? "A entrega será desmarcada e o pagamento mantido."
+                  : (saved?.resumo.pago
+                      ? "O registro do pagamento e as vendas vinculadas serão estornados. "
+                      : "") +
+                    (confirmation === "voltar-produzir"
+                      ? "As produções deste pedido serão reabertas."
+                      : ["voltar-rascunho", "voltar-enviado"].includes(
+                            confirmation,
+                          )
+                        ? "Os planejamentos serão cancelados e as peças já produzidas ficarão no estoque."
+                        : "As peças continuarão reservadas."))
+              : confirmation.startsWith("produzir/") &&
+                  expected &&
+                  expected.slice(0, 16) > localNow().slice(0, 16)
+                ? "A impressão está prevista para terminar em " +
+                  stamp(expected) +
+                  ". Confirme apenas se a peça já saiu da impressora. Registrar a produção agora?"
+                : (
+                    {
+                      cancelar: "Cancelar este rascunho?",
+                      aprovar: "Aprovar o pedido e reservar as peças?",
+                      revisar: "Voltar esta proposta para rascunho?",
+                      entregar: "Registrar a entrega do pedido?",
+                      pagar: "Registrar o pagamento do pedido?",
+                      produzir: "Confirmar a produção deste item?",
+                    } as Record<string, string>
+                  )[confirmation.split("/")[0]]}
           </Body>
           {!!error && <Notice message={error} />}
           <Button

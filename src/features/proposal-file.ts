@@ -1,12 +1,25 @@
+import { toByteArray } from "base64-js";
+import { request } from "@/api/session";
 import { Directory, File, Paths } from "expo-file-system";
 import { Platform } from "react-native";
 import { proposalDocument } from "./proposal-document";
 import type { Detail } from "./budget-ui";
 
-export async function openProposal(proposal: Detail) {
+export async function openProposal(proposal: Detail, store: string) {
   const name =
     "Proposta-" + proposal.resumo.codigo.replace(/[^a-z0-9-]/gi, "") + ".pdf";
-  const bytes = proposalDocument(proposal);
+  const photos: Record<string, string> = {};
+  for (const item of proposal.itens) {
+    if (!item.id) continue;
+    const thumbnail = await request<{ base64: string } | undefined>(
+      "/orcamentos/itens/" + encodeURIComponent(item.id) + "/miniatura",
+    );
+    if (thumbnail?.base64)
+      photos[item.id] = Array.from(toByteArray(thumbnail.base64), (byte) =>
+        byte.toString(16).padStart(2, "0"),
+      ).join("");
+  }
+  const bytes = proposalDocument(proposal, store, photos);
   if (Platform.OS === "web") {
     const url = URL.createObjectURL(
       new Blob([bytes], { type: "application/pdf" }),

@@ -88,6 +88,7 @@ export function ModuleScreen({
   lightHeader,
   fillContent = false,
   refreshControl,
+  automaticallyAdjustKeyboardInsets,
 }: PropsWithChildren<{
   section: string;
   title: string;
@@ -95,6 +96,7 @@ export function ModuleScreen({
   lightHeader?: boolean;
   fillContent?: boolean;
   refreshControl?: ScrollViewProps["refreshControl"];
+  automaticallyAdjustKeyboardInsets?: boolean;
 }>) {
   const wide = useWindowDimensions().width >= 900;
   useFocusEffect(
@@ -119,6 +121,7 @@ export function ModuleScreen({
         lightHeader={lightHeader}
       />
       <FormScrollView
+        automaticallyAdjustKeyboardInsets={automaticallyAdjustKeyboardInsets}
         refreshControl={refreshControl}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{

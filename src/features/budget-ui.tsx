@@ -66,6 +66,8 @@ export type Detail = {
   resultado: { estado: string; titulo: string; lucro: number; margem: number };
   previsao?: string;
   linhas: {
+    itemId?: string;
+    fim?: string;
     impressoes: { inicio: string; fim: string; minutosFolga: number }[];
   }[];
   ocupacoes: {

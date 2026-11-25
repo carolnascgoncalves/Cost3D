@@ -1,3 +1,4 @@
+import { SearchEmpty } from "@/components/ui";
 import { ColorWheel } from "@/components/color-wheel";
 import { useRef, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
@@ -407,6 +408,12 @@ function Form({
         />
         {key === "categoria" && focused === key && (
           <View style={layout.row}>
+            {!!values[key] &&
+              !suggestions.some((c) =>
+                c.toLowerCase().includes(values[key].toLowerCase()),
+              ) && (
+                <SearchEmpty message="Nenhuma categoria encontrada. Você pode usar a categoria digitada." />
+              )}
             {suggestions
               .filter((c) =>
                 c.toLowerCase().includes(values[key].toLowerCase()),
@@ -426,6 +433,13 @@ function Form({
         )}
         {key === "modelo" && focused === key && (
           <View style={layout.row}>
+            {!!model &&
+              models.data &&
+              !models.data.some((m) =>
+                m.nome.toLowerCase().includes(model.toLowerCase()),
+              ) && (
+                <SearchEmpty message="Nenhum modelo encontrado. Você pode usar o modelo digitado." />
+              )}
             {models.data
               ?.filter((m) =>
                 m.nome.toLowerCase().includes(model.toLowerCase()),

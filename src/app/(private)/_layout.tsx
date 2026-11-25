@@ -1,15 +1,22 @@
 import { Icon } from "@/components/icon";
+import { BudgetKeyboard } from "@/components/budget-keyboard";
 import { SessionLoading } from "@/components/brand-logo";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Redirect, Slot, usePathname, router } from "expo-router";
 import {
   Pressable,
+  KeyboardAvoidingView,
+  Keyboard,
+  Platform,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useAuth } from "@/auth/provider";
 import { request, type TenantTheme } from "@/api/session";
@@ -102,8 +109,38 @@ function Shell({
   const { width } = useWindowDimensions();
   const path = usePathname();
   const wide = width >= 900;
+  const budget = path === "/budgets";
+  const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
   const [exitError, setExitError] = useState("");
+  const [typing, setTyping] = useState(Keyboard.isVisible());
+  const [viewport, setViewport] = useState({ width: 0, height: 0 });
+  const beforeKeyboard = useRef<typeof viewport | null>(null);
+  useEffect(() => {
+    setTyping(Keyboard.isVisible());
+    const show = Keyboard.addListener("keyboardDidShow", () => setTyping(true));
+    const hide = Keyboard.addListener("keyboardDidHide", () => {
+      beforeKeyboard.current = null;
+      setTyping(false);
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  // adjustResize can shrink the window before Android emits keyboardDidShow.
+  const previous = beforeKeyboard.current;
+  const hidesFooter =
+    budget &&
+    Platform.OS === "android" &&
+    (typing ||
+      (previous?.width === viewport.width &&
+        previous.height > viewport.height + 100));
+  function onFieldFocus() {
+    if (budget && Platform.OS === "android" && !Keyboard.isVisible()) {
+      beforeKeyboard.current = viewport;
+    }
+  }
   const navigation = items
     .filter(
       (item) =>
@@ -170,14 +207,29 @@ function Shell({
   return (
     <SafeAreaView style={[s.page, { backgroundColor: t.background }]}>
       <StatusBar style={luminance(t.background) < 0.2 ? "light" : "dark"} />
-      <View style={[s.shell, wide && { flexDirection: "row" }]}>
+      <View
+        style={[s.shell, wide && { flexDirection: "row" }]}
+        onLayout={
+          budget && Platform.OS === "android"
+            ? (e) => {
+                const { width, height } = e.nativeEvent.layout;
+                setViewport({ width, height });
+              }
+            : undefined
+        }
+      >
         {wide && (
           <DesktopNav
             store={!!account?.tenantId && !account.trocaSenhaObrigatoria}
             onError={() => setExitError("Não foi possível abrir o site.")}
           />
         )}
-        <View style={s.main}>
+        <KeyboardAvoidingView
+          enabled={Platform.OS === "ios" && !budget}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={insets.top}
+          style={s.main}
+        >
           {wide && (
             <View
               style={[
@@ -231,9 +283,13 @@ function Shell({
             </View>
           )}
           <View style={s.main}>
-            <Slot />
+            <BudgetKeyboard.Provider
+              value={{ active: budget, hidesFooter, onFieldFocus }}
+            >
+              <Slot />
+            </BudgetKeyboard.Provider>
           </View>
-          {!wide && (
+          {!wide && (budget ? !hidesFooter : !typing) && (
             <View
               style={[
                 s.bottom,
@@ -243,7 +299,7 @@ function Shell({
               {navigation}
             </View>
           )}
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </SafeAreaView>
   );

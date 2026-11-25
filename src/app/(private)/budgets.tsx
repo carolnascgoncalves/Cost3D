@@ -36,6 +36,7 @@ export default function Budgets() {
   const t = useTheme(),
     params = useLocalSearchParams<{ id?: string }>(),
     [id, select] = useState(params.id || ""),
+    [details, showDetails] = useState(false),
     [archived, archive] = useState(false),
     [filter, filterBy] = useState(""),
     [page, setPage] = useState(0),
@@ -73,13 +74,21 @@ export default function Budgets() {
       working(false);
     }
   }
+  function openDetails(id: string) {
+    showDetails(true);
+    select(id);
+  }
   function close() {
+    showDetails(false);
     select("");
     setConfirm(undefined);
     if (params.id) router.setParams({ id: "" });
     q.retry();
   }
-  if (id) return <BudgetWizard key={id} id={id} close={close} />;
+  if (id)
+    return (
+      <BudgetWizard key={id} id={id} close={close} startInDetails={details} />
+    );
   return (
     <View style={{ flex: 1 }}>
       <ModuleScreen
@@ -150,7 +159,11 @@ export default function Budgets() {
               const operational = ["APROVADO", "PRONTO", "ENTREGUE"].includes(
                   s.status,
                 ),
-                pay = operational && !s.pago && !archived;
+                pay =
+                  (s.status === "ENTREGUE" ||
+                    s.situacao === "Pronto para entregar") &&
+                  !s.pago &&
+                  !archived;
               const steps = [
                 s.status !== "RASCUNHO",
                 operational,
@@ -186,7 +199,7 @@ export default function Budgets() {
                   </View>
                   <Pressable
                     accessibilityRole="button"
-                    onPress={() => select(s.id)}
+                    onPress={() => openDetails(s.id)}
                   >
                     <Body strong>{s.titulo}</Body>
                   </Pressable>
@@ -240,6 +253,14 @@ export default function Budgets() {
                         }
                       />
                     </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={"Ver detalhes de " + s.titulo}
+                      onPress={() => openDetails(s.id)}
+                      style={{ padding: 8 }}
+                    >
+                      <Icon name="eye" color={t.primaryText} />
+                    </Pressable>
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={

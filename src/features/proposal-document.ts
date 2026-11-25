@@ -19,77 +19,204 @@ function encoded(text: string) {
       .padStart(2, "0");
   }).join("");
 }
-export function proposalDocument(d: Detail) {
-  const currency = (v: number) =>
-    Number(v || 0).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-  const pages: string[][] = [[]];
-  let y = 785;
-  function line(value: string, size = 12, bold = false) {
-    const max = Math.floor(500 / (size * 0.77));
-    for (const para of String(value).split(/\r?\n/)) {
-      let remaining = para.trim();
+const currency = (value: number) =>
+  Number(value || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+const code = (d: Detail) => "#" + d.resumo.codigo.replace(/^#/, "");
+const deadline = (value: string) =>
+  value.slice(0, 10).split("-").reverse().join("/") +
+  " às " +
+  value.slice(11, 16);
+
+export function proposalMessage(d: Detail, store: string, whatsapp: boolean) {
+  const heading = (text: string) => (whatsapp ? "*" + text + "*" : text);
+  const person = d.resumo.cliente?.trim();
+  return [
+    person ? "Olá, " + person + "!" : "Olá!",
+    "Segue a proposta " + code(d) + " de " + store + ".",
+    heading("Peças") +
+      "\n" +
+      d.itens
+        .map(
+          (item) =>
+            "• " +
+            item.nome +
+            "\n   " +
+            item.quantidade +
+            " un. × " +
+            currency(item.preco) +
+            " = " +
+            currency(item.quantidade * item.preco),
+        )
+        .join("\n"),
+    [
+      "Subtotal das peças: " + currency(d.subtotal),
+      d.desconto ? "Desconto: −" + currency(d.desconto) : "",
+      "Frete: " + currency(d.dados.frete),
+      heading("Total: " + currency(d.resumo.total)),
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    d.previsao ? "Previsão de conclusão: " + deadline(d.previsao) : "",
+    d.dados.observacoes?.trim()
+      ? "Observações: " + d.dados.observacoes.trim()
+      : "",
+    "Se tiver alguma dúvida ou quiser confirmar o pedido, é só responder por aqui.",
+    store,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+export function proposalDocument(
+  d: Detail,
+  store = "Cost3D",
+  photos: Record<string, string> = {},
+) {
+  const pages: string[][] = [];
+  const pictures: { name: string; hex: string }[] = [];
+  let y = 0,
+    commands: string[] = [];
+  const ink = "0.16 0.12 0.17",
+    muted = "0.36 0.32 0.35",
+    wine = "0.45 0.12 0.19";
+  function box(x: number, bottom: number, w: number, h: number, color: string) {
+    commands.push(color + " rg " + [x, bottom, w, h].join(" ") + " re f");
+  }
+  function text(
+    value: string,
+    x: number,
+    baseline: number,
+    size = 11,
+    bold = false,
+    color = ink,
+  ) {
+    commands.push(
+      "BT /" +
+        (bold ? "B" : "R") +
+        " " +
+        size +
+        " Tf " +
+        color +
+        " rg " +
+        x +
+        " " +
+        baseline +
+        " Td <" +
+        encoded(value) +
+        "> Tj ET",
+    );
+  }
+  function wrap(value: string, limit: number) {
+    const lines: string[] = [];
+    for (let part of value.split(/\r?\n/)) {
+      part = part.trim();
       do {
-        let cut = max;
-        if (remaining.length > max) {
-          const space = remaining.lastIndexOf(" ", max);
-          if (space > 0) cut = space;
-        }
-        if (y < 55) {
-          pages.push([]);
-          y = 785;
-        }
-        pages[pages.length - 1].push(
-          "BT /" +
-            (bold ? "B" : "R") +
-            " " +
-            size +
-            " Tf 0.16 0.12 0.22 rg 48 " +
-            y +
-            " Td <" +
-            encoded(remaining.slice(0, cut)) +
-            "> Tj ET",
-        );
-        y -= size + 7;
-        remaining = remaining.slice(cut).trimStart();
-      } while (remaining.length);
+        const space = part.lastIndexOf(" ", limit);
+        const cut = part.length > limit && space > 0 ? space : limit;
+        lines.push(part.slice(0, cut));
+        part = part.slice(cut).trimStart();
+      } while (part.length);
+    }
+    return lines;
+  }
+  function page() {
+    commands = [];
+    pages.push(commands);
+    box(0, 755, 595, 87, wine);
+    text("PROPOSTA COMERCIAL", 36, 811, 10, true, "1 0.91 0.92");
+    text(code(d), 36, 773, 27, true, "1 1 1");
+    wrap(store, 28)
+      .slice(0, 3)
+      .forEach((line, i) => text(line, 350, 804 - 14 * i, 12, true, "1 1 1"));
+    y = 729;
+  }
+  function space(height: number) {
+    if (y - height < 58) page();
+  }
+  function paragraph(value: string, size = 11, bold = false, color = ink) {
+    for (const line of wrap(value, Math.floor(530 / (size * 0.78)))) {
+      space(size + 7);
+      text(line, 36, y, size, bold, color);
+      y -= size + 7;
     }
   }
-  line("Proposta " + d.resumo.codigo, 22, true);
-  line(d.resumo.titulo, 15, true);
-  line("Cliente: " + (d.resumo.cliente || "A informar"));
-  if (d.resumo.contato) line(d.resumo.contato);
-  if (d.resumo.email) line(d.resumo.email);
+  page();
+  if (d.resumo.titulo && d.resumo.titulo !== "Novo orçamento")
+    paragraph(d.resumo.titulo, 18, true);
+  paragraph("PREPARADA PARA", 9, true, wine);
+  paragraph(d.resumo.cliente || "Cliente", 14, true);
+  for (const contact of [d.resumo.contato, d.resumo.email])
+    if (contact) paragraph(contact, 10, false, muted);
   if (d.previsao)
-    line(
-      "Previsão: " +
-        d.previsao.slice(0, 10).split("-").reverse().join("/") +
-        " às " +
-        d.previsao.slice(11, 16),
-    );
+    paragraph("Previsão de conclusão: " + deadline(d.previsao), 11);
   y -= 10;
-  line("Peças", 14, true);
+  space(110);
+  paragraph("Peças da proposta", 15, true);
   for (const item of d.itens) {
-    line(item.nome, 12, true);
-    line(
-      item.quantidade +
-        " un. × " +
-        currency(item.preco) +
-        " = " +
-        currency(item.quantidade * item.preco),
+    const lines = wrap(item.nome, 44),
+      h = Math.max(70, lines.length * 16 + 32);
+    space(h);
+    box(36, y - h + 5, 523, h - 7, "0.97 0.96 0.96");
+    const photo = item.id ? photos[item.id] : undefined;
+    const x = photo ? 110 : 48;
+    if (photo) {
+      const name = "Im" + pictures.length;
+      pictures.push({ name, hex: photo });
+      commands.push("q 52 0 0 52 46 " + (y - 59) + " cm /" + name + " Do Q");
+    }
+    lines.forEach((line, i) => text(line, x, y - 20 - i * 16, 12, true));
+    text(
+      item.quantidade + " un. × " + currency(item.preco),
+      x,
+      y - 25 - lines.length * 16,
+      10,
+      false,
+      muted,
     );
+    text(currency(item.quantidade * item.preco), 451, y - 22, 12, true, wine);
+    y -= h;
   }
-  y -= 10;
-  line("Peças: " + currency(d.subtotal));
-  line("Desconto: " + currency(d.desconto));
-  line("Frete: " + currency(d.dados.frete));
-  line("Total ao cliente: " + currency(d.resumo.total), 16, true);
-  if (d.dados.observacoes) {
-    line("Observações", 13, true);
-    line(d.dados.observacoes);
+  space(135);
+  y -= 14;
+  for (const [label, amount] of [
+    ["Peças", d.subtotal],
+    ["Desconto", d.desconto],
+    ["Frete", d.dados.frete],
+  ] as const) {
+    text(label, 320, y, 11, false, muted);
+    text(currency(amount), 451, y, 11, true);
+    y -= 18;
   }
+  box(36, y - 28, 523, 36, wine);
+  text(
+    "Total ao cliente: " + currency(d.resumo.total),
+    51,
+    y - 15,
+    16,
+    true,
+    "1 1 1",
+  );
+  y -= 52;
+  if (d.dados.observacoes?.trim()) {
+    space(44);
+    paragraph("Observações", 13, true);
+    paragraph(d.dados.observacoes, 11, false, muted);
+  }
+  pages.forEach((p, i) => {
+    commands = p;
+    box(36, 40, 523, 1, "0.85 0.82 0.83");
+    text("Proposta " + code(d), 36, 24, 9, false, muted);
+    text("Página " + (i + 1) + " de " + pages.length, 472, 24, 9, false, muted);
+  });
+  const imageRefs = pictures
+    .map(
+      (picture, i) =>
+        "/" + picture.name + " " + (5 + 2 * pages.length + i) + " 0 R",
+    )
+    .join(" ");
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Count " +
@@ -107,12 +234,24 @@ export function proposalDocument(d: Detail) {
   pages.forEach((commands, i) => {
     const stream = commands.join("\n") + "\n";
     objects.push(
-      "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /R 3 0 R /B 4 0 R >> >> /Contents " +
+      "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << " +
+        imageRefs +
+        " >> /Font << /R 3 0 R /B 4 0 R >> >> /Contents " +
         (6 + i * 2) +
         " 0 R >>",
       "<< /Length " + stream.length + " >>\nstream\n" + stream + "endstream",
     );
   });
+  for (const photo of pictures) {
+    const stream = photo.hex + ">";
+    objects.push(
+      "<< /Type /XObject /Subtype /Image /Width 320 /Height 320 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter [/ASCIIHexDecode /DCTDecode] /Length " +
+        stream.length +
+        " >>\nstream\n" +
+        stream +
+        "\nendstream",
+    );
+  }
   let pdf = "%PDF-1.4\n";
   const offsets = [0];
   objects.forEach((obj, i) => {
