@@ -159,7 +159,7 @@ export default function Movements() {
               <Field label="Data final" placeholder="dd/mm/aaaa" value={draft.fim} maxLength={10} keyboardType="numbers-and-punctuation" onChangeText={(fim) => setDraft({ ...draft, fim })} />
             </View>
           )}
-          <View style={{ flexDirection: "row", justifyContent: "flex-end" }}><Chip label="Todo o período" selected={draft.tudo} onPress={() => { setCustomPeriod(false); setDraft({ ...draft, tudo: !draft.tudo }); }} /></View>
+          <Pressable accessibilityRole="button" accessibilityState={{ selected: draft.tudo }} onPress={() => { setCustomPeriod(false); setDraft({ ...draft, tudo: !draft.tudo }); }} style={{ width: "100%", minHeight: 42, alignItems: "center", justifyContent: "center", borderRadius: 12, borderWidth: 1, borderColor: draft.tudo ? t.primary : t.border, backgroundColor: draft.tudo ? t.primary : t.surface }}><Text style={{ color: draft.tudo ? t.onPrimary : t.primaryText, fontWeight: "600" }}>Todo o período</Text></Pressable>
           <Body muted>Direção</Body>
           <View style={{ ...layout.row, flexWrap: "nowrap" }}>
             {[["", "Todas"], ["entrada", "Entradas"], ["saida", "Saídas"]].map(([value, label]) => <View key={value} style={{ flex: 1 }}><Chip label={label} selected={draft.direcao === value} onPress={() => setDraft({ ...draft, direcao: value })} /></View>)}

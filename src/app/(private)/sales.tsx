@@ -6,14 +6,13 @@ import {
   Body,
   Button,
   Card,
-  Chip,
   Notice,
   Pagination,
   layout,
 } from "@/components/ui";
 import { Icon } from "@/components/icon";
 import { useTheme } from "@/theme/provider";
-import { CalculationIdentity } from "@/features/mobile-calculations";
+import { CalculationPhoto } from "@/features/mobile-calculations";
 import { LotOperation } from "@/features/lot-operation";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { reais } from "@/features/format";
@@ -57,17 +56,18 @@ export default function Sales() {
       section="Comercial"
       title="Vendas e estoque"
     >
-      <View style={layout.row}>
+      <View style={{ flexDirection: "row", padding: 4, borderRadius: 13, backgroundColor: t.accentTint, gap: 4 }}>
         {groups.map(([key, label]) => (
-          <Chip
+          <Pressable
             key={key}
-            label={label}
-            selected={key === group}
+            accessibilityRole="button"
+            accessibilityState={{ selected: key === group }}
             onPress={() => {
               setPage(0);
               setGroup(key);
             }}
-          />
+            style={{ flex: 1, minHeight: 42, alignItems: "center", justifyContent: "center", paddingHorizontal: 5, borderRadius: 10, backgroundColor: key === group ? t.surface : "transparent", borderWidth: key === group ? 1 : 0, borderColor: t.border }}
+          ><Text style={{ color: key === group ? t.primaryText : t.muted, fontWeight: key === group ? "700" : "500", fontSize: 12 }}>{label}</Text></Pressable>
         ))}
       </View>
       {q.loading ? (
@@ -129,80 +129,32 @@ export default function Sales() {
             </View>
           )}
           {q.data?.itens?.map((l) => (
-            <Card key={l.id}>
-              <View
-                style={{ gap: 8, flexDirection: "row", alignItems: "center" }}
-              >
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <CalculationIdentity id={l.id} name={l.nome} />
+            <Card key={l.id} style={{ gap: 10 }}>
+              <Pressable accessibilityRole="button" accessibilityLabel={"Abrir lote de " + l.nome} onPress={() => select(l.id!)} style={{ gap: 10 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <CalculationPhoto id={l.id} name={l.nome} size={52} />
+                  <View style={{ flex: 1, minHeight: 52, justifyContent: "space-between", minWidth: 0 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <View style={{ flex: 1 }}><Body strong>{l.nome}</Body></View>
+                      <Icon name="chevron-right" color={t.muted} size={13} />
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                      <Body muted>{!l.plataforma || l.plataforma === "NENHUMA" ? "Sem plataforma" : l.plataforma.replaceAll("_", " ")}</Body>
+                      <Body strong>Venda {reais(l.preco)}</Body>
+                    </View>
+                  </View>
                 </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={"Ver detalhes de " + l.nome}
-                  onPress={() => select(l.id!)}
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderWidth: 1,
-                    borderColor: t.border,
-                    borderRadius: 10,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Icon name="eye" color={t.primaryText} />
-                </Pressable>
-              </View>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: 6,
-                }}
-              >
-                <Body muted>
-                  {!l.plataforma || l.plataforma === "NENHUMA"
-                    ? "Sem plataforma"
-                    : l.plataforma.replaceAll("_", " ")}
-                </Body>
-                <Body strong>{reais(l.preco)} / un.</Body>
-              </View>
-              <Body>
-                {group === "ESTOQUE"
-                  ? (l.disponiveis ?? 0) + " un. disponíveis"
-                  : group === "VENDIDOS"
-                    ? (l.vendidas ?? 0) + " un. vendidas"
-                    : (l.unidades ?? 1) + " un. para produzir"}
-              </Body>
-              {!!l.reservadas && (
-                <Text
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  style={{
-                    alignSelf: "flex-start",
-                    maxWidth: "100%",
-                    textAlign: "left",
-                    color: t.text,
-                    backgroundColor: t.accentTint,
-                    borderRadius: 12,
-                    paddingHorizontal: 10,
-                    paddingVertical: 4,
-                    fontSize: 13,
-                  }}
-                >
-                  {l.reservadas} un.{" "}
-                  {l.reservadas === 1 ? "reservada" : "reservadas"} para pedidos
-                </Text>
-              )}
+                <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                  <Body muted>{group === "ESTOQUE" ? `Disponível ${l.disponiveis ?? 0}` : group === "VENDIDOS" ? `${l.vendidas ?? 0} un. vendidas` : `${l.unidades ?? 1} un. para produzir`}</Body>
+                  {!!l.reservadas ? <Text numberOfLines={1} adjustsFontSizeToFit style={{ maxWidth: "100%", color: t.text, backgroundColor: t.accentTint, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 3, fontSize: 12 }}>{l.reservadas} reservadas para pedidos</Text> : <Body muted>Reservadas 0</Body>}
+                </View>
+              </Pressable>
               <Button
                 variant="secondary"
                 label={
-                  group === "PARA_PRODUZIR"
-                    ? "Revisar produção"
-                    : group === "ESTOQUE" && l.disponiveis
-                      ? "Registrar venda"
-                      : "Ver operação do lote"
+                  group === "ESTOQUE" && l.disponiveis
+                    ? "Registrar venda"
+                    : "Ver lote"
                 }
                 onPress={() => select(l.id!)}
               />

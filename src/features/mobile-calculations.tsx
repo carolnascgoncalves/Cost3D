@@ -49,6 +49,7 @@ import { useTheme } from "@/theme/provider";
 import { decimal, reais } from "./format";
 
 type Schema = components["schemas"];
+type HistoryItem = NonNullable<Schema["PaginaResponseHistoricoListaResponse"]["itens"]>[number];
 type Result = Schema["ValorCalculo"];
 type Selection = CatalogRow & { id: string };
 const menu = () => router.setParams({ modo: "menu", peca: "" });
@@ -894,11 +895,22 @@ export function SavedCalculation({ id }: { id: string }) {
 }
 export function CalculationHistory() {
   const t = useTheme();
-  const [page, setPage] = useState(0),
-    [search, setSearch] = useState("");
+  const params = useLocalSearchParams<{ busca?: string; pagina?: string; status?: string }>();
+  const [page, setPage] = useState(Number(params.pagina) || 0),
+    [search, setSearch] = useState(params.busca ?? ""),
+    [status, setStatus] = useState(params.status ?? "");
   const q = useApiQuery<Schema["PaginaResponseHistoricoListaResponse"]>(
-    "/calculos?pagina=" + page + "&busca=" + encodeURIComponent(search),
+    "/calculos?pagina=" + page + "&busca=" + encodeURIComponent(search) + "&status=" + status,
   );
+  const dateToday = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const historyGroups: { day: string; items: HistoryItem[] }[] = [];
+  for (const item of q.data?.itens ?? []) {
+    const day = item.dataCalculo?.slice(0, 10) ?? "sem-data";
+    const previous = historyGroups[historyGroups.length - 1];
+    if (previous?.day === day) previous.items.push(item);
+    else historyGroups.push({ day, items: [item] });
+  }
+  const filterOptions = [["", "Todos"], ["PARA_PRODUZIR", "Só cálculo"], ["ESTOQUE", "Em estoque"], ["VENDIDOS", "Vendido"]];
   return (
     <ModuleScreen
       lightHeader
@@ -914,9 +926,12 @@ export function CalculationHistory() {
           onChangeText={(v) => {
             setSearch(v);
             setPage(0);
+            router.setParams({ modo: "historico", busca: v, pagina: "0", status });
           }}
         />
-        <Body muted>{q.data ? `${q.data.total} cálculos` : "Seus cálculos salvos"}</Body>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {filterOptions.map(([value, label]) => <Chip key={value} secondary label={value === status && !value && q.data?.total != null ? `${label} ${q.data.total}` : label} selected={status === value} onPress={() => { setStatus(value); setPage(0); router.setParams({ modo: "historico", busca: search, pagina: "0", status: value }); }} />)}
+        </View>
       </View>
       {q.loading ? (
         <ActivityIndicator />
@@ -924,52 +939,25 @@ export function CalculationHistory() {
         <Notice message={q.error} onRetry={q.retry} />
       ) : (
         <>
-          {q.data?.itens?.map((item) => (
-            <Card key={item.id}>
-              <CalculationIdentity id={item.id} name={item.nomePeca} />
-              <Body muted>
-                {item.dataCalculo?.slice(0, 10).split("-").reverse().join("/")}{" "}
-                · {item.unidades ?? 1} un.
-              </Body>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 6,
-                }}
-              >
-                <Body strong>
-                  {money(item.precoVendaPlataforma ?? item.precoSugerido)} / un.
-                </Body>
-                <Badge>
-                  {item.vendido
-                    ? "Vendido"
-                    : item.produzido
-                      ? "Em estoque"
-                      : "Só cálculo"}
-                </Badge>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={"Ver detalhes de " + item.nomePeca}
-                onPress={() =>
-                  router.setParams({ modo: "detalhe", id: item.id })
-                }
-                style={{
-                  alignSelf: "flex-start",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 44,
-                  height: 44,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: t.border,
-                }}
-              >
-                <Icon name="eye" color={t.primaryText} />
-              </Pressable>
-            </Card>
+          {historyGroups.map((group) => (
+            <View key={group.day} style={{ gap: 6 }}>
+              <Body muted>{group.day === dateToday ? "Hoje" : group.day === "sem-data" ? "Sem data" : group.day.split("-").reverse().join("/")}</Body>
+              <Card style={{ gap: 0, paddingVertical: 0 }}>
+                {group.items.map((item, index) => (
+                  <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={"Abrir cálculo de " + item.nomePeca} onPress={() => router.setParams({ modo: "detalhe", id: item.id, busca: search, pagina: String(page), status })} style={{ minHeight: 68, paddingVertical: 8, flexDirection: "row", alignItems: "center", gap: 10, borderTopWidth: index ? 1 : 0, borderColor: t.border }}>
+                    <CalculationPhoto id={item.id} name={item.nomePeca} size={40} />
+                    <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                      <Body strong>{item.nomePeca}</Body>
+                      <Body muted>{item.unidades ?? 1} un.</Body>
+                    </View>
+                    <View style={{ alignItems: "flex-end", gap: 3 }}>
+                      <Body strong>{money(item.precoVendaPlataforma ?? item.precoSugerido)}</Body>
+                      <Text style={{ color: item.vendido ? t.primary : item.produzido ? t.success : t.muted, fontSize: 11 }}>{item.vendido ? "Vendido" : item.produzido ? "Em estoque" : "Só cálculo"}</Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </Card>
+            </View>
           ))}
           {!q.data?.itens?.length && (
             <SearchEmpty
@@ -985,7 +973,7 @@ export function CalculationHistory() {
               page={page}
               total={q.data!.total!}
               size={12}
-              onPage={setPage}
+              onPage={(next) => { setPage(next); router.setParams({ modo: "historico", busca: search, pagina: String(next), status }); }}
             />
           )}
         </>
