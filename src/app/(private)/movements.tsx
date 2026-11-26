@@ -228,7 +228,7 @@ export default function Movements() {
     );
   return (
     <ModuleScreen
-      section="Gestão"
+      section="Produção e gestão"
       title="Movimentações"
       refreshControl={
         <RefreshControl

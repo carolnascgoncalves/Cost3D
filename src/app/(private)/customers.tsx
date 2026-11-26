@@ -107,7 +107,7 @@ export default function Customers() {
     );
   return (
     <View style={{ flex: 1, backgroundColor: t.background }}>
-      <ModuleHeader section="Menu" title="Clientes" lightHeader />
+      <ModuleHeader section="Comercial" title="Clientes" lightHeader />
       <View style={{ paddingHorizontal: 16, gap: 10, paddingBottom: 12 }}>
         <View style={{ flexDirection: "row", gap: 8 }}>
           {["Ativos", "Arquivados"].map((label, i) => (
@@ -123,13 +123,21 @@ export default function Customers() {
           ))}
         </View>
         <ListSearch
-          accessibilityLabel="Pesquisar clientes"
-          placeholder="Pesquisar por nome, telefone ou e-mail"
+          accessibilityLabel="Buscar clientes"
+          placeholder="Buscar clientes por nome, telefone ou e-mail"
           value={filter.busca}
           onChangeText={(busca) =>
             setCustomers({ ...filter, busca, pagina: 0 })
           }
         />
+        {!filter.arquivados && (
+          <Button
+            label="+ Novo cliente"
+            onPress={() =>
+              router.push({ pathname: "/customers/[id]", params: { id: "new" } })
+            }
+          />
+        )}
       </View>
       <FlatList
         data={rows}
@@ -157,13 +165,23 @@ export default function Customers() {
             <ActivityIndicator />
           ) : first.error ? undefined : (
             <Empty
-              title="Nenhum cliente encontrado"
+              title={
+                filter.busca
+                  ? `Nenhum cliente encontrado para “${filter.busca}”`
+                  : "Nenhum cliente encontrado"
+              }
               description={
                 filter.busca
-                  ? "Tente outra busca."
+                  ? "Confira o texto ou limpe a busca para ver todos os clientes."
                   : filter.arquivados
                     ? "Os clientes arquivados aparecerão aqui."
                     : "Cadastre o primeiro cliente da sua loja."
+              }
+              actionLabel={filter.busca ? "Limpar busca" : undefined}
+              onAction={
+                filter.busca
+                  ? () => setCustomers({ ...filter, busca: "", pagina: 0 })
+                  : undefined
               }
             />
           )
@@ -178,28 +196,6 @@ export default function Customers() {
           ) : undefined
         }
       />
-      {!filter.arquivados && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Novo cliente"
-          onPress={() =>
-            router.push({ pathname: "/customers/[id]", params: { id: "new" } })
-          }
-          style={{
-            position: "absolute",
-            bottom: 16,
-            right: 16,
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            backgroundColor: t.primary,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Text style={{ fontSize: 28, color: t.onPrimary }}>+</Text>
-        </Pressable>
-      )}
     </View>
   );
 }

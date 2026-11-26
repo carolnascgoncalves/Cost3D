@@ -185,7 +185,7 @@ export default function Planning() {
       <ModuleScreen
         lightHeader
         title="Planejar produção"
-        section="Mais"
+        section="Produção e gestão"
         onBack={() => router.navigate("/more")}
       >
         <View style={{ flexDirection: "row", gap: 8 }}>
@@ -225,6 +225,12 @@ export default function Planning() {
             {shift(7)}
           </View>
         </View>
+        {!done && (
+          <Button
+            label="+ Novo planejamento"
+            onPress={() => create(true)}
+          />
+        )}
         {q.loading ? (
           <ActivityIndicator />
         ) : q.error ? (
@@ -368,7 +374,7 @@ export default function Planning() {
                         </Pressable>
                         {done && (
                           <Button
-                            label="Operação do lote"
+                            label="Ver lote"
                             variant="secondary"
                             onPress={() => operation(j)}
                           />
@@ -389,28 +395,7 @@ export default function Planning() {
             </>
           ))
         )}
-        {!done && <View style={{ height: 65 }} />}
       </ModuleScreen>
-      {!done && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Novo planejamento"
-          onPress={() => create(true)}
-          style={{
-            position: "absolute",
-            bottom: 16,
-            right: 16,
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            backgroundColor: t.primary,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Text style={{ fontSize: 32, color: t.onPrimary }}>+</Text>
-        </Pressable>
-      )}
       {job && (
         <PlanningSheet title={job.nome} close={() => open(undefined)}>
           <View

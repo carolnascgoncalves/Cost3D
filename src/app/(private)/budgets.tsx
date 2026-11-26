@@ -93,7 +93,7 @@ export default function Budgets() {
     <View style={{ flex: 1 }}>
       <ModuleScreen
         lightHeader
-        section="Mais"
+        section="Comercial"
         title="Orçamentos e pedidos"
         onBack={() => router.navigate("/more")}
       >
@@ -148,6 +148,9 @@ export default function Budgets() {
             />
           ))}
         </ScrollView>
+        {!archived && (
+          <Button label="+ Novo orçamento" onPress={() => select("new")} />
+        )}
         {!!error && <Notice message={error} />}
         {q.loading ? (
           <ActivityIndicator />
@@ -255,14 +258,6 @@ export default function Budgets() {
                     </View>
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={"Ver detalhes de " + s.titulo}
-                      onPress={() => openDetails(s.id)}
-                      style={{ padding: 8 }}
-                    >
-                      <Icon name="eye" color={t.primaryText} />
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
                       accessibilityLabel={
                         archived ? "Restaurar proposta" : "Arquivar proposta"
                       }
@@ -314,28 +309,7 @@ export default function Budgets() {
             />
           </>
         )}
-        <View style={{ height: 64 }} />
       </ModuleScreen>
-      {!archived && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Novo orçamento"
-          onPress={() => select("new")}
-          style={{
-            position: "absolute",
-            right: 16,
-            bottom: 16,
-            width: 54,
-            height: 54,
-            borderRadius: 27,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: t.header,
-          }}
-        >
-          <Text style={{ fontSize: 30, color: t.onPrimary }}>+</Text>
-        </Pressable>
-      )}
     </View>
   );
 }

@@ -38,7 +38,23 @@ export function BrandLogo({
 export function SessionLoading() {
   const mobile = useWindowDimensions().width < 900;
   if (!mobile)
-    return <ActivityIndicator accessibilityLabel="Restaurando sessão" />;
+    return (
+      <View
+        accessibilityRole="progressbar"
+        accessibilityLabel="Carregando o Cost3D"
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#f4eee4",
+        }}
+      >
+        <ActivityIndicator
+          accessibilityLabel="Carregando o Cost3D"
+          color="#86202d"
+        />
+      </View>
+    );
   return (
     <View
       accessibilityRole="progressbar"

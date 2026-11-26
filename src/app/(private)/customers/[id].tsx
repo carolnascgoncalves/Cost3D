@@ -143,7 +143,7 @@ export default function CustomerDetail() {
   return (
     <Frame
       title={title}
-      section="Clientes"
+      section="Comercial"
       onBack={() => router.navigate("/customers")}
     >
       {!mobile && (
@@ -210,7 +210,7 @@ export default function CustomerDetail() {
           {editing ? (
             <Card>
               <Field
-                label="Nome *"
+                label="Nome"
                 value={form.nome}
                 maxLength={150}
                 editable={!busy && !conflict}
@@ -249,27 +249,33 @@ export default function CustomerDetail() {
                   setForm({ ...form, observacoes })
                 }
               />
-              <View style={layout.row}>
-                <Button
-                  label={isNew ? "Cadastrar cliente" : "Salvar alterações"}
-                  busy={busy}
-                  disabled={conflict}
-                  onPress={() => void save()}
-                />
-                <Button
-                  label="Cancelar"
-                  variant="ghost"
-                  disabled={busy}
-                  onPress={() => {
-                    if (isNew) router.navigate("/customers");
-                    else {
-                      setEditing(false);
-                      setError("");
-                      setConflict(false);
-                      if (query.data) fill(query.data);
-                    }
-                  }}
-                />
+              <View style={[layout.row, { flexWrap: "nowrap" }]}>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    label="Cancelar"
+                    variant="secondary"
+                    stretch
+                    disabled={busy}
+                    onPress={() => {
+                      if (isNew) router.navigate("/customers");
+                      else {
+                        setEditing(false);
+                        setError("");
+                        setConflict(false);
+                        if (query.data) fill(query.data);
+                      }
+                    }}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    label="Salvar"
+                    busy={busy}
+                    disabled={conflict}
+                    stretch
+                    onPress={() => void save()}
+                  />
+                </View>
               </View>
             </Card>
           ) : (
@@ -333,9 +339,7 @@ export default function CustomerDetail() {
                   <View style={layout.row}>
                     <Button
                       label={
-                        query.data?.arquivado
-                          ? "Confirmar restauração"
-                          : "Confirmar arquivamento"
+                        query.data?.arquivado ? "Restaurar" : "Arquivar"
                       }
                       variant={query.data?.arquivado ? "primary" : "danger"}
                       busy={busy}

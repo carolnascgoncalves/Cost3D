@@ -186,8 +186,8 @@ function Listings({ category }: { category: Category }) {
       )}
       {mobile && (
         <ListSearch
-          accessibilityLabel={"Pesquisar em " + category.label}
-          placeholder={"Pesquisar em " + category.label.toLowerCase() + "…"}
+          accessibilityLabel={"Buscar em " + category.label}
+          placeholder={"Buscar em " + category.label.toLowerCase()}
           value={search}
           onChangeText={(value) => {
             setSearch(value);

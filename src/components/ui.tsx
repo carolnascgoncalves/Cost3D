@@ -499,9 +499,13 @@ export function SearchEmpty({ message }: { message: string }) {
 export function Empty({
   title,
   description,
+  actionLabel,
+  onAction,
 }: {
   title: string;
   description: string;
+  actionLabel?: string;
+  onAction?: () => void;
 }) {
   const t = useTheme();
   return (
@@ -520,6 +524,9 @@ export function Empty({
       <Text style={{ color: t.muted, textAlign: "center", lineHeight: 22 }}>
         {description}
       </Text>
+      {actionLabel && onAction && (
+        <Button label={actionLabel} variant="secondary" onPress={onAction} />
+      )}
     </Card>
   );
 }

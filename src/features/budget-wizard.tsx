@@ -1104,18 +1104,25 @@ export function BudgetWizard({
         {stage === 4 && (
           <>
             <Body strong>Confira a proposta</Body>
-            <View style={{ ...row, alignItems: "stretch" }}>
-              <Card style={{ flex: 1 }}>
-                <Body muted>CLIENTE</Body>
-                <Body strong>{form.cliente || "A informar"}</Body>
-                {!!form.contato && <Body muted>{phone(form.contato)}</Body>}
-              </Card>
-              <Card style={{ flex: 1 }}>
-                <Body muted>PRAZO PREVISTO</Body>
-                <Body strong>{stamp(end)}</Body>
-                <Body muted>Confira antes de combinar a entrega.</Body>
-              </Card>
-            </View>
+            <Card>
+              <View
+                style={{
+                  ...row,
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Body muted>CLIENTE</Body>
+                  <Body strong>{form.cliente || "A informar"}</Body>
+                  {!!form.contato && <Body muted>{phone(form.contato)}</Body>}
+                </View>
+                <View style={{ alignItems: "flex-end", flexShrink: 1 }}>
+                  <Body muted>PRAZO PREVISTO</Body>
+                  <Body strong>{stamp(end)}</Body>
+                </View>
+              </View>
+            </Card>
             {lines.map((l, i) => (
               <Card key={l.id || i} style={row}>
                 <CalculationPhoto
@@ -1151,37 +1158,25 @@ export function BudgetWizard({
                   {money(total)}
                 </Text>
               </View>
-            </Card>
-            <Card>
-              <Body strong>Para onde vai o dinheiro</Body>
-              <ValueRow
-                label="Produção e envio"
-                value={money(preview?.custo ?? 0)}
-              />
-              <ValueRow label="Taxas" value={money(preview?.taxas ?? 0)} />
-              <View
-                style={{
-                  ...row,
-                  justifyContent: "space-between",
-                  padding: 12,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: (profit?.lucro ?? 0) < 0 ? "#c15b54" : "#68a478",
-                  backgroundColor:
-                    (profit?.lucro ?? 0) < 0 ? "#fff0ef" : "#e9f6eb",
-                }}
-              >
-                <Body>Lucro estimado</Body>
+              <View style={{ ...row, justifyContent: "space-between" }}>
+                <Body muted>Lucro estimado</Body>
                 <Text
                   style={{
-                    fontWeight: "bold",
                     color: (profit?.lucro ?? 0) < 0 ? "#8b2e28" : "#205b32",
+                    fontWeight: "700",
                   }}
                 >
                   {money(profit?.lucro ?? 0)}
                 </Text>
               </View>
             </Card>
+            <Expand title="Para onde vai o dinheiro">
+              <ValueRow
+                label="Produção e envio"
+                value={money(preview?.custo ?? 0)}
+              />
+              <ValueRow label="Taxas" value={money(preview?.taxas ?? 0)} />
+            </Expand>
             <Card>
               <Field
                 optional
@@ -1217,8 +1212,8 @@ export function BudgetWizard({
             </Card>
             <Expand
               icon="send"
-              title="Outros canais"
-              note="E-mail e copiar mensagem"
+              title="Compartilhar e materiais"
+              note="Outros canais, materiais e reposição"
             >
               <View style={{ ...row, alignItems: "stretch" }}>
                 <View style={{ flex: 1 }}>
@@ -1240,8 +1235,7 @@ export function BudgetWizard({
                   />
                 </View>
               </View>
-            </Expand>
-            <Expand icon="box" title="Materiais e reposição" note="Uso interno">
+              <Body strong>Materiais e reposição · uso interno</Body>
               {preview?.materiais?.materiais.map((m, i) => (
                 <View key={i} style={row}>
                   <View

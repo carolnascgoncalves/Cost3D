@@ -57,7 +57,7 @@ export default function Account() {
   }
   const Frame = mobile ? ModuleScreen : Screen;
   return (
-    <Frame section="Menu" title="Minha conta">
+    <Frame section="Conta" title="Minha conta">
       {!mobile && (
         <Heading
           title="Minha conta"
@@ -140,7 +140,7 @@ export default function Account() {
           {!changed && (
             <Button
               label="Sair da conta"
-              variant="ghost"
+              variant="danger"
               onPress={() => void signOut().catch((e) => setMessage(e.message))}
             />
           )}

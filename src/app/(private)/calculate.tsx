@@ -52,7 +52,7 @@ function routeMaterials(raw?: string) {
   }
 }
 export default function Calculate() {
-  const { modo, id, peca, nome, gramas, minutos, materiais } =
+  const { modo, id, peca, nome, gramas, minutos, materiais, placa } =
     useLocalSearchParams<{
       modo?: string;
       id?: string;
@@ -61,6 +61,7 @@ export default function Calculate() {
       gramas?: string;
       materiais?: string;
       minutos?: string;
+      placa?: string;
     }>();
   const [focused, setFocused] = useState(true);
   useFocusEffect(
@@ -85,6 +86,7 @@ export default function Calculate() {
                 materiais: routeMaterials(materiais),
                 gramas,
                 minutos: minutos ? Number(minutos) : undefined,
+                placaMiniatura: placa ? Number(placa) : undefined,
               }
             : undefined
         }

@@ -67,6 +67,7 @@ export default function PrivateLayout() {
   ]);
   if (loading) return <SessionLoading />;
   if (!account) return <Redirect href="/login" />;
+  if (account.tenantId && !theme && !error) return <SessionLoading />;
   if (account.trocaSenhaObrigatoria && path !== "/account")
     return <Redirect href="/account" />;
   if (

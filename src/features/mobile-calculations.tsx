@@ -262,7 +262,7 @@ export function CalculationPhoto({
     </View>
   );
 }
-function Breakdown({ result }: { result: Result }) {
+function CostCards({ result }: { result: Result }) {
   const t = useTheme();
   const costs = result.custos;
   if (!costs) return null;
@@ -321,6 +321,193 @@ function Breakdown({ result }: { result: Result }) {
         label="Custo total de produção por unidade"
         value={money(result.custoUnitario)}
       />
+    </View>
+  );
+}
+function FilamentsUsed({
+  result,
+  heading = true,
+}: {
+  result: Result;
+  heading?: boolean;
+}) {
+  const t = useTheme();
+  if (!result.filamentos?.length)
+    return <Body muted>Nenhum filamento informado.</Body>;
+  return (
+    <View style={{ gap: 8 }}>
+      {heading && <Body strong>Filamentos utilizados</Body>}
+      {result.filamentos.map((m, i) => (
+        <Card key={i}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View
+              style={{
+                width: 17,
+                height: 17,
+                borderRadius: 9,
+                borderWidth: 1,
+                borderColor: t.border,
+                backgroundColor: m.codigoCor || t.accentTint,
+              }}
+            />
+            <View style={{ flex: 1 }}>
+              <Body strong>{m.nome}</Body>
+              {!!m.cor && <Body muted>{m.cor}</Body>}
+            </View>
+          </View>
+          <ValueRow
+            label="Quantidade utilizada"
+            value={decimal(String(m.gramas ?? 0)) + " g"}
+          />
+          <ValueRow label="Custo deste filamento" value={money(m.custo)} />
+        </Card>
+      ))}
+    </View>
+  );
+}
+function Disclosure({
+  title,
+  children,
+}: React.PropsWithChildren<{ title: string }>) {
+  const t = useTheme();
+  const [open, setOpen] = useState(false);
+  return (
+    <Card style={{ gap: 0 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen((value) => !value)}
+        style={{
+          minHeight: 42,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Body strong>{title}</Body>
+        <View style={{ transform: [{ rotate: open ? "90deg" : "0deg" }] }}>
+          <Icon name="chevron-right" color={t.primaryText} />
+        </View>
+      </Pressable>
+      {open && <View style={{ paddingTop: 8, gap: 10 }}>{children}</View>}
+    </Card>
+  );
+}
+function CalculationResult({
+  result,
+  printer,
+  pack,
+  minutes,
+}: {
+  result: Result;
+  printer?: Selection;
+  pack?: Selection;
+  minutes: string;
+}) {
+  const t = useTheme();
+  const recommended =
+    result.custos?.precoVendaPlataforma ?? result.precoUnitario;
+  const platform =
+    result.plataforma && result.plataforma !== "NENHUMA"
+      ? ((
+          {
+            MERCADO_LIVRE: "Mercado Livre",
+            SHOPEE: "Shopee",
+            AMAZON: "Amazon",
+            TIKTOK: "TikTok Shop",
+            TIKTOK_SHOP: "TikTok Shop",
+          } as Record<string, string>
+        )[result.plataforma] ?? result.plataforma)
+      : "Preço sugerido por unidade";
+  const profit = result.custos?.lucroLiquido;
+  return (
+    <View style={{ gap: 10 }}>
+      <Body muted>
+        {result.nome} · {result.unidades ?? 1} un.
+      </Body>
+      <View
+        style={{
+          backgroundColor: t.primary,
+          borderRadius: 14,
+          padding: 16,
+          gap: 3,
+        }}
+      >
+        <Text style={{ color: t.onPrimary, fontSize: 13 }}>
+          Preço de venda recomendado
+        </Text>
+        <Text style={{ color: t.onPrimary, fontSize: 28, fontWeight: "700" }}>
+          {money(recommended)}
+        </Text>
+        <Text style={{ color: t.onPrimary, fontSize: 12 }}>
+          {result.comissao == null
+            ? platform
+            : platform +
+              " · comissão " +
+              decimal(String(result.comissao)) +
+              "%"}
+        </Text>
+      </View>
+      {profit != null && (
+        <View
+          style={{
+            backgroundColor: profit < 0 ? t.dangerBackground : t.success + "14",
+            borderColor: profit < 0 ? t.danger : t.success,
+            borderWidth: 1,
+            borderRadius: 14,
+            padding: 14,
+            gap: 3,
+          }}
+        >
+          <Text
+            style={{ color: profit < 0 ? t.danger : t.success, fontSize: 13 }}
+          >
+            Lucro líquido estimado
+          </Text>
+          <Text
+            style={{
+              color: profit < 0 ? t.danger : t.success,
+              fontSize: 25,
+              fontWeight: "700",
+            }}
+          >
+            {money(profit)}
+          </Text>
+        </View>
+      )}
+      <Card>
+        <CostCards result={result} />
+      </Card>
+      <Disclosure
+        title={`Filamentos utilizados (${result.filamentos?.length ?? 0})`}
+      >
+        <FilamentsUsed result={result} heading={false} />
+      </Disclosure>
+      <Disclosure title="Dados da impressão">
+        <ValueRow label="Impressora" value={printer?.nome || "—"} />
+        <ValueRow
+          label="Tempo por unidade"
+          value={(minutes || "—") + (minutes ? " min" : "")}
+        />
+        <ValueRow
+          label="Quantidade"
+          value={String(result.unidades ?? 1) + " un."}
+        />
+        <ValueRow
+          label="Embalagem"
+          value={pack?.nome || "Conforme configuração da loja"}
+        />
+      </Disclosure>
+    </View>
+  );
+}
+function Breakdown({ result }: { result: Result }) {
+  const t = useTheme();
+  const costs = result.custos;
+  if (!costs) return null;
+  return (
+    <View style={{ gap: 10 }}>
+      <CostCards result={result} />
       <View
         style={{
           padding: 16,
@@ -426,49 +613,7 @@ function Breakdown({ result }: { result: Result }) {
           </Text>
         </View>
       )}
-      {!!result.filamentos?.length && (
-        <>
-          <Body strong>Filamentos utilizados</Body>
-          {result.filamentos.map((m, i) => (
-            <Card key={i}>
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-              >
-                <View
-                  style={{
-                    width: 17,
-                    height: 17,
-                    borderRadius: 9,
-                    borderWidth: 1,
-                    borderColor: t.border,
-                    backgroundColor: m.codigoCor || t.accentTint,
-                  }}
-                />
-                <View style={{ flex: 1 }}>
-                  <Body strong>{m.nome}</Body>
-                  {!!m.cor && <Body muted>{m.cor}</Body>}
-                </View>
-              </View>
-              <ValueRow
-                label="Quantidade utilizada"
-                value={decimal(String(m.gramas ?? 0)) + " g"}
-              />
-              <View
-                style={{
-                  borderTopWidth: 1,
-                  borderColor: t.border,
-                  paddingTop: 8,
-                }}
-              >
-                <ValueRow
-                  label="Custo deste filamento"
-                  value={money(m.custo)}
-                />
-              </View>
-            </Card>
-          ))}
-        </>
-      )}
+      {!!result.filamentos?.length && <FilamentsUsed result={result} />}
     </View>
   );
 }
@@ -858,6 +1003,7 @@ type Material = {
   grams: string;
   color?: string;
   name?: string;
+  suggested?: boolean;
 };
 export function CalculationForm({
   quick,
@@ -878,6 +1024,8 @@ export function CalculationForm({
     referencedMaterials(initial?.materiais, initial?.gramas ?? ""),
   );
   const nextKey = useRef(materials.length),
+    suggestionRevision = useRef(0),
+    photoRevision = useRef(0),
     lock = useRef(false);
   const [sale, setSale] = useState(initialSale),
     [file, setFile] = useState<Schema["ArquivoConsulta"]>();
@@ -888,14 +1036,46 @@ export function CalculationForm({
     error?: string;
   }>();
   const [quickKey, setQuickKey] = useState("");
-  function loadMaterials(refs: CatalogRow["materiais"], fallback: string) {
-    const rows = referencedMaterials(refs, fallback);
+  async function loadMaterials(
+    refs: CatalogRow["materiais"],
+    fallback: string,
+  ) {
+    const rows: Material[] = referencedMaterials(refs, fallback);
+    const revision = ++suggestionRevision.current;
     nextKey.current = rows.length;
     setMaterials(rows);
+    const suggested = await Promise.all(
+      rows.map(async (material) => {
+        if (!material.color) return material;
+        try {
+          const response = await request<{ itens?: CatalogRow[] }>(
+            "/catalogo/filamentos?pagina=0&busca=" +
+              encodeURIComponent(material.color),
+          );
+          const color = material.color!.replace(/^#/, "").toUpperCase();
+          const filament = response.itens?.find(
+            (item) =>
+              item.id &&
+              item.codigoCor?.replace(/^#/, "").toUpperCase() === color,
+          );
+          return filament
+            ? {
+                ...material,
+                item: { ...filament, id: filament.id! },
+                suggested: true,
+              }
+            : material;
+        } catch {
+          return material;
+        }
+      }),
+    );
+    if (revision === suggestionRevision.current) setMaterials(suggested);
   }
   const [photo, setPhoto] = useState<{ type: string; base64: string } | null>(
     null,
   );
+  const [photoLoading, setPhotoLoading] = useState(false);
   async function choosePhoto() {
     if (lock.current) return;
     lock.current = true;
@@ -903,7 +1083,11 @@ export function CalculationForm({
     setError("");
     try {
       const picked = await pickCalculationPhoto();
-      if (picked) setPhoto(picked);
+      if (picked) {
+        photoRevision.current++;
+        setPhotoLoading(false);
+        setPhoto(picked);
+      }
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Não foi possível abrir a foto.",
@@ -977,6 +1161,34 @@ export function CalculationForm({
       prev.map((m) => (m.key === key ? { ...m, ...patch } : m)),
     );
   }
+  async function selectPiece(item?: Selection) {
+    setPiece(item);
+    setMinutes(String(item?.minutos ?? ""));
+    void loadMaterials(item?.materiais, item?.gramas ?? "");
+    const revision = ++photoRevision.current;
+    setPhoto(null);
+    setPhotoLoading(false);
+    if (!item?.id || item.placaMiniatura == null) return;
+    setPhotoLoading(true);
+    try {
+      const image = await request<Schema["FotoCatalogo"]>(
+        "/catalogo/pecas/" +
+          encodeURIComponent(item.id) +
+          "/placas/" +
+          item.placaMiniatura +
+          "/foto",
+      );
+      if (revision === photoRevision.current && image.base64 && image.tipo)
+        setPhoto({ type: image.tipo, base64: image.base64 });
+    } catch {
+      // A peça pode não ter uma imagem disponível; o cálculo segue normalmente.
+    } finally {
+      if (revision === photoRevision.current) setPhotoLoading(false);
+    }
+  }
+  useEffect(() => {
+    if (initial) void selectPiece(initial);
+  }, []);
   function makeInput() {
     if (markup && !Number.isFinite(numeric(markup)))
       throw new Error("Informe um markup válido.");
@@ -1154,70 +1366,40 @@ export function CalculationForm({
     <View style={{ flex: 1 }}>
       <ModuleScreen
         lightHeader
-        section={!quick && step > 0 && !result ? stages[step - 1] : "Calcular"}
+        section="Calcular"
         title={
           result && !quick
             ? result.id
               ? "Cálculo salvo"
-              : "Resultado da impressão"
+              : "Resultado do cálculo"
             : quick
               ? "Consultar sem salvar"
               : "Calcular e salvar"
         }
-        onBack={back}
+        onBack={menu}
       >
         {defaults.loading ? (
           <ActivityIndicator />
         ) : defaults.error ? (
           <Notice message={defaults.error} onRetry={defaults.retry} />
         ) : result && !quick ? (
-          <Card>
-            <Body strong>
-              {result.id ? "Cálculo salvo" : "Resultado da consulta"}
-            </Body>
-            {result.id ? (
+          result.id ? (
+            <Card>
               <CalculationIdentity id={result.id} name={result.nome} large />
-            ) : (
-              <>
-                {photo && (
-                  <Image
-                    accessibilityLabel="Foto escolhida para este cálculo"
-                    source={{
-                      uri: "data:" + photo.type + ";base64," + photo.base64,
-                    }}
-                    resizeMode="contain"
-                    style={{ width: "100%", height: 112 }}
-                  />
-                )}
-                <Body>{result.nome}</Body>
-              </>
-            )}
-            <Body muted>{result.unidades} un.</Body>
-            <Breakdown result={result} />
-            {result.id ? (
+              <Body muted>{result.unidades} un.</Body>
               <Button
                 label="Ver meus cálculos"
                 onPress={() => router.setParams({ modo: "historico" })}
               />
-            ) : (
-              <>
-                {!quick && (
-                  <Button
-                    label="Confirmar e salvar"
-                    busy={busy}
-                    disabled={busy}
-                    onPress={() => void submit(true)}
-                  />
-                )}
-                <Button
-                  label="Ajustar cálculo"
-                  variant="secondary"
-                  disabled={busy}
-                  onPress={back}
-                />
-              </>
-            )}
-          </Card>
+            </Card>
+          ) : (
+            <CalculationResult
+              result={result}
+              printer={printer}
+              pack={pack}
+              minutes={minutes}
+            />
+          )
         ) : (
           <View pointerEvents={busy ? "none" : "auto"} style={{ gap: 12 }}>
             {!quick && (
@@ -1241,183 +1423,289 @@ export function CalculationForm({
               </View>
             )}
             {(quick || step === 0) && (
-              <Card>
-                <SectionTitle number="01" title="Materiais" />
-                {quick && (
-                  <>
-                    <Button
-                      variant="secondary"
-                      label={
-                        file ? "Trocar arquivo 3MF" : "Importar arquivo 3MF"
-                      }
-                      onPress={() => void importFile()}
+              <>
+                {!quick && (
+                  <Card>
+                    <Picker
+                      label="Peça"
+                      category="pecas"
+                      value={piece}
+                      onChange={(item) => void selectPiece(item)}
                     />
-                    {file && (
-                      <>
-                        {file.imagemPreviewDataUri && (
-                          <Image
-                            accessibilityLabel="Prévia da peça importada"
-                            source={{ uri: file.imagemPreviewDataUri }}
-                            resizeMode="contain"
-                            style={{
-                              width: "100%",
-                              height: 110,
-                              borderRadius: 8,
-                            }}
-                          />
-                        )}
-                        <Body strong>{file.nome}</Body>
-                        <Body muted>
-                          {file.placas} placa(s)
-                          {file.completo
-                            ? ""
-                            : " · Confira o tempo e o consumo do fatiamento."}
-                        </Body>
-                      </>
-                    )}
-                  </>
-                )}
-                {!quick && (
-                  <Picker
-                    label="Peça"
-                    category="pecas"
-                    value={piece}
-                    onChange={(p) => {
-                      setPiece(p);
-                      setMinutes(String(p?.minutos ?? ""));
-                      loadMaterials(p?.materiais, p?.gramas ?? "");
-                    }}
-                  />
-                )}
-                {!quick && (
-                  <View style={{ gap: 8 }}>
                     <View
                       style={{
                         flexDirection: "row",
-                        gap: 6,
                         alignItems: "center",
+                        gap: 10,
                       }}
                     >
-                      <Body muted>Foto do cálculo</Body>
-                      <OptionalBadge />
-                    </View>
-                    {photo && (
-                      <Image
-                        accessibilityLabel="Foto escolhida para este cálculo"
-                        source={{
-                          uri: "data:" + photo.type + ";base64," + photo.base64,
-                        }}
-                        resizeMode="contain"
+                      <View
                         style={{
-                          width: "100%",
-                          height: 132,
+                          width: 56,
+                          height: 56,
                           borderRadius: 10,
+                          overflow: "hidden",
                           backgroundColor: t.accentTint,
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
-                      />
-                    )}
-                    <Button
-                      variant="secondary"
-                      label={photo ? "Trocar foto" : "Adicionar foto"}
-                      onPress={() => void choosePhoto()}
-                    />
-                    {photo ? (
-                      <Button
-                        variant="ghost"
-                        label="Remover foto"
-                        onPress={() => setPhoto(null)}
-                      />
-                    ) : (
-                      <Body muted>JPG, PNG ou WEBP · até 3 MB</Body>
-                    )}
-                  </View>
-                )}
-                <Field
-                  label="Quantidade de unidades"
-                  keyboardType="number-pad"
-                  value={units}
-                  onChangeText={setUnits}
-                />
-                {materials.map((m, index) => (
-                  <View
-                    key={m.key}
-                    style={{
-                      gap: 8,
-                      borderWidth: 1,
-                      borderColor: t.border,
-                      borderRadius: 10,
-                      padding: 12,
-                    }}
-                  >
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                        gap: 7,
-                      }}
-                    >
-                      <Body strong>Filamento {index + 1}</Body>
-                      {m.color && (
+                      >
+                        {photo ? (
+                          <Image
+                            accessibilityLabel="Foto do cálculo"
+                            source={{
+                              uri:
+                                "data:" +
+                                photo.type +
+                                ";base64," +
+                                photo.base64,
+                            }}
+                            resizeMode="cover"
+                            style={{ width: 56, height: 56 }}
+                          />
+                        ) : photoLoading ? (
+                          <ActivityIndicator color={t.primaryText} />
+                        ) : null}
+                      </View>
+                      <View style={{ flex: 1, gap: 4 }}>
                         <View
                           style={{
-                            height: 16,
-                            width: 16,
-                            borderRadius: 8,
-                            borderColor: t.border,
-                            borderWidth: 1,
-                            backgroundColor: m.color,
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 6,
+                            flexWrap: "wrap",
                           }}
+                        >
+                          <Body strong>Foto do cálculo</Body>
+                          <OptionalBadge />
+                        </View>
+                      </View>
+                      {photo ? (
+                        <View style={{ flexDirection: "row", gap: 6 }}>
+                          <Button
+                            variant="secondary"
+                            label="Trocar"
+                            disabled={photoLoading}
+                            onPress={() => void choosePhoto()}
+                          />
+                          <Button
+                            variant="danger"
+                            label="Remover"
+                            disabled={photoLoading}
+                            onPress={() => {
+                              photoRevision.current++;
+                              setPhoto(null);
+                            }}
+                          />
+                        </View>
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          label="Adicionar foto"
+                          disabled={photoLoading}
+                          onPress={() => void choosePhoto()}
                         />
                       )}
-                      <Body muted>
-                        {[m.name, m.color?.toUpperCase()]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </Body>
                     </View>
-                    <Picker
-                      label="Filamento"
-                      category="filamentos"
-                      value={m.item}
-                      onChange={(item) => update(m.key, { item })}
-                    />
-                    <Field
-                      label={
-                        quick
-                          ? file
-                            ? "Consumo por arquivo (g)"
-                            : "Consumo total do lote (g)"
-                          : "Consumo por unidade (g)"
-                      }
-                      keyboardType="decimal-pad"
-                      value={m.grams}
-                      onChangeText={(grams) => update(m.key, { grams })}
-                    />
-                    {materials.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        label="Remover filamento"
-                        onPress={() =>
-                          setMaterials(materials.filter((x) => x.key !== m.key))
-                        }
-                      />
-                    )}
-                  </View>
-                ))}
-                {materials.length < 100 && (
-                  <Button
-                    variant="ghost"
-                    label="Adicionar filamento"
-                    onPress={() =>
-                      setMaterials([
-                        ...materials,
-                        { key: nextKey.current++, grams: "" },
-                      ])
-                    }
-                  />
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        borderTopWidth: 1,
+                        borderColor: t.border,
+                        paddingTop: 10,
+                      }}
+                    >
+                      <Body strong>Quantidade de unidades</Body>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 12,
+                        }}
+                      >
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Diminuir unidades"
+                          disabled={Number(units) <= 1}
+                          onPress={() =>
+                            setUnits(
+                              String(Math.max(1, (Number(units) || 1) - 1)),
+                            )
+                          }
+                          style={{
+                            width: 42,
+                            height: 42,
+                            borderWidth: 1,
+                            borderColor: t.border,
+                            borderRadius: 11,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            opacity: Number(units) <= 1 ? 0.5 : 1,
+                          }}
+                        >
+                          <Text style={{ color: t.primaryText, fontSize: 22 }}>
+                            −
+                          </Text>
+                        </Pressable>
+                        <Text
+                          style={{
+                            color: t.text,
+                            minWidth: 20,
+                            textAlign: "center",
+                            fontSize: 17,
+                            fontWeight: "700",
+                          }}
+                        >
+                          {units}
+                        </Text>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Aumentar unidades"
+                          disabled={Number(units) >= 10000}
+                          onPress={() =>
+                            setUnits(
+                              String(Math.min(10000, (Number(units) || 1) + 1)),
+                            )
+                          }
+                          style={{
+                            width: 42,
+                            height: 42,
+                            borderWidth: 1,
+                            borderColor: t.border,
+                            borderRadius: 11,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            opacity: Number(units) >= 10000 ? 0.5 : 1,
+                          }}
+                        >
+                          <Text style={{ color: t.primaryText, fontSize: 22 }}>
+                            +
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </Card>
                 )}
-              </Card>
+                <Card>
+                  {quick && <SectionTitle number="01" title="Materiais" />}
+                  {quick && (
+                    <>
+                      <Button
+                        variant="secondary"
+                        label={file ? "Trocar arquivo" : "Escolher arquivo 3MF"}
+                        onPress={() => void importFile()}
+                      />
+                      {file && (
+                        <>
+                          {file.imagemPreviewDataUri && (
+                            <Image
+                              accessibilityLabel="Prévia da peça importada"
+                              source={{ uri: file.imagemPreviewDataUri }}
+                              resizeMode="contain"
+                              style={{
+                                width: "100%",
+                                height: 110,
+                                borderRadius: 8,
+                              }}
+                            />
+                          )}
+                          <Body strong>{file.nome}</Body>
+                          <Body muted>
+                            {file.placas} placa(s)
+                            {file.completo
+                              ? ""
+                              : " · Confira o tempo e o consumo do fatiamento."}
+                          </Body>
+                        </>
+                      )}
+                    </>
+                  )}
+                  {materials.map((m, index) => (
+                    <View
+                      key={m.key}
+                      style={{
+                        gap: 8,
+                        borderWidth: 1,
+                        borderColor: t.border,
+                        borderRadius: 10,
+                        padding: 12,
+                      }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: 7,
+                        }}
+                      >
+                        <Body strong>Filamento {index + 1}</Body>
+                        {m.suggested && <Badge>Sugerido pelo arquivo</Badge>}
+                      </View>
+                      {m.name || m.color ? (
+                        <Body muted>
+                          No arquivo:{" "}
+                          {[m.name, m.color?.toUpperCase()]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </Body>
+                      ) : null}
+                      <Picker
+                        label="Filamento"
+                        category="filamentos"
+                        value={m.item}
+                        onChange={(item) => {
+                          suggestionRevision.current++;
+                          update(m.key, { item, suggested: false });
+                        }}
+                      />
+                      <Field
+                        label={
+                          quick && file
+                            ? "Consumo por arquivo (g)"
+                            : "Consumo por unidade (g)"
+                        }
+                        keyboardType="decimal-pad"
+                        value={m.grams}
+                        onChangeText={(grams) => update(m.key, { grams })}
+                      />
+                      {materials.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          label="Remover filamento"
+                          onPress={() =>
+                            setMaterials(
+                              materials.filter((x) => x.key !== m.key),
+                            )
+                          }
+                        />
+                      )}
+                    </View>
+                  ))}
+                  {quick && (
+                    <Field
+                      label="Quantidade de unidades"
+                      keyboardType="number-pad"
+                      value={units}
+                      onChangeText={setUnits}
+                    />
+                  )}
+                  {materials.length < 100 && (
+                    <Button
+                      variant="secondary"
+                      label="Adicionar filamento"
+                      onPress={() =>
+                        setMaterials([
+                          ...materials,
+                          { key: nextKey.current++, grams: "" },
+                        ])
+                      }
+                    />
+                  )}
+                </Card>
+              </>
             )}
             {(quick || step === 1) && (
               <Card>
@@ -1623,7 +1911,7 @@ export function CalculationForm({
         )}
       </ModuleScreen>
       {!quick &&
-        !result &&
+        (!result || !result.id) &&
         defaults.data &&
         !defaults.loading &&
         !defaults.error && (
@@ -1641,17 +1929,35 @@ export function CalculationForm({
             <View style={{ flex: 1 }}>
               <Button
                 variant="secondary"
-                label="Voltar"
+                label={
+                  result
+                    ? "Ajustar cálculo"
+                    : step === 0
+                      ? "Cancelar"
+                      : "Voltar"
+                }
                 disabled={busy}
                 onPress={back}
               />
             </View>
             <View style={{ flex: 1 }}>
               <Button
-                label={step < 3 ? "Continuar" : "Ver resultado"}
+                label={
+                  result
+                    ? "Confirmar e salvar"
+                    : step < 3
+                      ? "Continuar"
+                      : "Ver resultado"
+                }
                 busy={busy}
                 disabled={busy}
-                onPress={step < 3 ? next : () => void submit(false)}
+                onPress={
+                  result
+                    ? () => void submit(true)
+                    : step < 3
+                      ? next
+                      : () => void submit(false)
+                }
               />
             </View>
           </View>

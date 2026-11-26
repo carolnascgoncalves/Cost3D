@@ -48,7 +48,7 @@ export function ModuleHeader({
   return (
     <View
       style={{
-        backgroundColor: wide || lightHeader ? t.background : t.header,
+        backgroundColor: t.background,
         paddingHorizontal: wide ? 48 : 20,
         paddingTop: wide ? 40 : 20,
         paddingBottom: 18,
@@ -59,7 +59,7 @@ export function ModuleHeader({
         accessibilityRole={onBack ? "button" : undefined}
         onPress={onBack}
         style={{
-          color: wide || lightHeader ? t.pageMuted : t.onPrimary,
+          color: t.pageMuted,
           fontSize: 11,
           letterSpacing: 1.1,
         }}
@@ -69,7 +69,7 @@ export function ModuleHeader({
       <Text
         accessibilityRole="header"
         style={{
-          color: wide || lightHeader ? t.pageText : t.onPrimary,
+          color: t.pageText,
           fontSize: wide ? 34 : 24,
           fontWeight: "700",
         }}

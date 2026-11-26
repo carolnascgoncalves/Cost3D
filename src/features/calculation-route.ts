@@ -7,6 +7,7 @@ export function pieceCalculation(row: CatalogRow) {
       peca: row.id ?? "",
       nome: row.nome ?? "",
       materiais: JSON.stringify(row.materiais ?? []),
+      placa: String(row.placaMiniatura ?? ""),
       gramas: row.gramas ?? "",
       minutos: String(row.minutos ?? ""),
     },
