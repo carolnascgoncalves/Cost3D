@@ -559,6 +559,16 @@ export function BudgetWizard({
         onBack={back}
       >
         {!readonly && <Steps step={view} />}
+        {readonly && saved && !["RASCUNHO", "CANCELADO"].includes(saved.resumo.status) && (
+          <View style={{ gap: 6 }}>
+            <View style={{ flexDirection: "row", gap: 4 }}>
+              {[0, 1, 2, 3].map((i) => (
+                <View key={i} style={{ flex: 1, height: 4, borderRadius: 3, backgroundColor: i < ({ ENVIADO: 1, APROVADO: 2, PRONTO: 3, ENTREGUE: 4, CANCELADO: 4 } as Record<string, number>)[saved.resumo.status] ? t.primary : t.border }} />
+              ))}
+            </View>
+            <Body muted>{saved.resumo.status === "ENVIADO" ? "Enviado · aguardando aprovação" : saved.resumo.status === "APROVADO" ? "A produzir" : saved.resumo.status === "PRONTO" ? "Pronto para entregar" : "Entregue"}</Body>
+          </View>
+        )}
         {!!error && <Notice message={error} />}
         {stage === 0 && (
           <>
@@ -1123,37 +1133,47 @@ export function BudgetWizard({
                 </View>
               </View>
             </Card>
-            {lines.map((l, i) => (
-              <Card key={l.id || i} style={row}>
-                <CalculationPhoto
-                  id={l.referencia ?? undefined}
-                  name={l.nome}
-                />
-                <View style={{ flex: 1 }}>
-                  <Body strong>{l.nome}</Body>
-                  <Body muted>
-                    {l.quantidade} un. × {money(l.preco)}
-                  </Body>
+            <Card style={{ gap: 0 }}>
+              {lines.map((l, i) => (
+                <View key={l.id || i}>
+                  {i > 0 && (
+                    <View
+                      style={{
+                        height: 1,
+                        backgroundColor: t.border,
+                        marginVertical: 8,
+                      }}
+                    />
+                  )}
+                  <View style={{ ...row, gap: 8 }}>
+                    <CalculationPhoto
+                      id={l.referencia ?? undefined}
+                      name={l.nome}
+                      size={36}
+                    />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Body strong>{l.nome}</Body>
+                      <Body muted>
+                        {l.quantidade} un. × {money(l.preco)}
+                      </Body>
+                    </View>
+                    <Body strong>{money(l.quantidade * l.preco)}</Body>
+                  </View>
                 </View>
-                <Body strong>{money(l.quantidade * l.preco)}</Body>
-              </Card>
-            ))}
-            <Card>
-              <ValueRow label="Peças" value={money(subtotal)} />
-              <ValueRow label="Desconto" value={money(discount)} />
-              <ValueRow label="Frete cobrado" value={money(form.frete)} />
+              ))}
               <View
                 style={{
                   ...row,
                   justifyContent: "space-between",
                   borderTopWidth: 1,
                   borderColor: t.border,
-                  paddingTop: 10,
+                  paddingTop: 12,
+                  marginTop: 10,
                 }}
               >
                 <Body>Total ao cliente</Body>
                 <Text
-                  style={{ fontSize: 22, fontWeight: "700", color: t.text }}
+                  style={{ fontSize: 20, fontWeight: "700", color: t.text }}
                 >
                   {money(total)}
                 </Text>
@@ -1177,22 +1197,27 @@ export function BudgetWizard({
               />
               <ValueRow label="Taxas" value={money(preview?.taxas ?? 0)} />
             </Expand>
+            <View style={{ gap: 8 }}>
+              <View style={{ ...row, gap: 6 }}>
+                <Body muted>Observações para o cliente</Body>
+                <Text style={{ color: t.primaryText, backgroundColor: t.accentTint, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, fontSize: 11 }}>Opcional</Text>
+              </View>
             <Card>
               <Field
                 optional
                 editable={!readonly}
-                label="Observações para o cliente"
-                multiline
-                placeholder="Ex.: retirada na loja após a confirmação de que as peças estão prontas."
+                label="Observação"
+                placeholder="Ex.: retirada na loja"
                 value={form.observacoes}
                 onChangeText={(v) => field("observacoes", v)}
               />
             </Card>
-            <Card>
-              <View style={row}>
-                <Icon name="send" size={21} color={t.primaryText} />
-                <Body strong>Compartilhar com o cliente</Body>
-              </View>
+            </View>
+            <Expand
+              icon="send"
+              title="Compartilhar e materiais"
+              note="WhatsApp, PDF, outros canais e reposição"
+            >
               <View style={row}>
                 {["WhatsApp", "PDF"].map((k, i) => (
                   <View key={k} style={{ flex: 1 }}>
@@ -1209,12 +1234,6 @@ export function BudgetWizard({
               <Body muted>
                 Abrir o WhatsApp não marca a proposta como enviada.
               </Body>
-            </Card>
-            <Expand
-              icon="send"
-              title="Compartilhar e materiais"
-              note="Outros canais, materiais e reposição"
-            >
               <View style={{ ...row, alignItems: "stretch" }}>
                 <View style={{ flex: 1 }}>
                   <Button

@@ -50,6 +50,8 @@ export default function Movements() {
   const [draft, setDraft] = useState(filter);
   const [pull, setPull] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [choosingType, setChoosingType] = useState(false);
+  const [customPeriod, setCustomPeriod] = useState(false);
   const [error, setError] = useState("");
   const { width } = useWindowDimensions();
   const wide = width >= 700;
@@ -91,6 +93,24 @@ export default function Movements() {
     return start.toISOString().slice(0, 10);
   }
   const total = query.data?.movimentacoes?.total || 0;
+  const groupedMovements = (query.data?.movimentacoes?.itens ?? []).reduce<
+    { key: string; items: Movement[] }[]
+  >((groups, item) => {
+    const parsed = item.data ? new Date(item.data) : null;
+    const key =
+      parsed && !Number.isNaN(parsed.getTime())
+        ? new Intl.DateTimeFormat("en-CA", {
+            timeZone: "America/Sao_Paulo",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).format(parsed)
+        : "sem-data";
+    const last = groups.at(-1);
+    if (last?.key === key) last.items.push(item);
+    else groups.push({ key, items: [item] });
+    return groups;
+  }, []);
   function apply() {
     const start = toIsoDate(draft.inicio),
       end = toIsoDate(draft.fim);
@@ -104,7 +124,10 @@ export default function Movements() {
     }
     setError("");
     setMovements({ ...draft, busca: draft.busca.trim(), pagina: 0 });
-    if (mobile) setExpanded(false);
+    if (mobile) {
+      setChoosingType(false);
+      setExpanded(false);
+    }
   }
   function clear() {
     setDraft({ ...defaultMovements });
@@ -119,6 +142,42 @@ export default function Movements() {
   }
   const filterFields = (
     <View style={{ gap: 12 }}>
+      {mobile ? (
+        <>
+          <Body muted>Período</Body>
+          <View style={{ ...layout.row, flexWrap: "wrap" }}>
+            {[[7, "7 dias"], [30, "30 dias"], [0, "Este mês"]].map(([days, label]) => {
+              const start = periodStart(Number(days));
+              const selected = !customPeriod && !draft.tudo && ((toIsoDate(draft.inicio) === start && toIsoDate(draft.fim) === today) || (Number(days) === 30 && !draft.inicio && !draft.fim));
+              return <Chip key={String(label)} label={String(label)} selected={selected} onPress={() => { setCustomPeriod(false); setDraft({ ...draft, inicio: displayDate(start), fim: displayDate(today), tudo: false }); }} />;
+            })}
+            <Chip label="Personalizado" selected={customPeriod} onPress={() => { setCustomPeriod(true); setDraft({ ...draft, inicio: draft.inicio || displayDate(periodStart(30)), fim: draft.fim || displayDate(today), tudo: false }); }} />
+          </View>
+          {customPeriod && !draft.tudo && (
+            <View style={{ flexDirection: wide ? "row" : "column", gap: 8 }}>
+              <Field label="Data inicial" placeholder="dd/mm/aaaa" value={draft.inicio} maxLength={10} keyboardType="numbers-and-punctuation" onChangeText={(inicio) => setDraft({ ...draft, inicio })} />
+              <Field label="Data final" placeholder="dd/mm/aaaa" value={draft.fim} maxLength={10} keyboardType="numbers-and-punctuation" onChangeText={(fim) => setDraft({ ...draft, fim })} />
+            </View>
+          )}
+          <View style={{ flexDirection: "row", justifyContent: "flex-end" }}><Chip label="Todo o período" selected={draft.tudo} onPress={() => { setCustomPeriod(false); setDraft({ ...draft, tudo: !draft.tudo }); }} /></View>
+          <Body muted>Direção</Body>
+          <View style={{ ...layout.row, flexWrap: "nowrap" }}>
+            {[["", "Todas"], ["entrada", "Entradas"], ["saida", "Saídas"]].map(([value, label]) => <View key={value} style={{ flex: 1 }}><Chip label={label} selected={draft.direcao === value} onPress={() => setDraft({ ...draft, direcao: value })} /></View>)}
+          </View>
+          <Body muted>Tipo</Body>
+          <Pressable onPress={() => setChoosingType(true)} style={{ minHeight: 44, borderWidth: 1, borderColor: t.border, borderRadius: 12, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <Body>{movementTypes.find(([value]) => value === draft.tipo)?.[1] ?? "Todos os tipos"}</Body><Icon name="chevron-right" color={t.primaryText} />
+          </Pressable>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Body>Mostrar saldos iniciais</Body><Chip label={draft.saldo ? "Ligado" : "Desligado"} selected={draft.saldo} onPress={() => setDraft({ ...draft, saldo: !draft.saldo })} />
+          </View>
+          <View style={{ ...layout.row, marginTop: 4 }}>
+            <View style={{ flex: 1 }}><Button label="Limpar" variant="secondary" onPress={() => { setDraft({ ...defaultMovements }); setError(""); }} /></View>
+            <View style={{ flex: 1 }}><Button label="Aplicar" onPress={apply} /></View>
+          </View>
+        </>
+      ) : (
+      <>
       {mobile && (
         <>
           <Body muted>Tipo</Body>
@@ -215,6 +274,8 @@ export default function Movements() {
         />
       )}
       <Button label="Aplicar filtros" onPress={apply} />
+      </>
+      )}
     </View>
   );
   if (!account?.tenantId)
@@ -362,6 +423,7 @@ export default function Movements() {
                 variant="secondary"
                 onPress={() => {
                   setDraft({ ...filter, busca: draft.busca });
+                  setCustomPeriod(!!filter.inicio && ![periodStart(7), periodStart(30), periodStart(0)].includes(toIsoDate(filter.inicio) || ""));
                   setError("");
                   setExpanded(true);
                 }}
@@ -392,6 +454,7 @@ export default function Movements() {
                   onPress={() => {
                     if (mobile) {
                       setDraft({ ...filter, busca: draft.busca });
+                      setCustomPeriod(!!filter.inicio && ![periodStart(7), periodStart(30), periodStart(0)].includes(toIsoDate(filter.inicio) || ""));
                       setError("");
                     }
                     setExpanded(!expanded);
@@ -443,10 +506,24 @@ export default function Movements() {
                     gap: 12,
                   }}
                 >
-                  <Body strong>Filtros</Body>
+                  <View style={{ ...layout.row, justifyContent: "space-between", alignItems: "center" }}>
+                    <Body strong>Filtros</Body>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Fechar filtros" onPress={() => setExpanded(false)} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: t.border, borderRadius: 10 }}><Text style={{ color: t.primaryText, fontSize: 22 }}>×</Text></Pressable>
+                  </View>
                   {filterFields}
                   {!!error && <Notice message={error} />}
                 </FormScrollView>
+              </View>
+            </Modal>
+          )}
+          {mobile && (
+            <Modal visible={choosingType} transparent animationType="slide" onRequestClose={() => setChoosingType(false)}>
+              <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "#24183580" }}>
+                <Pressable onPress={() => setChoosingType(false)} style={{ flex: 1 }} />
+                <View style={{ maxHeight: "65%", backgroundColor: t.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, gap: 8 }}>
+                  <View style={{ ...layout.row, justifyContent: "space-between" }}><Body strong>Tipo</Body><Button label="Fechar" variant="ghost" onPress={() => setChoosingType(false)} /></View>
+                  {movementTypes.map(([value, label]) => <Pressable key={value} onPress={() => { const saldo = value === "SALDO_INICIAL" || draft.saldo; setDraft({ ...draft, tipo: value, saldo }); setChoosingType(false); }} style={{ minHeight: 44, justifyContent: "center", borderBottomWidth: 1, borderBottomColor: t.border }}><Body strong={draft.tipo === value}>{value ? label : "Todos os tipos"}</Body></Pressable>)}
+                </View>
               </View>
             </Modal>
           )}
@@ -499,9 +576,50 @@ export default function Movements() {
           />
         )}
       </View>
-      {query.data?.movimentacoes?.itens?.map((item, index) => (
-        <MovementItem key={item.id ?? index} item={item} />
-      ))}
+      {groupedMovements.map((group) => {
+        const date =
+          group.key === "sem-data" ? null : new Date(group.key + "T12:00:00");
+        const label = date
+          ? new Intl.DateTimeFormat("pt-BR", {
+              day: "numeric",
+              month: "long",
+              timeZone: "America/Sao_Paulo",
+            }).format(date)
+          : "Data não informada";
+        return (
+          <View
+            key={group.key}
+            style={{
+              borderWidth: 1,
+              borderColor: t.border,
+              borderRadius: 12,
+              overflow: "hidden",
+              backgroundColor: t.surface,
+              marginBottom: 10,
+            }}
+          >
+            <View
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+                backgroundColor: t.accentTint,
+              }}
+            >
+              <Text style={{ color: t.primaryText, fontSize: 13 }}>
+                {group.key === today ? "Hoje · " : ""}
+                {label}
+              </Text>
+            </View>
+            {group.items.map((item, index) => (
+              <MovementItem
+                key={item.id ?? index}
+                item={item}
+                last={index === group.items.length - 1}
+              />
+            ))}
+          </View>
+        );
+      })}
       {!total && !query.loading && !query.error ? (
         <Empty
           title="Nenhuma movimentação encontrada"
@@ -519,7 +637,7 @@ export default function Movements() {
     </ModuleScreen>
   );
 }
-function MovementItem({ item }: { item: Movement }) {
+function MovementItem({ item, last }: { item: Movement; last: boolean }) {
   const t = useTheme();
   const mobile = useWindowDimensions().width < 900;
   const negative = item.quantidade?.startsWith("-");
@@ -532,99 +650,123 @@ function MovementItem({ item }: { item: Movement }) {
       : null;
   const hasPhoto = item.origem === "lote" && !!item.referencia;
   return (
-    <Card>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        {hasPhoto ? (
-          <CalculationPhoto id={item.referencia} name={detail || title} />
-        ) : (
-          <View
+    <View
+      style={{
+        minHeight: 72,
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        borderBottomWidth: last ? 0 : 1,
+        borderColor: t.border,
+      }}
+    >
+      {hasPhoto ? (
+        <CalculationPhoto
+          id={item.referencia}
+          name={detail || title}
+          size={38}
+        />
+      ) : (
+        <View
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 17,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: negative ? t.dangerBackground : t.success + "30",
+          }}
+        >
+          {swatch ? (
+            <View
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 8,
+                backgroundColor: swatch,
+                borderWidth: 1,
+                borderColor: t.border,
+              }}
+            />
+          ) : (
+            <Icon
+              name={
+                item.tipo?.includes("VENDA")
+                  ? "shop"
+                  : item.medida === "g"
+                    ? "palette"
+                    : "arrow-switch"
+              }
+              color={color}
+              size={18}
+            />
+          )}
+        </View>
+      )}
+      <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            flexWrap: "wrap",
+          }}
+        >
+          {hasPhoto && swatch && (
+            <View
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: t.border,
+                backgroundColor: swatch,
+              }}
+            />
+          )}
+          <Text
             style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: t.accentTint,
+              flexShrink: 1,
+              fontSize: 15,
+              fontWeight: "700",
+              color: t.text,
             }}
           >
-            {swatch ? (
-              <View
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 11,
-                  backgroundColor: swatch,
-                  borderWidth: 1,
-                  borderColor: t.border,
-                }}
-              />
-            ) : (
-              <Icon
-                name={
-                  item.tipo?.includes("VENDA")
-                    ? "shop"
-                    : item.medida === "g"
-                      ? "palette"
-                      : "arrow-switch"
-                }
-                color={t.primaryText}
-              />
-            )}
-          </View>
-        )}
-        <View style={{ flex: 1, gap: 3 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {hasPhoto && swatch && (
-              <View
-                style={{
-                  width: 13,
-                  height: 13,
-                  borderRadius: 7,
-                  borderWidth: 1,
-                  borderColor: t.border,
-                  backgroundColor: swatch,
-                }}
-              />
-            )}
-            <Text
-              style={{
-                flexShrink: 1,
-                fontSize: 16,
-                fontWeight: "700",
-                color: t.text,
-              }}
-            >
-              {title || "Movimentação"}
-            </Text>
-          </View>
-          {!!detail && <Body muted>{detail}</Body>}
-          <Body muted>{movementLabels[item.tipo || ""] || item.tipo}</Body>
-        </View>
-        <Text
-          selectable
-          style={{ fontSize: mobile ? 15 : 18, fontWeight: "700", color }}
-        >
-          {quantity(item.quantidade, item.medida, true)}
-        </Text>
-      </View>
-      <View
-        style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          justifyContent: "space-between",
-          gap: 6,
-          borderTopWidth: 1,
-          borderColor: t.border,
-          paddingTop: 8,
-        }}
-      >
-        <Body muted>{dateTime(item.data)}</Body>
-        {item.saldoApos != null && (
-          <Text style={{ color: t.primaryText, fontWeight: "600" }}>
-            Saldo após · {quantity(item.saldoApos, "g")}
+            {title || "Movimentação"}
           </Text>
+          <Text
+            style={{
+              color: t.primaryText,
+              backgroundColor: t.accentTint,
+              paddingHorizontal: 7,
+              paddingVertical: 2,
+              borderRadius: 7,
+              fontSize: 11,
+              fontWeight: "600",
+            }}
+          >
+            {movementLabels[item.tipo || ""] || item.tipo}
+          </Text>
+        </View>
+        <Body muted>
+          {item.tipo === "VENDA_3D" || item.tipo === "VENDA_PRODUTO"
+            ? "Venda registrada"
+            : detail || movementLabels[item.tipo || ""] || item.tipo}
+          {item.data ? " · " + dateTime(item.data).split(", ").at(-1) : ""}
+        </Body>
+        {item.saldoApos != null && (
+          <Body muted>Saldo após: {quantity(item.saldoApos, "g")}</Body>
         )}
       </View>
-    </Card>
+      <Text
+        selectable
+        style={{ fontSize: mobile ? 14 : 16, fontWeight: "700", color }}
+      >
+        {quantity(item.quantidade, item.medida, true)}
+      </Text>
+      <Icon name="chevron-right" size={15} color={t.muted} />
+    </View>
   );
 }

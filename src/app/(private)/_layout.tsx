@@ -75,6 +75,7 @@ export default function PrivateLayout() {
     [
       "/catalog",
       "/sales",
+      "/other-sales",
       "/calculate",
       "/dashboard",
       "/budgets",
@@ -160,6 +161,7 @@ function Shell({
             "/extra-costs",
             "/account",
             "/settings",
+            "/other-sales",
           ].some((prefix) => path === prefix || path.startsWith(prefix + "/")));
       return (
         <Pressable

@@ -26,7 +26,7 @@ const sections: [string, MenuItem[]][] = [
     [
       { label: "Clientes", route: "/customers", icon: "person" },
       { label: "Orçamentos e pedidos", route: "/budgets", icon: "file-text" },
-      { label: "Outras vendas", site: "/outras-vendas", icon: "bag-plus" },
+      { label: "Outras vendas", route: "/other-sales", icon: "bag-plus" },
     ],
   ],
   [

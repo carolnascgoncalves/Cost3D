@@ -21,7 +21,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import type { components } from "@/api/schema";
 import { ApiError, request } from "@/api/session";
 import {
@@ -42,6 +42,7 @@ import {
   Pagination,
   ValueRow,
 } from "@/components/ui";
+import { ListSearch } from "@/components/list-search";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { Icon, type IconName } from "@/components/icon";
 import { useTheme } from "@/theme/provider";
@@ -475,6 +476,17 @@ function CalculationResult({
           </Text>
         </View>
       )}
+      <Card style={{ gap: 8 }}>
+        <Body strong>Resumo do lote · {result.unidades ?? 1} un.</Body>
+        <ValueRow
+          label="Receita estimada do lote"
+          value={recommended == null ? "—" : money(recommended * (result.unidades ?? 1))}
+        />
+        <ValueRow
+          label="Lucro líquido estimado do lote"
+          value={profit == null ? "—" : money(profit * (result.unidades ?? 1))}
+        />
+      </Card>
       <Card>
         <CostCards result={result} />
       </Card>
@@ -826,13 +838,6 @@ export function Picker({
                   )}
                 </>
               )}
-              {category === "embalagens" && (
-                <Button
-                  variant="ghost"
-                  label="Limpar seleção"
-                  onPress={() => choose()}
-                />
-              )}
             </FormScrollView>
           </View>
         </KeyboardAvoidingView>
@@ -901,26 +906,18 @@ export function CalculationHistory() {
       section="Calcular"
       onBack={menu}
     >
-      <Card>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Body strong>Cálculos realizados</Body>
-          {q.data && <Badge>{q.data.total} registros</Badge>}
-        </View>
-        <Field
-          label="Buscar peça"
+      <View style={{ gap: 8 }}>
+        <ListSearch
+          accessibilityLabel="Buscar cálculos"
+          placeholder="Buscar por peça"
           value={search}
           onChangeText={(v) => {
             setSearch(v);
             setPage(0);
           }}
         />
-      </Card>
+        <Body muted>{q.data ? `${q.data.total} cálculos` : "Seus cálculos salvos"}</Body>
+      </View>
       {q.loading ? (
         <ActivityIndicator />
       ) : q.error ? (
@@ -1432,160 +1429,171 @@ export function CalculationForm({
                       value={piece}
                       onChange={(item) => void selectPiece(item)}
                     />
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 10,
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: 10,
-                          overflow: "hidden",
-                          backgroundColor: t.accentTint,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        {photo ? (
-                          <Image
-                            accessibilityLabel="Foto do cálculo"
-                            source={{
-                              uri:
-                                "data:" +
-                                photo.type +
-                                ";base64," +
-                                photo.base64,
-                            }}
-                            resizeMode="cover"
-                            style={{ width: 56, height: 56 }}
-                          />
-                        ) : photoLoading ? (
-                          <ActivityIndicator color={t.primaryText} />
-                        ) : null}
-                      </View>
-                      <View style={{ flex: 1, gap: 4 }}>
+                    {piece && (
+                      <>
                         <View
                           style={{
                             flexDirection: "row",
                             alignItems: "center",
-                            gap: 6,
-                            flexWrap: "wrap",
+                        gap: 10,
+                        marginTop: 4,
                           }}
                         >
-                          <Body strong>Foto do cálculo</Body>
-                          <OptionalBadge />
-                        </View>
-                      </View>
-                      {photo ? (
-                        <View style={{ flexDirection: "row", gap: 6 }}>
-                          <Button
-                            variant="secondary"
-                            label="Trocar"
-                            disabled={photoLoading}
-                            onPress={() => void choosePhoto()}
-                          />
-                          <Button
-                            variant="danger"
-                            label="Remover"
-                            disabled={photoLoading}
-                            onPress={() => {
-                              photoRevision.current++;
-                              setPhoto(null);
+                          <View
+                            style={{
+                              width: 56,
+                              height: 56,
+                              borderRadius: 10,
+                              overflow: "hidden",
+                              backgroundColor: t.accentTint,
+                              alignItems: "center",
+                              justifyContent: "center",
                             }}
-                          />
+                          >
+                            {photo ? (
+                              <Image
+                                accessibilityLabel="Foto do cálculo"
+                                source={{
+                                  uri:
+                                    "data:" +
+                                    photo.type +
+                                    ";base64," +
+                                    photo.base64,
+                                }}
+                                resizeMode="cover"
+                                style={{ width: 56, height: 56 }}
+                              />
+                            ) : photoLoading ? (
+                              <ActivityIndicator color={t.primaryText} />
+                            ) : null}
+                          </View>
+                          <View style={{ flex: 1, gap: 4 }}>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 6,
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <Body strong>Foto do cálculo</Body>
+                              <OptionalBadge />
+                            </View>
+                          </View>
+                          {photo ? (
+                            <View style={{ flexDirection: "row", gap: 6 }}>
+                              <Button
+                                variant="secondary"
+                                label="Trocar"
+                                disabled={photoLoading}
+                                onPress={() => void choosePhoto()}
+                              />
+                              <Button
+                                variant="danger"
+                                label="Remover"
+                                disabled={photoLoading}
+                                onPress={() => {
+                                  photoRevision.current++;
+                                  setPhoto(null);
+                                }}
+                              />
+                            </View>
+                          ) : (
+                            <Button
+                              variant="secondary"
+                              label="Adicionar foto"
+                              disabled={photoLoading}
+                              onPress={() => void choosePhoto()}
+                            />
+                          )}
                         </View>
-                      ) : (
-                        <Button
-                          variant="secondary"
-                          label="Adicionar foto"
-                          disabled={photoLoading}
-                          onPress={() => void choosePhoto()}
-                        />
-                      )}
-                    </View>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        borderTopWidth: 1,
-                        borderColor: t.border,
-                        paddingTop: 10,
-                      }}
-                    >
-                      <Body strong>Quantidade de unidades</Body>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 12,
-                        }}
-                      >
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel="Diminuir unidades"
-                          disabled={Number(units) <= 1}
-                          onPress={() =>
-                            setUnits(
-                              String(Math.max(1, (Number(units) || 1) - 1)),
-                            )
-                          }
+                        <View
                           style={{
-                            width: 42,
-                            height: 42,
-                            borderWidth: 1,
-                            borderColor: t.border,
-                            borderRadius: 11,
+                            flexDirection: "row",
                             alignItems: "center",
-                            justifyContent: "center",
-                            opacity: Number(units) <= 1 ? 0.5 : 1,
-                          }}
-                        >
-                          <Text style={{ color: t.primaryText, fontSize: 22 }}>
-                            −
-                          </Text>
-                        </Pressable>
-                        <Text
-                          style={{
-                            color: t.text,
-                            minWidth: 20,
-                            textAlign: "center",
-                            fontSize: 17,
-                            fontWeight: "700",
-                          }}
-                        >
-                          {units}
-                        </Text>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel="Aumentar unidades"
-                          disabled={Number(units) >= 10000}
-                          onPress={() =>
-                            setUnits(
-                              String(Math.min(10000, (Number(units) || 1) + 1)),
-                            )
-                          }
-                          style={{
-                            width: 42,
-                            height: 42,
-                            borderWidth: 1,
+                            justifyContent: "space-between",
+                            borderTopWidth: 1,
                             borderColor: t.border,
-                            borderRadius: 11,
-                            alignItems: "center",
-                            justifyContent: "center",
-                            opacity: Number(units) >= 10000 ? 0.5 : 1,
+                            paddingTop: 10,
                           }}
                         >
-                          <Text style={{ color: t.primaryText, fontSize: 22 }}>
-                            +
-                          </Text>
-                        </Pressable>
-                      </View>
-                    </View>
+                          <Body strong>Quantidade de unidades</Body>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 12,
+                            }}
+                          >
+                            <Pressable
+                              accessibilityRole="button"
+                              accessibilityLabel="Diminuir unidades"
+                              disabled={Number(units) <= 1}
+                              onPress={() =>
+                                setUnits(
+                                  String(Math.max(1, (Number(units) || 1) - 1)),
+                                )
+                              }
+                              style={{
+                                width: 42,
+                                height: 42,
+                                borderWidth: 1,
+                                borderColor: t.border,
+                                borderRadius: 11,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                opacity: Number(units) <= 1 ? 0.5 : 1,
+                              }}
+                            >
+                              <Text
+                                style={{ color: t.primaryText, fontSize: 22 }}
+                              >
+                                −
+                              </Text>
+                            </Pressable>
+                            <Text
+                              style={{
+                                color: t.text,
+                                minWidth: 20,
+                                textAlign: "center",
+                                fontSize: 17,
+                                fontWeight: "700",
+                              }}
+                            >
+                              {units}
+                            </Text>
+                            <Pressable
+                              accessibilityRole="button"
+                              accessibilityLabel="Aumentar unidades"
+                              disabled={Number(units) >= 10000}
+                              onPress={() =>
+                                setUnits(
+                                  String(
+                                    Math.min(10000, (Number(units) || 1) + 1),
+                                  ),
+                                )
+                              }
+                              style={{
+                                width: 42,
+                                height: 42,
+                                borderWidth: 1,
+                                borderColor: t.border,
+                                borderRadius: 11,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                opacity: Number(units) >= 10000 ? 0.5 : 1,
+                              }}
+                            >
+                              <Text
+                                style={{ color: t.primaryText, fontSize: 22 }}
+                              >
+                                +
+                              </Text>
+                            </Pressable>
+                          </View>
+                        </View>
+                      </>
+                    )}
                   </Card>
                 )}
                 <Card>
@@ -1642,6 +1650,21 @@ export function CalculationForm({
                         }}
                       >
                         <Body strong>Filamento {index + 1}</Body>
+                        {(m.item?.codigoCor || m.color) && (
+                          <View
+                            accessibilityLabel={
+                              "Cor " + (m.item?.cor || m.name || "do arquivo")
+                            }
+                            style={{
+                              width: 13,
+                              height: 13,
+                              borderRadius: 7,
+                              borderWidth: 1,
+                              borderColor: t.border,
+                              backgroundColor: m.item?.codigoCor || m.color,
+                            }}
+                          />
+                        )}
                         {m.suggested && <Badge>Sugerido pelo arquivo</Badge>}
                       </View>
                       {m.name || m.color ? (

@@ -5,6 +5,7 @@ import {
   Pressable,
   ScrollView,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useTheme } from "@/theme/provider";
@@ -14,7 +15,7 @@ import { Icon } from "@/components/icon";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { request } from "@/api/session";
 import { BudgetWizard } from "@/features/budget-wizard";
-import { Metric, Avatar, money, row, type Summary } from "@/features/budget-ui";
+import { Metric, money, row, type Summary } from "@/features/budget-ui";
 type List = {
   itens: Summary[];
   total: number;
@@ -24,7 +25,6 @@ type List = {
   produzir: number;
 };
 const filters = [
-  ["", "Todos"],
   ["RASCUNHO", "Rascunho"],
   ["APROVADO", "A produzir"],
   ["PRONTO", "Pronto"],
@@ -38,7 +38,9 @@ export default function Budgets() {
     [id, select] = useState(params.id || ""),
     [details, showDetails] = useState(false),
     [archived, archive] = useState(false),
-    [filter, filterBy] = useState(""),
+    [filtersOpen, setFiltersOpen] = useState(false),
+    [selectedStatuses, setSelectedStatuses] = useState<string[]>([]),
+    [draftStatuses, setDraftStatuses] = useState<string[]>([]),
     [page, setPage] = useState(0),
     [confirm, setConfirm] = useState<{ s: Summary; action: string }>(),
     [error, setError] = useState(""),
@@ -50,7 +52,9 @@ export default function Budgets() {
           page +
           "&arquivados=" +
           archived +
-          (filter ? "&status=" + filter : ""),
+          (selectedStatuses.length
+            ? "&status=" + selectedStatuses.join(",")
+            : ""),
   );
   async function act() {
     if (!confirm || busy) return;
@@ -114,43 +118,177 @@ export default function Budgets() {
             value={String(q.data?.produzir ?? "—")}
           />
         </View>
-        <View style={row}>
+        {!archived && (
+          <Button label="+ Novo orçamento" onPress={() => select("new")} />
+        )}
+        <View style={{ ...row, alignItems: "center" }}>
           {["Ativos", "Arquivados"].map((s, i) => (
-            <View key={s} style={{ flex: 1 }}>
-              <Button
-                label={s}
-                variant={archived === !!i ? "primary" : "secondary"}
-                onPress={() => {
-                  archive(!!i);
-                  setPage(0);
-                  setConfirm(undefined);
-                }}
-              />
-            </View>
-          ))}
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 6 }}
-        >
-          {filters.map(([key, label]) => (
             <Chip
-              key={key}
+              key={s}
               secondary
-              selected={key === filter}
-              label={label}
+              selected={archived === !!i}
+              label={s}
               onPress={() => {
-                filterBy(key);
+                archive(!!i);
                 setPage(0);
                 setConfirm(undefined);
               }}
             />
           ))}
-        </ScrollView>
-        {!archived && (
-          <Button label="+ Novo orçamento" onPress={() => select("new")} />
-        )}
+          <View style={{ flex: 1 }} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Filtrar orçamentos"
+            onPress={() => {
+              setDraftStatuses(selectedStatuses);
+              setFiltersOpen(true);
+            }}
+            style={{
+              width: 42,
+              height: 42,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1,
+              borderColor: t.border,
+              borderRadius: 12,
+              backgroundColor: t.surface,
+            }}
+          >
+            <View style={{ gap: 4 }}>
+              {[16, 11, 6].map((width) => (
+                <View
+                  key={width}
+                  style={{
+                    height: 2,
+                    width,
+                    borderRadius: 1,
+                    backgroundColor: t.primaryText,
+                  }}
+                />
+              ))}
+            </View>
+            {selectedStatuses.length > 0 && (
+              <View
+                style={{
+                  position: "absolute",
+                  right: 4,
+                  top: 4,
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: t.primary,
+                }}
+              />
+            )}
+          </Pressable>
+        </View>
+        <Modal
+          visible={filtersOpen}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setFiltersOpen(false)}
+        >
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "flex-end",
+              backgroundColor: "rgba(32,22,52,0.46)",
+            }}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Fechar filtros"
+              onPress={() => setFiltersOpen(false)}
+              style={{ flex: 1 }}
+            />
+            <View
+              style={{
+                backgroundColor: t.surface,
+                borderTopLeftRadius: 22,
+                borderTopRightRadius: 22,
+                padding: 18,
+                gap: 8,
+                maxHeight: "80%",
+              }}
+            >
+              <View style={{ ...row, justifyContent: "space-between" }}>
+                <Body strong>Filtrar por situação</Body>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Fechar filtros"
+                  onPress={() => setFiltersOpen(false)}
+                  hitSlop={8}
+                >
+                  <Text style={{ color: t.muted, fontSize: 24 }}>×</Text>
+                </Pressable>
+              </View>
+              <ScrollView contentContainerStyle={{ gap: 4 }}>
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: draftStatuses.length === 0 }}
+                  onPress={() => setDraftStatuses([])}
+                  style={{ ...row, minHeight: 46, paddingHorizontal: 8 }}
+                >
+                  <Text
+                    style={{ color: t.primaryText, fontSize: 18, width: 24 }}
+                  >
+                    {draftStatuses.length === 0 ? "✓" : "○"}
+                  </Text>
+                  <Body>Todos</Body>
+                </Pressable>
+                {filters.map(([key, label]) => {
+                  const checked = draftStatuses.includes(key);
+                  return (
+                    <Pressable
+                      key={key}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked }}
+                      onPress={() =>
+                        setDraftStatuses((current) =>
+                          checked
+                            ? current.filter((item) => item !== key)
+                            : [...current, key],
+                        )
+                      }
+                      style={{ ...row, minHeight: 46, paddingHorizontal: 8 }}
+                    >
+                      <Text
+                        style={{
+                          color: checked ? t.primary : t.muted,
+                          fontSize: 18,
+                          width: 24,
+                        }}
+                      >
+                        {checked ? "✓" : "○"}
+                      </Text>
+                      <Body>{label}</Body>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+              <View style={row}>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    label="Limpar"
+                    variant="secondary"
+                    onPress={() => setDraftStatuses([])}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Button
+                    label="Aplicar"
+                    onPress={() => {
+                      setSelectedStatuses(draftStatuses);
+                      setPage(0);
+                      setFiltersOpen(false);
+                      setConfirm(undefined);
+                    }}
+                  />
+                </View>
+              </View>
+            </View>
+          </View>
+        </Modal>
         {!!error && <Notice message={error} />}
         {q.loading ? (
           <ActivityIndicator />
@@ -207,16 +345,15 @@ export default function Budgets() {
                     <Body strong>{s.titulo}</Body>
                   </Pressable>
                   <View style={row}>
-                    <Avatar name={s.cliente} />
                     <View style={{ flex: 1 }}>
-                      <Body>{s.cliente || "Cliente a informar"}</Body>
+                      <Body muted>{s.cliente || "Cliente a informar"}</Body>
                     </View>
                     <Body strong>{money(s.total)}</Body>
                   </View>
                   <View style={row}>
                     {["Proposta", "Produção", "Entrega", "Pago"].map(
                       (label, i) => (
-                        <View key={label} style={{ flex: 1, gap: 3 }}>
+                        <View key={label} style={{ flex: 1 }}>
                           <View
                             style={{
                               height: 5,
@@ -226,9 +363,6 @@ export default function Budgets() {
                                 : t.selectionTint,
                             }}
                           />
-                          <Text style={{ color: t.muted, fontSize: 11 }}>
-                            {label}
-                          </Text>
                         </View>
                       ),
                     )}
@@ -236,7 +370,8 @@ export default function Budgets() {
                   <View style={row}>
                     <View style={{ flex: 1 }}>
                       <Body muted>
-                        {s.pago ? "Pagamento registrado" : "Pagamento pendente"}
+                        {s.situacao} · {steps.filter(Boolean).length} de 4 ·{" "}
+                        {s.pago ? "pagamento registrado" : "pagamento pendente"}
                       </Body>
                     </View>
                     <View style={{ flex: 1.3 }}>
