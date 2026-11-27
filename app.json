@@ -40,7 +40,8 @@
           "imageWidth": 76,
           "backgroundColor": "#FAF6F2"
         }
-      ]
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true

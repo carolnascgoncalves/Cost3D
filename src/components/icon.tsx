@@ -1,4 +1,6 @@
-import { Image, View } from "react-native";
+import { useEffect } from "react";
+import { Image } from "expo-image";
+import { Image as NativeImage } from "react-native";
 const icons = {
   send: require("../../assets/images/catalogo/send.png"),
   copy: require("../../assets/images/catalogo/copy.png"),
@@ -53,8 +55,9 @@ export function Icon({
   return (
     <Image
       accessible={false}
-      fadeDuration={0}
-      resizeMode="contain"
+      cachePolicy="memory-disk"
+      contentFit="contain"
+      transition={0}
       source={icons[name]}
       style={{ width: size, height: size, tintColor: color }}
     />
@@ -62,22 +65,12 @@ export function Icon({
 }
 /** Keeps the app's small raster icon set decoded between route changes. */
 export function IconWarmup() {
-  return (
-    <View
-      accessible={false}
-      pointerEvents="none"
-      style={{ position: "absolute", width: 1, height: 1, opacity: 0 }}
-    >
-      {Object.values(icons).map((source, index) => (
-        <Image
-          key={index}
-          accessible={false}
-          fadeDuration={0}
-          source={source}
-          style={{ position: "absolute", width: 1, height: 1 }}
-        />
-      ))}
-    </View>
-  );
+  useEffect(() => {
+    const uris = Object.values(icons)
+      .map((source) => NativeImage.resolveAssetSource(source)?.uri)
+      .filter((uri): uri is string => !!uri);
+    void Image.prefetch(uris, "memory-disk");
+  }, []);
+  return null;
 }
 export type IconName = keyof typeof icons;

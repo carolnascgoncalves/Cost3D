@@ -33,19 +33,23 @@ const items = [
   { path: "/more", icon: "three-dots", label: "Mais", store: false },
 ] as const;
 export default function PrivateLayout() {
-  const { account, loading } = useAuth();
+  const { account, loading, cachedTheme, saveTheme } = useAuth();
   const path = usePathname();
-  const [theme, setTheme] = useState<TenantTheme | null>(null);
+  const [theme, setTheme] = useState<TenantTheme | null>(cachedTheme);
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
   useEffect(() => {
     let active = true;
-    setTheme(null);
     setError("");
     if (account?.tenantId && !account.trocaSenhaObrigatoria) {
+      const cached = cachedTheme?.id === account.tenantId ? cachedTheme : null;
+      setTheme(cached);
       request<TenantTheme>("/tenant")
         .then((value) => {
-          if (active) setTheme(value);
+          if (active) {
+            setTheme(value);
+            void saveTheme(value);
+          }
         })
         .catch((e) => {
           if (active)
@@ -55,6 +59,8 @@ export default function PrivateLayout() {
                 : "Não foi possível carregar o tema.",
             );
         });
+    } else {
+      setTheme(null);
     }
     return () => {
       active = false;
@@ -63,7 +69,9 @@ export default function PrivateLayout() {
     account?.id,
     account?.tenantId,
     account?.trocaSenhaObrigatoria,
+    cachedTheme?.id,
     revision,
+    saveTheme,
   ]);
   if (loading) return <SessionLoading />;
   if (!account) return <Redirect href="/login" />;

@@ -2,10 +2,10 @@ import {
   ActivityIndicator,
   View,
   useWindowDimensions,
-  Image,
   type StyleProp,
   type ImageStyle,
 } from "react-native";
+import { Image } from "expo-image";
 const source = require("../../assets/images/cost3d-logo.png");
 export function BrandLogo({
   width = 260,
@@ -18,11 +18,13 @@ export function BrandLogo({
 }) {
   return (
     <Image
+      cachePolicy="memory-disk"
+      contentFit="contain"
+      transition={0}
       source={
         light ? require("../../assets/images/cost3d-logo-claro.png") : source
       }
       accessibilityLabel="Cost3D"
-      resizeMode="contain"
       style={[
         {
           width,

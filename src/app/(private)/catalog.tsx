@@ -3,7 +3,7 @@ import { ListSearch } from "@/components/list-search";
 import { CatalogEditor } from "@/features/catalog-editor";
 import { pieceCalculation } from "@/features/calculation-route";
 import { router, useLocalSearchParams } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -69,6 +69,7 @@ function Listings({ category }: { category: Category }) {
   const [created, setCreated] = useState(false);
   const [piece, setPiece] = useState<Row>();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
   const [lowOnly, setLowOnly] = useState(false);
   const [selecting, setSelecting] = useState(false),
@@ -77,6 +78,10 @@ function Listings({ category }: { category: Category }) {
     [busy, setBusy] = useState(false),
     [result, setResult] = useState("");
   const lock = useRef(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
   function toggle(id: string) {
     setResult("");
     setSelected((old) =>
@@ -130,7 +135,7 @@ function Listings({ category }: { category: Category }) {
       "?pagina=" +
       page +
       "&busca=" +
-      encodeURIComponent(search.trim()),
+      encodeURIComponent(debouncedSearch),
   );
   const items = q.data?.itens ?? [];
   const lowStock =

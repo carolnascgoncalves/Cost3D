@@ -4310,6 +4310,17 @@
             "items": {
               "$ref": "#/components/schemas/PontoProducao"
             }
+          },
+          "receber": {
+            "type": "number"
+          },
+          "aguardandoVenda": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "estoqueCritico": {
+            "$ref": "#/components/schemas/FilamentoCatalogo",
+            "nullable": true
           }
         }
       },

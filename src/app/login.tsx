@@ -53,6 +53,7 @@ export default function Login() {
           }}
         >
           <Image
+            fadeDuration={0}
             source={require("../../assets/images/cost3d-mascote.png")}
             style={{ width: 120, height: 120 }}
             resizeMode="contain"

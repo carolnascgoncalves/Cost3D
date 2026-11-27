@@ -1,4 +1,5 @@
-import { Image, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { Image } from "expo-image";
 import { Body, Card } from "@/components/ui";
 import { Icon, type IconName } from "@/components/icon";
 import { useTheme } from "@/theme/provider";
@@ -113,6 +114,9 @@ export const stamp = (s?: string) =>
 export function PieceMark() {
   return (
     <Image
+      cachePolicy="memory-disk"
+      contentFit="cover"
+      transition={0}
       source={require("../../assets/images/cost3d-icone-marsala.png")}
       style={{ width: 36, height: 36, borderRadius: 8 }}
     />

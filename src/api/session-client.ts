@@ -37,6 +37,8 @@ export function createSession(options: Options) {
   let expired = () => {};
   async function raw(path: string, init: RequestInit = {}) {
     let response: Pick<Response, "ok" | "status" | "json">;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20_000);
     try {
       const url = options.url + "/api/v1" + path;
       response =
@@ -53,14 +55,19 @@ export function createSession(options: Options) {
                 ...(web ? { "X-Cost3D-Web": "1" } : {}),
                 ...init.headers,
               },
+              signal: init.signal ?? controller.signal,
             });
     } catch {
       throw new ApiError(
         0,
-        init.body instanceof FormData
+        controller.signal.aborted
+          ? "O servidor está demorando para responder. Aguarde um instante e tente novamente."
+          : init.body instanceof FormData
           ? "Não foi possível enviar o arquivo. Confira se ele está disponível no aparelho e se o servidor está acessível."
           : "Não foi possível conectar à API. Confira a conexão e o endereço do servidor.",
       );
+    } finally {
+      clearTimeout(timeoutId);
     }
     if (!response.ok) {
       const problem = await response.json().catch(() => ({}));
@@ -108,9 +115,20 @@ export function createSession(options: Options) {
         ...init,
         headers: { ...init.headers, Authorization: `Bearer ${access}` },
       });
+    const sendWithRetry = async () => {
+      try {
+        return await send();
+      } catch (error) {
+        const method = (init.method ?? "GET").toUpperCase();
+        const transient = error instanceof ApiError && (error.status === 0 || error.status >= 500);
+        if (method !== "GET" || !transient) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        return send();
+      }
+    };
     let response: Pick<Response, "ok" | "status" | "json">;
     try {
-      response = await send();
+      response = await sendWithRetry();
     } catch (error) {
       if (
         !(error instanceof ApiError) ||
@@ -120,7 +138,7 @@ export function createSession(options: Options) {
         throw error;
       try {
         if (token === access) await refreshSession();
-        response = await send();
+        response = await sendWithRetry();
       } catch (retryError) {
         if (
           retryError instanceof ApiError &&
@@ -165,6 +183,7 @@ export function createSession(options: Options) {
     login,
     logout,
     request,
+    getAccessToken: () => access,
     refreshSession,
     clearSession,
     onSessionExpired(callback: () => void) {

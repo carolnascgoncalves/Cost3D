@@ -6,6 +6,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import Svg, { Circle, Path, Polygon } from "react-native-svg";
 import type { components } from "@/api/schema";
 import { Body, Card } from "./ui";
 import { decimal, reais } from "@/features/format";
@@ -22,97 +23,165 @@ const platformTones: Record<string, string> = {
   "--dashboard-outro": "#9184a5",
   "--dashboard-sem-plataforma": "#ccc4d8",
 };
-const tone = (key?: string) => platformTones[key ?? ""] ?? "#9184a5";
+const tone = (key?: string) =>
+  /^#[\da-f]{6}$/i.test(key ?? "")
+    ? (key as string)
+    : (platformTones[key ?? ""] ?? "#9184a5");
 
 function mixColor(a: string, b: string, weight: number) {
-  const left = [1, 3, 5].map((index) => parseInt(a.slice(index, index + 2), 16));
-  const right = [1, 3, 5].map((index) => parseInt(b.slice(index, index + 2), 16));
-  return "#" + left.map((value, index) => Math.round(value * (1 - weight) + right[index] * weight).toString(16).padStart(2, "0")).join("");
+  const left = [1, 3, 5].map((index) =>
+    parseInt(a.slice(index, index + 2), 16),
+  );
+  const right = [1, 3, 5].map((index) =>
+    parseInt(b.slice(index, index + 2), 16),
+  );
+  return (
+    "#" +
+    left
+      .map((value, index) =>
+        Math.round(value * (1 - weight) + right[index] * weight)
+          .toString(16)
+          .padStart(2, "0"),
+      )
+      .join("")
+  );
 }
 
 function categoryColor(name: string) {
   let hash = 0;
-  for (const char of name.toLocaleLowerCase("pt-BR")) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  for (const char of name.toLocaleLowerCase("pt-BR"))
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
   const hue = hash % 360;
   const saturation = 0.52;
   const lightness = 0.8;
   const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
   const second = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
-  const base = hue < 60 ? [chroma, second, 0] : hue < 120 ? [second, chroma, 0] : hue < 180 ? [0, chroma, second] : hue < 240 ? [0, second, chroma] : hue < 300 ? [second, 0, chroma] : [chroma, 0, second];
+  const base =
+    hue < 60
+      ? [chroma, second, 0]
+      : hue < 120
+        ? [second, chroma, 0]
+        : hue < 180
+          ? [0, chroma, second]
+          : hue < 240
+            ? [0, second, chroma]
+            : hue < 300
+              ? [second, 0, chroma]
+              : [chroma, 0, second];
   const offset = lightness - chroma / 2;
-  return "#" + base.map((value) => Math.round((value + offset) * 255).toString(16).padStart(2, "0")).join("");
+  return (
+    "#" +
+    base
+      .map((value) =>
+        Math.round((value + offset) * 255)
+          .toString(16)
+          .padStart(2, "0"),
+      )
+      .join("")
+  );
 }
+const categoryPalette = [
+  "#F3BCD0",
+  "#9FE1CB",
+  "#C8C4F2",
+  "#FAC775",
+  "#9BCDF2",
+  "#F5B99A",
+  "#A9DDE3",
+  "#F1C0E8",
+  "#C9DF9C",
+  "#E5B6AC",
+  "#B5C9EE",
+  "#F0D69B",
+  "#B8D6C2",
+  "#D7BDEB",
+  "#F2C6B5",
+  "#B4D8E9",
+  "#D8D0A5",
+  "#E7BFC9",
+];
 
 function Caption({ children }: { children: React.ReactNode }) {
   const t = useTheme();
   return <Text style={{ fontSize: 12, color: t.muted }}>{children}</Text>;
 }
 
-// Intersect two half-discs to draw a sector of at most 180 degrees.
-function Sector({
-  start,
-  diameter = 148,
-  angle,
-  color,
+function PlatformDonut({
+  slices,
+  size = 160,
+  stroke = 26,
 }: {
-  start: number;
-  diameter?: number;
-  angle: number;
-  color: string;
+  slices: { value: number; color: string }[];
+  size?: number;
+  stroke?: number;
 }) {
-  const r = diameter / 2;
+  const t = useTheme();
+  const total = slices.reduce((sum, s) => sum + s.value, 0);
+  const center = size / 2,
+    r = (size - stroke) / 2,
+    c = 2 * Math.PI * r;
+  let done = 0;
   return (
-    <View
-      style={[
-        StyleSheet.absoluteFill,
-        { transform: [{ rotate: start + "deg" }] },
-      ]}
-    >
-      <View
-        style={{
-          position: "absolute",
-          left: r,
-          width: r,
-          height: diameter,
-          overflow: "hidden",
-        }}
-      >
-        <View
-          style={{
-            width: diameter,
-            height: diameter,
-            left: -r,
-            transform: [{ rotate: angle + "deg" }],
-          }}
-        >
-          <View
-            style={{
-              width: r,
-              height: diameter,
-              backgroundColor: color,
-              borderTopLeftRadius: r,
-              borderBottomLeftRadius: r,
-            }}
-          />
-        </View>
-      </View>
-    </View>
+    <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+      <Circle
+        cx={center}
+        cy={center}
+        r={r}
+        fill="none"
+        stroke={t.border}
+        strokeWidth={stroke}
+      />
+      {total > 0 &&
+        slices.map((s, i) => {
+          const part = (c * s.value) / total,
+            // small gap between slices, none when there is only one
+            gap =
+              slices.filter((x) => x.value > 0).length > 1
+                ? Math.min(2, part / 3)
+                : 0,
+            offset = -done;
+          done += part;
+          return s.value > 0 ? (
+            <Circle
+              key={i}
+              cx={center}
+              cy={center}
+              r={r}
+              fill="none"
+              stroke={s.color}
+              strokeWidth={stroke}
+              strokeDasharray={`${Math.max(0, part - gap)} ${c}`}
+              strokeDashoffset={offset}
+              rotation={-90}
+              origin={`${center}, ${center}`}
+            />
+          ) : null;
+        })}
+    </Svg>
   );
 }
 
 export function PlatformChart({ data }: { data: Panel }) {
   const t = useTheme(),
     rows = data.plataformas ?? [];
+  const size = 160;
   const magnitude = rows.reduce(
     (sum, p) => sum + Math.abs(Number(p.lucro ?? 0)),
     0,
   );
   const count = rows.reduce((sum, p) => sum + (p.vendas ?? 0), 0);
-  let cursor = 0;
   return (
     <Card>
-      <Body strong>Lucro por plataforma</Body>
-      <Caption>Vendas 3D</Caption>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Body strong>Lucro por plataforma</Body>
+        <Caption>Vendas 3D</Caption>
+      </View>
       {rows.length ? (
         <>
           <View
@@ -122,56 +191,25 @@ export function PlatformChart({ data }: { data: Panel }) {
             }
             style={{
               alignSelf: "center",
-              width: 148,
-              height: 148,
-              borderRadius: 74,
-              backgroundColor: magnitude ? t.surface : t.border,
+              width: size,
+              height: size,
               alignItems: "center",
               justifyContent: "center",
+              marginVertical: 6,
             }}
           >
-            {rows.map((p, i) => {
-              const span = magnitude
-                  ? (360 * Math.abs(Number(p.lucro ?? 0))) / magnitude
-                  : 0,
-                start = cursor;
-              cursor += span;
-              const gap = span >= 359.999 ? 0 : Math.min(1.4, span / 4),
-                sweep = span - gap;
-              return (
-                sweep > 0 && (
-                  <Fragment key={i}>
-                    <Sector
-                      start={start + gap / 2}
-                      angle={Math.min(180, sweep)}
-                      color={tone(p.cor)}
-                    />
-                    {sweep > 180 && (
-                      <Sector
-                        start={start + 180 + gap / 2}
-                        angle={sweep - 180}
-                        color={tone(p.cor)}
-                      />
-                    )}
-                  </Fragment>
-                )
-              );
-            })}
-            <View
-              style={{
-                width: 104,
-                height: 104,
-                borderRadius: 52,
-                backgroundColor: t.surface,
-                alignItems: "center",
-                justifyContent: "center",
-                paddingHorizontal: 5,
-              }}
-            >
+            <PlatformDonut
+              size={size}
+              slices={rows.map((p) => ({
+                value: Math.abs(Number(p.lucro ?? 0)),
+                color: tone(p.cor),
+              }))}
+            />
+            <View style={{ width: size - 70, alignItems: "center" }}>
               <Text
                 adjustsFontSizeToFit
                 numberOfLines={1}
-                style={{ color: t.text, fontWeight: "700", fontSize: 16 }}
+                style={{ color: t.text, fontWeight: "700", fontSize: 18 }}
               >
                 {reais(data.lucroPlataformas)}
               </Text>
@@ -180,28 +218,109 @@ export function PlatformChart({ data }: { data: Panel }) {
               </Caption>
             </View>
           </View>
-          {rows.map((p, i) => (
-            <View key={i} style={styles.row}>
-              <View
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 3,
-                  backgroundColor: tone(p.cor),
-                }}
-              />
-              <Text style={{ flex: 1, color: t.text }}>{p.nome}</Text>
-              <Caption>
-                {reais(p.lucro)} · {p.vendas}{" "}
-                {p.vendas === 1 ? "venda" : "vendas"}
-              </Caption>
-            </View>
-          ))}
+          {rows.map((p, i) => {
+            const share = magnitude
+              ? Math.round((100 * Math.abs(Number(p.lucro ?? 0))) / magnitude)
+              : 0;
+            return (
+              <View key={i} style={styles.row}>
+                <View
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: tone(p.cor),
+                  }}
+                />
+                <Text numberOfLines={1} style={{ flex: 1, color: t.text }}>
+                  {p.nome}{" "}
+                  <Text style={{ fontSize: 11, color: t.muted }}>
+                    {p.vendas} {p.vendas === 1 ? "venda" : "vendas"}
+                  </Text>
+                </Text>
+                <Text style={{ color: t.text, fontWeight: "700" }}>
+                  {share}%
+                </Text>
+              </View>
+            );
+          })}
         </>
       ) : (
         <Body muted>Nenhuma venda 3D no período.</Body>
       )}
     </Card>
+  );
+}
+
+const stockColors = { low: "#d9534f", mid: "#e2a233", ok: "#6a9f2f" };
+const stockColor = (percent: number) =>
+  percent <= 15
+    ? stockColors.low
+    : percent <= 40
+      ? stockColors.mid
+      : stockColors.ok;
+
+// One ring = two SVG circles (instead of 60 absolutely positioned dots per filament).
+function StockRing({
+  percent,
+  color,
+  dot,
+  size = 56,
+}: {
+  percent: number;
+  color: string;
+  dot: string;
+  size?: number;
+}) {
+  const t = useTheme();
+  const stroke = 6,
+    center = size / 2,
+    r = (size - stroke) / 2,
+    c = 2 * Math.PI * r,
+    // an empty roll still shows a small marker at the top
+    len = percent <= 0 ? 0.01 : (c * Math.min(100, percent)) / 100;
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Circle
+          cx={center}
+          cy={center}
+          r={r}
+          fill="none"
+          stroke="transparent"
+          strokeWidth={stroke}
+        />
+        <Circle
+          cx={center}
+          cy={center}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${len} ${c}`}
+          rotation={-90}
+          origin={`${center}, ${center}`}
+        />
+      </Svg>
+      <View
+        style={{
+          width: 20,
+          height: 20,
+          borderRadius: 10,
+          borderWidth: 1,
+          borderColor: t.border,
+          backgroundColor: dot,
+        }}
+      />
+    </View>
   );
 }
 
@@ -213,10 +332,16 @@ export function FilamentStock({ items }: { items: Schema["EstoquePainel"][] }) {
     1,
     Math.min(3, Math.floor(width / (80 * Math.max(1, fontScale)))),
   );
-  const size = 52;
   return (
     <Card>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 28 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          minHeight: 28,
+        }}
+      >
         <Body strong>Estoque de filamentos</Body>
         <Caption>Saldo por rolo</Caption>
       </View>
@@ -227,7 +352,6 @@ export function FilamentStock({ items }: { items: Schema["EstoquePainel"][] }) {
         >
           {items.map((f, i) => {
             const n = Math.max(0, Math.min(100, f.restante ?? 0));
-            const color = n <= 34 ? "#c54c44" : n <= 64 ? "#d5a130" : "#648b70";
             const saldo = decimal(f.gramas, 2) + " g";
             return (
               <View
@@ -243,49 +367,13 @@ export function FilamentStock({ items }: { items: Schema["EstoquePainel"][] }) {
                   gap: 3,
                 }}
               >
-                <View
-                  style={{
-                    width: size,
-                    height: size,
-                    borderRadius: size / 2,
-                    backgroundColor: t.accentTint,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 2,
-                  }}
-                >
-                  {Array.from({ length: 60 }, (_, segment) => {
-                    const active = n === 0 ? segment === 0 : segment < Math.ceil(n * 0.6);
-                    if (!active) return null;
-                    const theta = (segment / 60) * Math.PI * 2 - Math.PI / 2;
-                    const dot = 7;
-                    const center = size / 2;
-                    const radius = center - dot / 2;
-                    return <View key={segment} style={{ position: "absolute", left: center + Math.cos(theta) * radius - dot / 2, top: center + Math.sin(theta) * radius - dot / 2, width: dot, height: dot, borderRadius: dot / 2, backgroundColor: color }} />;
-                  })}
-                  <View
-                    style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: 17,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor: t.surface,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 17,
-                        height: 17,
-                        borderRadius: 9,
-                        borderWidth: 1,
-                        borderColor: t.border,
-                        backgroundColor: f.cor ?? t.border,
-                      }}
-                    />
-                  </View>
-                </View>
+                <StockRing
+                  percent={n}
+                  color={stockColor(n)}
+                  dot={f.cor ?? t.border}
+                />
                 <Text
+                  numberOfLines={1}
                   style={{
                     fontSize: 13,
                     fontWeight: "600",
@@ -315,32 +403,136 @@ export function FilamentStock({ items }: { items: Schema["EstoquePainel"][] }) {
   );
 }
 
+// The funnel is drawn with SVG polygons, so it looks the same on web, iOS and Android
+// (the old version used CSS clip-path, which only exists on web).
 export function ProductionFlow({ data }: { data: Panel }) {
-  const [flowWidth, setFlowWidth] = useState(0);
-  const t = useTheme(),
-    values = [data.calculadas ?? 0, data.produzidas ?? 0, data.vendidas ?? 0];
-  const colors = [mixColor(t.primary, "#FFFFFF", 0.66), mixColor(t.primary, "#FFFFFF", 0.3), t.primary],
-    labels = ["calculados", "produzidos", "vendidos"];
+  const t = useTheme();
+  const [width, setWidth] = useState(0);
+  const values = [
+    data.calculadas ?? 0,
+    data.produzidas ?? 0,
+    data.vendidas ?? 0,
+  ];
+  const colors = [
+    mixColor(t.primary, "#FFFFFF", 0.66),
+    mixColor(t.primary, "#FFFFFF", 0.3),
+    t.primary,
+  ];
+  const labels = ["calculados", "produzidos", "vendidos"];
   const pending = Math.max(0, values[1] - values[2]);
+  const rates = [
+    values[0] ? Math.round((values[1] * 100) / values[0]) : 0,
+    values[1] ? Math.round((values[2] * 100) / values[1]) : 0,
+  ];
+  const rowH = 58,
+    gap = 6,
+    chipW = 54,
+    chipH = 26,
+    total = rowH * 3 + gap * 2;
+  // leave room on the right for the percentage chips
+  const first = width
+    ? Math.max(0.5, Math.min(0.8, (width - chipW * 2 - 8) / width))
+    : 0.7;
+  const edges = [1, first, first - 0.14, first - 0.24];
+  const inset = 3;
   return (
     <Card>
       <Body strong>Fluxo de produção</Body>
       <Caption>Impressões 3D calculadas no período</Caption>
-      <View onLayout={(event) => setFlowWidth(event.nativeEvent.layout.width)} style={{ alignItems: "center", gap: 0, paddingTop: 5 }}>
-        {values.map((value, index) => {
-          const outer = [1, 0.82, 0.64][index];
-          const inner = [0.82, 0.64, 0.5][index];
-          const side = flowWidth ? Math.max(1, (flowWidth * outer * (outer - inner)) / (2 * outer)) : 0;
-          const color = colors[index];
-          return <View key={labels[index]} style={{ width: `${outer * 100}%`, height: 46, flexDirection: "row", alignItems: "stretch", justifyContent: "center" }}>
-            {flowWidth > 0 && <View style={{ width: 0, height: 0, alignSelf: "flex-start", borderBottomWidth: 46, borderBottomColor: color, borderRightWidth: side, borderRightColor: "transparent" }} />}
-            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: color }}><Text style={{ color: readable(color), fontSize: 21, fontWeight: "700", lineHeight: 24 }}>{value}</Text><Text style={{ color: readable(color), fontSize: 12 }}>{labels[index]}</Text></View>
-            {flowWidth > 0 && <View style={{ width: 0, height: 0, alignSelf: "flex-start", borderBottomWidth: 46, borderBottomColor: color, borderLeftWidth: side, borderLeftColor: "transparent" }} />}
-          </View>;
-        })}
+      <View
+        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+        style={{ height: total, marginTop: 6 }}
+      >
+        {width > 0 && (
+          <>
+            <Svg width={width} height={total} style={StyleSheet.absoluteFill}>
+              {values.map((_, i) => {
+                const y0 = i * (rowH + gap) + inset,
+                  y1 = i * (rowH + gap) + rowH - inset;
+                const l0 = (width * (1 - edges[i])) / 2 + inset,
+                  l1 = (width * (1 - edges[i + 1])) / 2 + inset;
+                const pts = `${l0},${y0} ${width - l0},${y0} ${width - l1},${y1} ${l1},${y1}`;
+                return (
+                  <Polygon
+                    key={i}
+                    points={pts}
+                    fill={colors[i]}
+                    stroke={colors[i]}
+                    strokeWidth={inset * 2}
+                    strokeLinejoin="round"
+                  />
+                );
+              })}
+            </Svg>
+            {values.map((value, i) => (
+              <View
+                key={labels[i]}
+                pointerEvents="none"
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  top: i * (rowH + gap),
+                  height: rowH,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    color: readable(colors[i]),
+                    fontSize: 21,
+                    fontWeight: "700",
+                    lineHeight: 24,
+                  }}
+                >
+                  {value}
+                </Text>
+                <Text style={{ color: readable(colors[i]), fontSize: 12 }}>
+                  {labels[i]}
+                </Text>
+              </View>
+            ))}
+            {rates.map((rate, i) => (
+              <View
+                key={i}
+                pointerEvents="none"
+                accessible
+                accessibilityLabel={
+                  (i === 0
+                    ? "Produzidos de calculados: "
+                    : "Vendidos de produzidos: ") +
+                  rate +
+                  "%"
+                }
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  top: (i + 1) * (rowH + gap) - gap / 2 - chipH / 2,
+                  minWidth: chipW - 8,
+                  height: chipH,
+                  paddingHorizontal: 9,
+                  borderRadius: chipH / 2,
+                  backgroundColor: t.border,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{ color: t.text, fontSize: 11, fontWeight: "700" }}
+                >
+                  {rate}%
+                </Text>
+              </View>
+            ))}
+          </>
+        )}
       </View>
-      <View style={{ position: "absolute", right: 13, top: 89, gap: 37 }}><Text style={{ color: t.text, backgroundColor: t.border, borderRadius: 16, overflow: "hidden", paddingHorizontal: 9, paddingVertical: 5, fontSize: 11, fontWeight: "700" }}>{values[0] ? Math.round(values[1] * 100 / values[0]) : 0}%</Text><Text style={{ color: t.text, backgroundColor: t.border, borderRadius: 16, overflow: "hidden", paddingHorizontal: 9, paddingVertical: 5, fontSize: 11, fontWeight: "700" }}>{values[1] ? Math.round(values[2] * 100 / values[1]) : 0}%</Text></View>
-      <Caption>{pending === 1 ? "1 produzida ainda sem venda" : `${pending} produzidas ainda sem venda`}</Caption>
+      <Caption>
+        {pending === 1
+          ? "1 produzida ainda sem venda"
+          : `${pending} produzidas ainda sem venda`}
+      </Caption>
     </Card>
   );
 }
@@ -358,16 +550,69 @@ export function CategoryChart({
   items: Schema["VendasCategoria"][];
 }) {
   const t = useTheme();
-  const sorted = [...items].sort((a, b) => (b.unidades ?? 0) - (a.unidades ?? 0));
+  const sorted = [...items].sort(
+    (a, b) => (b.unidades ?? 0) - (a.unidades ?? 0),
+  );
+  const names = [...sorted]
+    .map((row) => row.nome ?? "")
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const colorsByName = new Map(
+    names.map((name, index) => [
+      name,
+      categoryPalette[index % categoryPalette.length],
+    ]),
+  );
   const total = sorted.reduce((sum, row) => sum + (row.unidades ?? 0), 0);
   return (
     <Card>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><Body strong>Vendas por categoria</Body><Caption>{total} unidades</Caption></View>
-      {sorted.length ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 3, marginTop: 2 }}>{sorted.map((row, index) => {
-        const color = categoryColor(row.nome ?? String(index));
-        const ink = readable(color);
-        return <View key={row.nome ?? index} style={{ flexGrow: index < 2 ? 2 : 1, flexBasis: index < 2 ? "46%" : "29%", height: 76, borderRadius: 9, padding: 9, justifyContent: "space-between", backgroundColor: color }}><Text numberOfLines={1} style={{ color: ink, fontSize: 12 }}>{row.nome}</Text><Text style={{ color: ink, fontSize: 20, fontWeight: "700" }}>{row.unidades}</Text></View>;
-      })}</View> : (
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Body strong>Vendas por categoria</Body>
+        <Caption>{total} unidades</Caption>
+      </View>
+      {sorted.length ? (
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 3,
+            marginTop: 2,
+          }}
+        >
+          {sorted.map((row, index) => {
+            const color =
+              colorsByName.get(row.nome ?? "") ??
+              categoryColor(row.nome ?? String(index));
+            const ink = readable(color);
+            return (
+              <View
+                key={row.nome ?? index}
+                style={{
+                  flexGrow: index < 2 ? 2 : 1,
+                  flexBasis: index < 2 ? "46%" : "29%",
+                  height: 76,
+                  borderRadius: 9,
+                  padding: 9,
+                  justifyContent: "space-between",
+                  backgroundColor: color,
+                }}
+              >
+                <Text numberOfLines={1} style={{ color: ink, fontSize: 12 }}>
+                  {row.nome}
+                </Text>
+                <Text style={{ color: ink, fontSize: 20, fontWeight: "700" }}>
+                  {row.unidades}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      ) : (
         <Body muted>Nenhuma unidade vendida no período.</Body>
       )}
     </Card>
@@ -375,55 +620,279 @@ export function CategoryChart({
 }
 
 type ProductionPoint = { data?: string; unidades?: number };
-export function ProductionRhythm({ points, period }: { points: ProductionPoint[]; period: string }) {
+const weekdayNames = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+const dateKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+type RhythmCell = {
+  key: string;
+  day: number;
+  label: string;
+  value: number;
+  today: boolean;
+};
+
+export function ProductionRhythm({
+  points,
+  period,
+}: {
+  points: ProductionPoint[];
+  period: string;
+}) {
   const t = useTheme();
+  const [selected, setSelected] = useState<string>();
   const days = period === "30" ? 30 : period === "90" ? 90 : 84;
-  const today = new Date();
-  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const first = new Date(end);
-  first.setDate(first.getDate() - days + 1);
-  first.setDate(first.getDate() - first.getDay());
-  const totalCells = Math.ceil((days + end.getDay() + 1) / 7) * 7;
-  const counts = new Map(points.map(point => [point.data ?? "", point.unidades ?? 0]));
-  const cells = Array.from({ length: totalCells }, (_, index) => {
-    const date = new Date(first);
-    date.setDate(first.getDate() + index);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-    return { key, day: date.getDate(), month: date.getMonth() === end.getMonth(), value: counts.get(key) ?? 0, current: date.getTime() === end.getTime() };
-  });
-  const maximum = Math.max(1, ...cells.map(cell => cell.value));
-  const colors = [t.surface, t.accentTint, mixColor(t.primary, "#FFFFFF", 0.28), t.primary];
-  return <Card>
-    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><Body strong>Ritmo de produção</Body><Caption>Impressões por dia</Caption></View>
-    {period === "tudo" && <Caption>Últimas 12 semanas</Caption>}
-    <View style={{ flexDirection: "row", gap: 4 }}>{["D", "S", "T", "Q", "Q", "S", "S"].map((day, index) => <Text key={index} style={{ flex: 1, textAlign: "center", color: t.muted, fontSize: 10 }}>{day}</Text>)}</View>
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 3 }}>{cells.map(cell => {
-      const level = cell.value === 0 ? 0 : cell.value / maximum < 0.34 ? 1 : cell.value / maximum < 0.68 ? 2 : 3;
-      return <View key={cell.key} accessible accessibilityLabel={cell.key + ", " + cell.value + " impressões"} style={{ width: "13.6%", flexGrow: 1, height: 36, borderRadius: 6, backgroundColor: colors[level], borderWidth: cell.current ? 1.5 : 1, borderColor: cell.current ? t.text : t.border, opacity: cell.month ? 1 : 0.55, alignItems: "center", justifyContent: "center" }}><Text style={{ color: readable(colors[level]), fontSize: 10 }}>{cell.day}</Text></View>;
-    })}</View>
-  </Card>;
+  const { weeks, total, active, maximum } = useMemo(() => {
+    const now = new Date();
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const start = new Date(end);
+    start.setDate(start.getDate() - days + 1);
+    const counts = new Map(points.map((p) => [p.data ?? "", p.unidades ?? 0]));
+    const cells: (RhythmCell | null)[] = Array.from(
+      { length: start.getDay() },
+      () => null,
+    );
+    let sum = 0,
+      busy = 0,
+      peak = 1;
+    for (let i = 0; i < days; i++) {
+      const date = new Date(start);
+      date.setDate(start.getDate() + i);
+      const key = dateKey(date);
+      const value = counts.get(key) ?? 0;
+      sum += value;
+      if (value > 0) busy++;
+      peak = Math.max(peak, value);
+      cells.push({
+        key,
+        day: date.getDate(),
+        label: `${weekdayNames[date.getDay()]}, ${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`,
+        value,
+        today: i === days - 1,
+      });
+    }
+    while (cells.length % 7) cells.push(null);
+    const rows: (RhythmCell | null)[][] = [];
+    for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+    return { weeks: rows, total: sum, active: busy, maximum: peak };
+  }, [points, days]);
+  // zero, then four steps from the surface color up to the store's primary color
+  const scale = [0.22, 0.45, 0.72, 1].map((w) =>
+    mixColor(t.surface, t.primary, w),
+  );
+  const colorOf = (value: number) =>
+    value <= 0
+      ? t.border
+      : scale[Math.min(3, Math.ceil((value / maximum) * 4) - 1)];
+  const chosen = weeks.flat().find((c) => c?.key === selected);
+  const unit = (n: number) => (n === 1 ? "impressão" : "impressões");
+  return (
+    <Card>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Body strong>Ritmo de produção</Body>
+        <Caption>
+          {period === "tudo" ? "Últimas 12 semanas" : "Impressões por dia"}
+        </Caption>
+      </View>
+      <Text style={{ color: t.text, fontSize: 13, minHeight: 18 }}>
+        {chosen
+          ? `${chosen.label} · ${chosen.value} ${unit(chosen.value)}`
+          : `${total} ${unit(total)} em ${active} de ${days} dias`}
+      </Text>
+      <View
+        style={{ width: "100%", maxWidth: 420, alignSelf: "center", gap: 4 }}
+      >
+        <View style={{ flexDirection: "row", gap: 4 }}>
+          {["D", "S", "T", "Q", "Q", "S", "S"].map((d, i) => (
+            <Text
+              key={i}
+              style={{
+                flex: 1,
+                textAlign: "center",
+                color: t.muted,
+                fontSize: 10,
+              }}
+            >
+              {d}
+            </Text>
+          ))}
+        </View>
+        {weeks.map((week, w) => (
+          <View key={w} style={{ flexDirection: "row", gap: 4 }}>
+            {week.map((cell, i) => {
+              if (!cell)
+                return <View key={i} style={{ flex: 1, aspectRatio: 1 }} />;
+              const bg = colorOf(cell.value);
+              const isSelected = cell.key === selected;
+              return (
+                <Pressable
+                  key={i}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${cell.label}, ${cell.value} ${unit(cell.value)}`}
+                  onPress={() => setSelected(isSelected ? undefined : cell.key)}
+                  style={{
+                    flex: 1,
+                    aspectRatio: 1,
+                    borderRadius: 9,
+                    backgroundColor: bg,
+                    borderWidth: cell.today || isSelected ? 2 : 0,
+                    borderColor: isSelected ? t.primaryText : t.text,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: cell.value > 0 ? readable(bg) : t.muted,
+                      fontSize: 11,
+                      fontWeight: cell.value > 0 ? "700" : "400",
+                    }}
+                  >
+                    {cell.day}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: 4,
+            marginTop: 4,
+          }}
+        >
+          <Caption>Menos</Caption>
+          {[t.border, ...scale].map((c, i) => (
+            <View
+              key={i}
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 4,
+                backgroundColor: c,
+              }}
+            />
+          ))}
+          <Caption>Mais</Caption>
+        </View>
+      </View>
+    </Card>
+  );
 }
 
-export function ExtraCostProgress({ items }: { items: Schema["CustoResumo"][] }) {
+function polar(cx: number, cy: number, r: number, degrees: number) {
+  const a = (degrees * Math.PI) / 180;
+  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+}
+// SVG angles: 0° points right and grows clockwise, so 180° -> 360° is the top half.
+function arc(cx: number, cy: number, r: number, from: number, to: number) {
+  const a = polar(cx, cy, r, from),
+    b = polar(cx, cy, r, to);
+  return `M ${a.x} ${a.y} A ${r} ${r} 0 ${to - from > 180 ? 1 : 0} 1 ${b.x} ${b.y}`;
+}
+
+export function ExtraCostProgress({
+  items,
+}: {
+  items: Schema["CustoResumo"][];
+}) {
   const t = useTheme();
   const target = items.reduce((sum, item) => sum + Number(item.meta ?? 0), 0);
-  const recovered = items.reduce((sum, item) => sum + Number(item.recuperado ?? 0), 0);
-  const ratio = target > 0 ? Math.min(100, Math.max(0, recovered * 100 / target)) : 0;
-  const gaugeDots = Array.from({ length: 72 }, (_, index) => {
-    const angle = Math.PI + (Math.PI * index) / 71;
-    const dot = 7;
-    const cx = 100;
-    const cy = 90;
-    const radius = 72;
-    return { index, left: cx + Math.cos(angle) * radius - dot / 2, top: cy + Math.sin(angle) * radius - dot / 2, done: (index / 71) * 100 <= ratio };
-  });
-  return <Card>
-    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><Body strong>Custos extras</Body><Caption>Meta recuperada</Caption></View>
-    {target > 0 ? <View style={{ alignItems: "center", height: 112, marginTop: 5 }}>
-      {gaugeDots.map(dot => <View key={dot.index} style={{ position: "absolute", left: dot.left, top: dot.top, width: 7, height: 7, borderRadius: 4, backgroundColor: dot.done ? t.success : t.border }} />)}
-      <View style={{ position: "absolute", top: 39, alignItems: "center", gap: 1 }}><Text style={{ color: t.primaryText, fontSize: 28, fontWeight: "700" }}>{Math.round(ratio)}%</Text><Caption>{reais(recovered.toFixed(2))} de {reais(target.toFixed(2))}</Caption></View>
-    </View> : <Body muted>Nenhuma meta de custo cadastrada.</Body>}
-  </Card>;
+  const recovered = items.reduce(
+    (sum, item) => sum + Number(item.recuperado ?? 0),
+    0,
+  );
+  const ratio =
+    target > 0 ? Math.min(100, Math.max(0, (recovered * 100) / target)) : 0;
+  const stroke = 16,
+    w = 220,
+    r = (w - stroke) / 2,
+    cx = w / 2,
+    cy = r + stroke / 2,
+    h = cy + stroke / 2;
+  const end = 180 + Math.min(179.99, (180 * ratio) / 100);
+  return (
+    <Card>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Body strong>Custos extras</Body>
+        <Caption>Meta recuperada</Caption>
+      </View>
+      {target > 0 ? (
+        <View
+          accessible
+          accessibilityLabel={`${Math.round(ratio)}% da meta recuperada, ${reais(recovered.toFixed(2))} de ${reais(target.toFixed(2))}`}
+          style={{
+            alignSelf: "center",
+            width: w,
+            maxWidth: "100%",
+            height: h,
+            marginTop: 8,
+          }}
+        >
+          <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+            <Path
+              d={arc(cx, cy, r, 180, 359.99)}
+              stroke={t.border}
+              strokeWidth={stroke}
+              strokeLinecap="round"
+              fill="none"
+            />
+            {ratio > 0 && (
+              <Path
+                d={arc(cx, cy, r, 180, end)}
+                stroke={t.success}
+                strokeWidth={stroke}
+                strokeLinecap="round"
+                fill="none"
+              />
+            )}
+          </Svg>
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <Text
+              style={{
+                color: t.primaryText,
+                fontSize: 30,
+                fontWeight: "700",
+                lineHeight: 34,
+              }}
+            >
+              {Math.round(ratio)}%
+            </Text>
+            <Caption>
+              {reais(recovered.toFixed(2))} de {reais(target.toFixed(2))}
+            </Caption>
+          </View>
+        </View>
+      ) : (
+        <Body muted>Nenhuma meta de custo cadastrada.</Body>
+      )}
+    </Card>
+  );
 }
 
 export function ProfitChart({

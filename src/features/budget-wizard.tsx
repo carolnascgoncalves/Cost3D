@@ -101,11 +101,41 @@ function Amount({
 function WhatsAppGlyph() {
   const t = useTheme();
   return (
-    <View style={{ width: 18, height: 18, alignItems: "center", justifyContent: "center" }}>
-      <View style={{ width: 15, height: 15, borderRadius: 8, borderWidth: 1.5, borderColor: t.onPrimary, alignItems: "center", justifyContent: "center" }}>
+    <View
+      style={{
+        width: 18,
+        height: 18,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <View
+        style={{
+          width: 15,
+          height: 15,
+          borderRadius: 8,
+          borderWidth: 1.5,
+          borderColor: t.onPrimary,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <Icon name="telephone" color={t.onPrimary} size={9} />
       </View>
-      <View style={{ position: "absolute", left: 1, bottom: 1, width: 5, height: 5, borderLeftWidth: 1.5, borderBottomWidth: 1.5, borderColor: t.onPrimary, backgroundColor: t.primary, transform: [{ rotate: "-20deg" }] }} />
+      <View
+        style={{
+          position: "absolute",
+          left: 1,
+          bottom: 1,
+          width: 5,
+          height: 5,
+          borderLeftWidth: 1.5,
+          borderBottomWidth: 1.5,
+          borderColor: t.onPrimary,
+          backgroundColor: t.primary,
+          transform: [{ rotate: "-20deg" }],
+        }}
+      />
     </View>
   );
 }
@@ -127,12 +157,29 @@ function Expand({
   const t = useTheme();
   const [shown, set] = useState(false);
   return (
-    <Card style={embedded ? { padding: 0, gap: 0, borderWidth: 0, backgroundColor: "transparent" } : undefined}>
+    <Card
+      style={
+        embedded
+          ? {
+              padding: 0,
+              gap: 0,
+              borderWidth: 0,
+              backgroundColor: "transparent",
+            }
+          : undefined
+      }
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: shown }}
         onPress={() => set(!shown)}
-        style={{ ...row, minHeight: embedded ? 48 : undefined, borderTopWidth: embedded && separated ? 1 : 0, borderColor: t.border, paddingTop: embedded && separated ? 8 : 0 }}
+        style={{
+          ...row,
+          minHeight: embedded ? 48 : undefined,
+          borderTopWidth: embedded && separated ? 1 : 0,
+          borderColor: t.border,
+          paddingTop: embedded && separated ? 8 : 0,
+        }}
       >
         {icon && <Icon name={icon} color={t.primaryText} size={22} />}
         <View style={{ flex: 1 }}>
@@ -141,7 +188,19 @@ function Expand({
         </View>
         <Body>{shown ? "⌄" : "›"}</Body>
       </Pressable>
-      {shown && <View style={{ gap: 8, paddingTop: 8, paddingBottom: embedded ? 12 : 0, borderTopWidth: embedded ? 1 : 0, borderColor: t.border }}>{children}</View>}
+      {shown && (
+        <View
+          style={{
+            gap: 8,
+            paddingTop: 8,
+            paddingBottom: embedded ? 12 : 0,
+            borderTopWidth: embedded ? 1 : 0,
+            borderColor: t.border,
+          }}
+        >
+          {children}
+        </View>
+      )}
     </Card>
   );
 }
@@ -201,7 +260,12 @@ export function BudgetWizard({
     [editingPhase, setEditingPhase] = useState(false),
     [customerSheet, customers] = useState(false),
     [newCustomerSheet, setNewCustomerSheet] = useState(false),
-    [newCustomer, setNewCustomer] = useState<CustomerInput>({ nome: "", telefone: "", email: "", observacoes: "" }),
+    [newCustomer, setNewCustomer] = useState<CustomerInput>({
+      nome: "",
+      telefone: "",
+      email: "",
+      observacoes: "",
+    }),
     [savingCustomer, setSavingCustomer] = useState(false),
     [search, find] = useState(""),
     [selection, selectPieces] = useState<Line[] | null>(null),
@@ -250,9 +314,12 @@ export function BudgetWizard({
       email: d.dados.email ?? "",
       contato: d.dados.contato ?? "",
       observacoes: d.dados.observacoes ?? "",
-      descontoInformado: !d.dados.descontoInformado || Number(d.dados.descontoInformado.replace("%", "").replace(",", ".")) === 0
-        ? ""
-        : d.dados.descontoInformado,
+      descontoInformado:
+        !d.dados.descontoInformado ||
+        Number(d.dados.descontoInformado.replace("%", "").replace(",", ".")) ===
+          0
+          ? ""
+          : d.dados.descontoInformado,
       inicioPretendido: (d.dados.inicioPretendido || localNow()).slice(0, 16),
     });
   }
@@ -284,7 +351,9 @@ export function BudgetWizard({
       setError("Informe o nome do cliente com pelo menos 2 caracteres.");
       return;
     }
-    if (!(newCustomer.email?.trim() || newCustomer.telefone?.replace(/\D/g, ""))) {
+    if (!(
+      newCustomer.email?.trim() || newCustomer.telefone?.replace(/\D/g, "")
+    )) {
       setError("Informe pelo menos um contato: telefone ou e-mail.");
       return;
     }
@@ -311,7 +380,11 @@ export function BudgetWizard({
       setNewCustomerSheet(false);
       setStage(1);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Não foi possível cadastrar o cliente.");
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Não foi possível cadastrar o cliente.",
+      );
     } finally {
       setSavingCustomer(false);
       customerLock.current = false;
@@ -325,7 +398,10 @@ export function BudgetWizard({
     dados: {
       ...form,
       descontoInformado:
-        form.descontoInformado.trim().replace(/^R\$\s*/i, "").replace(/[.,]$/, "") || "0",
+        form.descontoInformado
+          .trim()
+          .replace(/^R\$\s*/i, "")
+          .replace(/[.,]$/, "") || "0",
     },
     itens: lines.map((l) => ({
       id: l.id,
@@ -622,30 +698,114 @@ export function BudgetWizard({
               ? "Novo orçamento"
               : "Editar orçamento"
         }
-        titleAccessory={readonly && saved ? (() => {
-          const badge = statusBadge(saved.resumo.status, saved.resumo.pago, t);
-          return <Text numberOfLines={1} style={{ color: badge.fg, backgroundColor: badge.bg, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5, fontSize: 12, fontWeight: "600", maxWidth: 136 }}>{saved.resumo.pago ? "Pago" : saved.resumo.situacao}</Text>;
-        })() : undefined}
+        titleAccessory={
+          readonly && saved
+            ? (() => {
+                const badge = statusBadge(
+                  saved.resumo.status,
+                  saved.resumo.pago,
+                  t,
+                );
+                return (
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      color: badge.fg,
+                      backgroundColor: badge.bg,
+                      borderRadius: 8,
+                      paddingHorizontal: 9,
+                      paddingVertical: 5,
+                      fontSize: 12,
+                      fontWeight: "600",
+                      maxWidth: 136,
+                    }}
+                  >
+                    {saved.resumo.pago ? "Pago" : saved.resumo.situacao}
+                  </Text>
+                );
+              })()
+            : undefined
+        }
         onBack={back}
       >
         {!readonly && <Steps step={view} />}
         {readonly && saved && (
           <>
-            <Text style={{ color: t.muted, fontSize: 12 }}>{saved.resumo.cliente || "Cliente"} · entrega prevista {end ? end.slice(8, 10) + "/" + end.slice(5, 7) : "a confirmar"}</Text>
-            {!["RASCUNHO", "CANCELADO"].includes(saved.resumo.status) && (() => {
-              const current = saved.resumo.pago ? 3 : ({ ENVIADO: 0, APROVADO: 1, PRONTO: 2, ENTREGUE: 3 } as Record<string, number>)[saved.resumo.status] ?? 0;
-              return <View style={{ flexDirection: "row", paddingVertical: 6 }}>
-                {["Enviado", "Produção", "Entrega", "Pagamento"].map((label, i) => (
-                  <View key={label} style={{ flex: 1, alignItems: "center" }}>
-                    {i < 3 && <View style={{ position: "absolute", left: "50%", top: 11, width: "100%", height: 2, backgroundColor: i < current ? t.primary : t.border }} />}
-                    <View style={{ width: 24, height: 24, alignItems: "center", justifyContent: "center", borderRadius: 12, backgroundColor: i < current ? t.primary : t.accentTint, borderWidth: i === current ? 2 : 0, borderColor: t.primary }}>
-                      <Text style={{ color: i < current ? t.onPrimary : t.text, fontSize: 11, fontWeight: "700" }}>{i < current ? "✓" : i + 1}</Text>
-                    </View>
-                    <Text style={{ color: i === current ? t.primaryText : t.muted, fontSize: 10, fontWeight: i === current ? "700" : "400" }}>{label}</Text>
+            <Text style={{ color: t.muted, fontSize: 12 }}>
+              {saved.resumo.cliente || "Cliente"} · entrega prevista{" "}
+              {end ? end.slice(8, 10) + "/" + end.slice(5, 7) : "a confirmar"}
+            </Text>
+            {!["RASCUNHO", "CANCELADO"].includes(saved.resumo.status) &&
+              (() => {
+                const current = saved.resumo.pago
+                  ? 3
+                  : ((
+                      {
+                        ENVIADO: 0,
+                        APROVADO: 1,
+                        PRONTO: 2,
+                        ENTREGUE: 3,
+                      } as Record<string, number>
+                    )[saved.resumo.status] ?? 0);
+                return (
+                  <View style={{ flexDirection: "row", paddingVertical: 6 }}>
+                    {["Enviado", "Produção", "Entrega", "Pagamento"].map(
+                      (label, i) => (
+                        <View
+                          key={label}
+                          style={{ flex: 1, alignItems: "center" }}
+                        >
+                          {i < 3 && (
+                            <View
+                              style={{
+                                position: "absolute",
+                                left: "50%",
+                                top: 11,
+                                width: "100%",
+                                height: 2,
+                                backgroundColor:
+                                  i < current ? t.primary : t.border,
+                              }}
+                            />
+                          )}
+                          <View
+                            style={{
+                              width: 24,
+                              height: 24,
+                              alignItems: "center",
+                              justifyContent: "center",
+                              borderRadius: 12,
+                              backgroundColor:
+                                i < current ? t.primary : t.accentTint,
+                              borderWidth: i === current ? 2 : 0,
+                              borderColor: t.primary,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                color: i < current ? t.onPrimary : t.text,
+                                fontSize: 11,
+                                fontWeight: "700",
+                              }}
+                            >
+                              {i < current ? "✓" : i + 1}
+                            </Text>
+                          </View>
+                          <Text
+                            style={{
+                              color: i === current ? t.primaryText : t.muted,
+                              fontSize: 10,
+                              fontWeight: i === current ? "700" : "400",
+                            }}
+                          >
+                            {label}
+                          </Text>
+                        </View>
+                      ),
+                    )}
                   </View>
-                ))}
-              </View>;
-            })()}
+                );
+              })()}
           </>
         )}
         {!!error && <Notice message={error} />}
@@ -682,7 +842,12 @@ export function BudgetWizard({
                   <Body strong>{form.cliente}</Body>
                   <Body muted>{phone(form.contato) || form.email}</Body>
                 </View>
-                <Button label="Trocar" variant="ghost" compact onPress={() => customers(true)} />
+                <Button
+                  label="Trocar"
+                  variant="ghost"
+                  compact
+                  onPress={() => customers(true)}
+                />
               </Card>
             )}
           </>
@@ -695,10 +860,18 @@ export function BudgetWizard({
                 <Body strong>{form.cliente || "Cliente a informar"}</Body>
                 {!!form.contato && <Body muted>{phone(form.contato)}</Body>}
               </View>
-              <Button label="Trocar" variant="ghost" onPress={() => setStage(0)} />
+              <Button
+                label="Trocar"
+                variant="ghost"
+                onPress={() => setStage(0)}
+              />
             </Card>
-            <View style={{ ...row, justifyContent: "space-between", marginTop: 4 }}>
-              <Body strong>{"Peças · " + lines.reduce((n, l) => n + l.quantidade, 0)}</Body>
+            <View
+              style={{ ...row, justifyContent: "space-between", marginTop: 4 }}
+            >
+              <Body strong>
+                {"Peças · " + lines.reduce((n, l) => n + l.quantidade, 0)}
+              </Body>
               <Button
                 label="Adicionar peça"
                 icon="bag-plus"
@@ -712,44 +885,167 @@ export function BudgetWizard({
             {lines.map((l, i) => (
               <Card key={l.id || l.referencia}>
                 <View style={{ ...row, alignItems: "flex-start" }}>
-                  <CalculationPhoto id={l.referencia ?? undefined} name={l.nome} size={44} />
+                  <CalculationPhoto
+                    id={l.referencia ?? undefined}
+                    name={l.nome}
+                    size={44}
+                  />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Body strong>{l.nome}</Body>
                     <Body muted>{l.material}</Body>
                   </View>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`Remover ${l.nome}`} hitSlop={8} onPress={() => setLines(current => current.filter((_, index) => index !== i))} style={{ width: 30, height: 30, alignItems: "center", justifyContent: "center" }}>
-                    <View style={{ width: 14, height: 14, borderWidth: 1.5, borderColor: t.muted, borderTopWidth: 0, borderBottomLeftRadius: 2, borderBottomRightRadius: 2, alignItems: "center", justifyContent: "center" }}>
-                      <View style={{ width: 6, height: 1, backgroundColor: t.muted }} />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remover ${l.nome}`}
+                    hitSlop={8}
+                    onPress={() =>
+                      setLines((current) =>
+                        current.filter((_, index) => index !== i),
+                      )
+                    }
+                    style={{
+                      width: 30,
+                      height: 30,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 14,
+                        height: 14,
+                        borderWidth: 1.5,
+                        borderColor: t.muted,
+                        borderTopWidth: 0,
+                        borderBottomLeftRadius: 2,
+                        borderBottomRightRadius: 2,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 6,
+                          height: 1,
+                          backgroundColor: t.muted,
+                        }}
+                      />
                     </View>
-                    <View style={{ position: "absolute", top: 7, width: 17, height: 1.5, backgroundColor: t.muted, borderRadius: 1 }} />
-                    <View style={{ position: "absolute", top: 5, width: 6, height: 2, borderTopLeftRadius: 2, borderTopRightRadius: 2, borderWidth: 1, borderBottomWidth: 0, borderColor: t.muted }} />
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: 7,
+                        width: 17,
+                        height: 1.5,
+                        backgroundColor: t.muted,
+                        borderRadius: 1,
+                      }}
+                    />
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: 5,
+                        width: 6,
+                        height: 2,
+                        borderTopLeftRadius: 2,
+                        borderTopRightRadius: 2,
+                        borderWidth: 1,
+                        borderBottomWidth: 0,
+                        borderColor: t.muted,
+                      }}
+                    />
                   </Pressable>
                 </View>
-                <Stepper label="Quantidade" min={1} max={500} value={l.quantidade} change={(n) => update(i, { quantidade: n, estoque: Math.min(l.livre, n) })} />
+                <Stepper
+                  label="Quantidade"
+                  min={1}
+                  max={500}
+                  value={l.quantidade}
+                  change={(n) =>
+                    update(i, { quantidade: n, estoque: Math.min(l.livre, n) })
+                  }
+                />
                 {l.estoque >= l.quantidade ? (
-                  <Text style={{ alignSelf: "flex-start", color: t.success, backgroundColor: "#E5F3E8", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, fontSize: 12 }}>{l.quantidade} sai do estoque</Text>
+                  <Text
+                    style={{
+                      alignSelf: "flex-start",
+                      color: t.success,
+                      backgroundColor: "#E5F3E8",
+                      borderRadius: 8,
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      fontSize: 12,
+                    }}
+                  >
+                    {l.quantidade} sai do estoque
+                  </Text>
                 ) : (
-                  <Text style={{ alignSelf: "flex-start", color: "#765700", backgroundColor: "#FFF1C2", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, fontSize: 12 }}>{l.quantidade - l.estoque} a produzir · sem estoque</Text>
+                  <Text
+                    style={{
+                      alignSelf: "flex-start",
+                      color: "#765700",
+                      backgroundColor: "#FFF1C2",
+                      borderRadius: 8,
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      fontSize: 12,
+                    }}
+                  >
+                    {l.quantidade - l.estoque} a produzir · sem estoque
+                  </Text>
                 )}
               </Card>
             ))}
-            {!lines.length && <Empty title="Nenhuma peça selecionada" description="Adicione uma peça para continuar com o orçamento." />}
+            {!lines.length && (
+              <Empty
+                title="Nenhuma peça selecionada"
+                description="Adicione uma peça para continuar com o orçamento."
+              />
+            )}
           </>
         )}
         {stage === 2 && (
           <>
-            <Card style={{ backgroundColor: t.primary, borderColor: t.primary }}>
-              <Text style={{ color: t.onPrimary, fontSize: 13 }}>Previsão de entrega</Text>
-              <Text style={{ fontSize: 23, fontWeight: "700", color: t.onPrimary }}>
-                {selectedDateIsPast ? "Escolha uma data a partir de hoje" : previewLoading ? "Atualizando previsão…" : end ? weekday(end.slice(0, 10)) + ", " + stamp(end) : "A confirmar"}
+            <Card
+              style={{ backgroundColor: t.primary, borderColor: t.primary }}
+            >
+              <Text style={{ color: t.onPrimary, fontSize: 13 }}>
+                Previsão de entrega
+              </Text>
+              <Text
+                style={{ fontSize: 23, fontWeight: "700", color: t.onPrimary }}
+              >
+                {selectedDateIsPast
+                  ? "Escolha uma data a partir de hoje"
+                  : previewLoading
+                    ? "Atualizando previsão…"
+                    : end
+                      ? weekday(end.slice(0, 10)) + ", " + stamp(end)
+                      : "A confirmar"}
               </Text>
             </Card>
             <View style={{ ...row, alignItems: "stretch" }}>
-              <Card style={{ flex: 1, paddingVertical: 7, paddingHorizontal: 10, backgroundColor: t.accentTint }}>
+              <Card
+                style={{
+                  flex: 1,
+                  paddingVertical: 7,
+                  paddingHorizontal: 10,
+                  backgroundColor: t.accentTint,
+                }}
+              >
                 <Body muted>Duração total</Body>
-                <Body strong>{Math.floor(duration / 60)} h {duration % 60} min</Body>
+                <Body strong>
+                  {Math.floor(duration / 60)} h {duration % 60} min
+                </Body>
               </Card>
-              <Card style={{ flex: 1, paddingVertical: 7, paddingHorizontal: 10, backgroundColor: t.accentTint }}>
+              <Card
+                style={{
+                  flex: 1,
+                  paddingVertical: 7,
+                  paddingHorizontal: 10,
+                  backgroundColor: t.accentTint,
+                }}
+              >
                 <Body muted>Folga aplicada</Body>
                 <Body strong>{form.folga}%</Body>
               </Card>
@@ -769,7 +1065,10 @@ export function BudgetWizard({
                   (d) => (
                     <Pressable
                       key={d}
-                      accessibilityState={{ disabled: d < today, selected: d === day }}
+                      accessibilityState={{
+                        disabled: d < today,
+                        selected: d === day,
+                      }}
                       disabled={d < today}
                       onPress={() =>
                         field(
@@ -825,11 +1124,28 @@ export function BudgetWizard({
                 <View style={{ ...row, gap: 6 }}>
                   <Icon name="printer" color={t.primaryText} size={15} />
                   <Body muted>
-                    {occupiedOn(day).length} {occupiedOn(day).length === 1 ? "impressão agendada" : "impressões agendadas"} neste dia · {occupiedOn(day).map((o) => o.inicio.slice(11, 16)).sort()[0]} às {occupiedOn(day).map((o) => o.fim.slice(11, 16)).sort().at(-1)}
+                    {occupiedOn(day).length}{" "}
+                    {occupiedOn(day).length === 1
+                      ? "impressão agendada"
+                      : "impressões agendadas"}{" "}
+                    neste dia ·{" "}
+                    {
+                      occupiedOn(day)
+                        .map((o) => o.inicio.slice(11, 16))
+                        .sort()[0]
+                    }{" "}
+                    às{" "}
+                    {occupiedOn(day)
+                      .map((o) => o.fim.slice(11, 16))
+                      .sort()
+                      .at(-1)}
                   </Body>
                 </View>
               ) : (
-                <View style={{ ...row, gap: 6 }}><Icon name="printer" color={t.muted} size={15} /><Body muted>Nenhuma impressão agendada neste dia.</Body></View>
+                <View style={{ ...row, gap: 6 }}>
+                  <Icon name="printer" color={t.muted} size={15} />
+                  <Body muted>Nenhuma impressão agendada neste dia.</Body>
+                </View>
               )}
               <HourField
                 label="Horário de início"
@@ -838,19 +1154,72 @@ export function BudgetWizard({
               />
             </Card>
             <Card style={{ gap: 0 }}>
-              <Expand embedded icon="clock-history" title="Expediente" note={form.turnoInicio.slice(0, 5) + " – " + form.turnoFim.slice(0, 5)}>
-                <HourField label="Início do expediente" value={form.turnoInicio} change={(v) => field("turnoInicio", v)} />
-                <HourField label="Fim do expediente" value={form.turnoFim} change={(v) => field("turnoFim", v)} />
+              <Expand
+                embedded
+                icon="clock-history"
+                title="Expediente"
+                note={
+                  form.turnoInicio.slice(0, 5) +
+                  " – " +
+                  form.turnoFim.slice(0, 5)
+                }
+              >
+                <HourField
+                  label="Início do expediente"
+                  value={form.turnoInicio}
+                  change={(v) => field("turnoInicio", v)}
+                />
+                <HourField
+                  label="Fim do expediente"
+                  value={form.turnoFim}
+                  change={(v) => field("turnoFim", v)}
+                />
                 <View style={{ ...row, flexWrap: "wrap" }}>
-                  {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map((s, i) => {
-                    const key = String(i + 1), days = form.dias.split(",").filter(Boolean);
-                    return <Chip label={s} key={s} selected={days.includes(key)} onPress={() => field("dias", (days.includes(key) ? days.filter((x) => x !== key) : [...days, key]).sort().join(","))} />;
-                  })}
+                  {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map(
+                    (s, i) => {
+                      const key = String(i + 1),
+                        days = form.dias.split(",").filter(Boolean);
+                      return (
+                        <Chip
+                          label={s}
+                          key={s}
+                          selected={days.includes(key)}
+                          onPress={() =>
+                            field(
+                              "dias",
+                              (days.includes(key)
+                                ? days.filter((x) => x !== key)
+                                : [...days, key]
+                              )
+                                .sort()
+                                .join(","),
+                            )
+                          }
+                        />
+                      );
+                    },
+                  )}
                 </View>
               </Expand>
-              <Expand embedded separated icon="gear" title="Intervalo" note={form.intervalo + " min · folga " + form.folga + "%"}>
-                <Field label="Intervalo (min)" keyboardType="number-pad" value={String(form.intervalo)} onChangeText={(v) => field("intervalo", Number(v) || 0)} />
-                <Field label="Folga (%)" keyboardType="number-pad" value={String(form.folga)} onChangeText={(v) => field("folga", Number(v) || 0)} />
+              <Expand
+                embedded
+                separated
+                icon="gear"
+                title="Intervalo"
+                note={form.intervalo + " min · folga " + form.folga + "%"}
+              >
+                <Field
+                  label="Intervalo (min)"
+                  keyboardType="number-pad"
+                  value={String(form.intervalo)}
+                  onChangeText={(v) => field("intervalo", Number(v) || 0)}
+                />
+                <Field
+                  label="Folga (%)"
+                  keyboardType="number-pad"
+                  value={String(form.folga)}
+                  onChangeText={(v) => field("folga", Number(v) || 0)}
+                />
               </Expand>
             </Card>
             {!!preview?.aviso && <Notice message={preview.aviso} />}
@@ -860,11 +1229,27 @@ export function BudgetWizard({
           <>
             <Card style={{ gap: 0, paddingVertical: 8 }}>
               {lines.map((l, i) => (
-                <View key={l.id || i} style={{ borderTopWidth: i ? 1 : 0, borderColor: t.border, paddingVertical: 7, gap: 1 }}>
+                <View
+                  key={l.id || i}
+                  style={{
+                    borderTopWidth: i ? 1 : 0,
+                    borderColor: t.border,
+                    paddingVertical: 7,
+                    gap: 1,
+                  }}
+                >
                   <View style={{ ...row, justifyContent: "space-between" }}>
-                    <View style={{ flex: 1 }}><Body strong>{l.nome}</Body></View>
-                    <Pressable accessibilityRole="button" accessibilityLabel={"Editar preço de " + l.nome} onPress={() => editPrice({ i, value: l.preco })} style={{ ...row, minHeight: 32 }}>
-                      <Body strong>{money(l.preco)}</Body><Icon name="pencil" color={t.primaryText} size={15} />
+                    <View style={{ flex: 1 }}>
+                      <Body strong>{l.nome}</Body>
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={"Editar preço de " + l.nome}
+                      onPress={() => editPrice({ i, value: l.preco })}
+                      style={{ ...row, minHeight: 32 }}
+                    >
+                      <Body strong>{money(l.preco)}</Body>
+                      <Icon name="pencil" color={t.primaryText} size={15} />
                     </Pressable>
                   </View>
                   <Body muted>{l.quantidade} un.</Body>
@@ -873,64 +1258,67 @@ export function BudgetWizard({
             </Card>
             <Card>
               <View style={{ ...row, alignItems: "flex-start" }}>
-                <View style={{ flex: 1 }}><Field optional label="Desconto" keyboardType="decimal-pad" value={form.descontoInformado} selectTextOnFocus placeholder="R$ 15 ou 15%" onChangeText={(v) => { if (/^\d{0,8}([.,]\d{0,2})?$/.test(v)) field("descontoInformado", v); }} /></View>
-                <View style={{ flex: 1 }}><Field optional label="Frete" keyboardType="decimal-pad" value={freteText ?? (form.frete ? String(form.frete).replace(".", ",") : "")} placeholder="R$ 10,00" onChangeText={(v) => { if (/^\d{0,8}([.,]\d{0,2})?$/.test(v)) { setFreteText(v); field("frete", Number(v.replace(",", ".")) || 0); } }} onBlur={() => setFreteText(null)} /></View>
+                <View style={{ flex: 1 }}>
+                  <Field
+                    optional
+                    label="Desconto"
+                    keyboardType="decimal-pad"
+                    value={form.descontoInformado}
+                    selectTextOnFocus
+                    placeholder="R$ 15 ou 15%"
+                    onChangeText={(v) => {
+                      if (/^\d{0,8}([.,]\d{0,2})?$/.test(v))
+                        field("descontoInformado", v);
+                    }}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Field
+                    optional
+                    label="Frete"
+                    keyboardType="decimal-pad"
+                    value={
+                      freteText ??
+                      (form.frete ? String(form.frete).replace(".", ",") : "")
+                    }
+                    placeholder="R$ 10,00"
+                    onChangeText={(v) => {
+                      if (/^\d{0,8}([.,]\d{0,2})?$/.test(v)) {
+                        setFreteText(v);
+                        field("frete", Number(v.replace(",", ".")) || 0);
+                      }
+                    }}
+                    onBlur={() => setFreteText(null)}
+                  />
+                </View>
               </View>
-              <Pressable accessibilityRole="button" accessibilityState={{ expanded: shippingExpanded }} onPress={() => setShippingExpanded(!shippingExpanded)} style={{ ...row, minHeight: 40 }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: shippingExpanded }}
+                onPress={() => setShippingExpanded(!shippingExpanded)}
+                style={{ ...row, minHeight: 40 }}
+              >
                 <Icon name="box" color={t.primaryText} size={16} />
-                <Body>Meu custo de envio e cotação do frete</Body><Body>›</Body>
+                <Body>Meu custo de envio e cotação do frete</Body>
+                <Body>›</Body>
               </Pressable>
-              {shippingExpanded && <>
-                <Amount optional label="Meu custo de envio (R$)" value={form.custoFrete} change={(n) => field("custoFrete", n)} />
-                <Button label="Cotar frete" variant="secondary" onPress={() => outbound("frete")} />
-              </>}
+              {shippingExpanded && (
+                <>
+                  <Amount
+                    optional
+                    label="Meu custo de envio (R$)"
+                    value={form.custoFrete}
+                    change={(n) => field("custoFrete", n)}
+                  />
+                  <Button
+                    label="Cotar frete"
+                    variant="secondary"
+                    onPress={() => outbound("frete")}
+                  />
+                </>
+              )}
             </Card>
             <Card style={{ gap: 8 }}>
-              <View style={{ ...row, justifyContent: "space-between", alignItems: "flex-start" }}>
-                <View><Body muted>Lucro estimado</Body><Text style={{ color: profit ? tone[2] : t.text, fontSize: 22, fontWeight: "700" }}>{preview ? money(preview.resultado.lucro) : "—"}</Text></View>
-                <View style={{ alignItems: "flex-end" }}><Body muted>Margem</Body><Text style={{ color: t.text, fontSize: 20, fontWeight: "700" }}>{preview ? Number(preview.resultado.margem).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%" : "—"}</Text></View>
-              </View>
-              <View style={{ ...row, gap: 0 }}>
-              {preview && (
-                <View
-                  pointerEvents="none"
-                  style={{
-                    position: "absolute",
-                    top: -5,
-                    zIndex: 1,
-                    height: 16,
-                    width: 3,
-                    borderRadius: 2,
-                    backgroundColor: t.text,
-                    left: ((preview.resultado.estado === "prejuizo"
-                      ? 16
-                      : preview.resultado.estado === "boa"
-                        ? 84
-                        : 50) + "%") as `${number}%`,
-                  }}
-                />
-              )}
-              {["#df8e94", "#edc261", "#88bd9d"].map((c, i) => (
-                <View
-                  key={c}
-                  style={{ flex: 1, borderTopWidth: 6, borderColor: c }}
-                >
-                  <Body muted>
-                    {["Prejuízo", "Apertada", "Saudável ≥ 15%"][i]}
-                  </Body>
-                </View>
-              ))}
-              </View>
-              {profit && <Text style={{ color: tone[2], backgroundColor: tone[0], borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, fontSize: 12, alignSelf: "flex-start" }}>{profit.titulo}</Text>}
-            </Card>
-          </>
-        )}
-        {stage === 4 && (
-          <>
-            {!readonly && <Body strong>Confira a proposta</Body>}
-            {(!readonly || !["APROVADO", "PRONTO", "ENTREGUE"].includes(saved?.resumo.status ?? "")) && <Card style={{ gap: 0 }}>
-              {readonly && <Text style={{ color: t.text, fontSize: 18, fontWeight: "700", marginBottom: 8 }}>Peças</Text>}
-              {!readonly && <>
               <View
                 style={{
                   ...row,
@@ -938,119 +1326,311 @@ export function BudgetWizard({
                   alignItems: "flex-start",
                 }}
               >
-                <View style={{ flex: 1 }}>
-                  <Body muted>Cliente</Body>
-                  <Body strong>{form.cliente || "A informar"}</Body>
-                  {!!form.contato && <Body muted>{phone(form.contato)}</Body>}
+                <View>
+                  <Body muted>Lucro estimado</Body>
+                  <Text
+                    style={{
+                      color: profit ? tone[2] : t.text,
+                      fontSize: 22,
+                      fontWeight: "700",
+                    }}
+                  >
+                    {preview ? money(preview.resultado.lucro) : "—"}
+                  </Text>
                 </View>
-                <View style={{ alignItems: "flex-end", flexShrink: 1 }}>
-                  <Body muted>Entrega prevista</Body>
-                  <Body strong>{stamp(end)}</Body>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Body muted>Margem</Body>
+                  <Text
+                    style={{ color: t.text, fontSize: 20, fontWeight: "700" }}
+                  >
+                    {preview
+                      ? Number(preview.resultado.margem).toLocaleString(
+                          "pt-BR",
+                          { maximumFractionDigits: 1 },
+                        ) + "%"
+                      : "—"}
+                  </Text>
                 </View>
               </View>
-              <View style={{ height: 1, backgroundColor: t.border, marginVertical: 10 }} />
-              </>}
-              {lines.map((l, i) => (
-                <View key={l.id || i}>
-                  {readonly && i > 0 && <View style={{ height: 1, backgroundColor: t.border, marginVertical: 6 }} />}
-                  <View style={{ ...row, gap: 8, paddingVertical: 7 }}>
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Body strong>{l.nome}</Body>
-                      <Body muted>
-                        {l.quantidade} un.{!readonly && " × " + money(l.preco)}
-                      </Body>
-                    </View>
-                    {!readonly && <Body strong>{money(l.quantidade * l.preco)}</Body>}
+              <View style={{ ...row, gap: 0 }}>
+                {preview && (
+                  <View
+                    pointerEvents="none"
+                    style={{
+                      position: "absolute",
+                      top: -5,
+                      zIndex: 1,
+                      height: 16,
+                      width: 3,
+                      borderRadius: 2,
+                      backgroundColor: t.text,
+                      left: ((preview.resultado.estado === "prejuizo"
+                        ? 16
+                        : preview.resultado.estado === "boa"
+                          ? 84
+                          : 50) + "%") as `${number}%`,
+                    }}
+                  />
+                )}
+                {["#df8e94", "#edc261", "#88bd9d"].map((c, i) => (
+                  <View
+                    key={c}
+                    style={{ flex: 1, borderTopWidth: 6, borderColor: c }}
+                  >
+                    <Body muted>
+                      {["Prejuízo", "Apertada", "Saudável ≥ 15%"][i]}
+                    </Body>
                   </View>
-                </View>
-              ))}
-              {!readonly && <View
-                style={{
-                  ...row,
-                  justifyContent: "space-between",
-                  borderTopWidth: 1,
-                  borderColor: t.border,
-                  paddingTop: 10,
-                  marginTop: 8,
-                }}
-              >
-                <Body>Total ao cliente</Body>
-                <Text
-                  style={{ fontSize: 20, fontWeight: "700", color: t.text }}
-                >
-                  {money(total)}
-                </Text>
-              </View>}
-              {!readonly && <View style={{ ...row, justifyContent: "space-between" }}>
-                <Body muted>Lucro estimado</Body>
+                ))}
+              </View>
+              {profit && (
                 <Text
                   style={{
-                    color: (profit?.lucro ?? 0) < 0 ? "#8b2e28" : "#205b32",
-                    fontWeight: "700",
+                    color: tone[2],
+                    backgroundColor: tone[0],
+                    borderRadius: 8,
+                    paddingHorizontal: 8,
+                    paddingVertical: 5,
+                    fontSize: 12,
+                    alignSelf: "flex-start",
                   }}
                 >
-                  {money(profit?.lucro ?? 0)}
+                  {profit.titulo}
                 </Text>
-              </View>}
-            </Card>}
-            {!readonly && <Expand title="Para onde vai o dinheiro">
-              <ValueRow
-                label="Produção e envio"
-                value={money(preview?.custo ?? 0)}
-              />
-              <ValueRow label="Taxas" value={money(preview?.taxas ?? 0)} />
-            </Expand>}
-            {!readonly && <View style={{ gap: 8 }}>
-              <View style={{ ...row, gap: 6 }}>
-                <Body muted>Observações para o cliente</Body>
-                <Text style={{ color: t.primaryText, backgroundColor: t.accentTint, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, fontSize: 11 }}>Opcional</Text>
-              </View>
-            <Card>
-              <Field
-                optional
-                editable={!readonly}
-                label="Observação"
-                placeholder="Ex.: retirada na loja"
-                value={form.observacoes}
-                onChangeText={(v) => field("observacoes", v)}
-              />
+              )}
             </Card>
-            </View>}
+          </>
+        )}
+        {stage === 4 && (
+          <>
+            {!readonly && <Body strong>Confira a proposta</Body>}
+            {(!readonly ||
+              !["APROVADO", "PRONTO", "ENTREGUE"].includes(
+                saved?.resumo.status ?? "",
+              )) && (
+              <Card style={{ gap: 0 }}>
+                {readonly && (
+                  <Text
+                    style={{
+                      color: t.text,
+                      fontSize: 18,
+                      fontWeight: "700",
+                      marginBottom: 8,
+                    }}
+                  >
+                    Peças
+                  </Text>
+                )}
+                {!readonly && (
+                  <>
+                    <View
+                      style={{
+                        ...row,
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Body muted>Cliente</Body>
+                        <Body strong>{form.cliente || "A informar"}</Body>
+                        {!!form.contato && (
+                          <Body muted>{phone(form.contato)}</Body>
+                        )}
+                      </View>
+                      <View style={{ alignItems: "flex-end", flexShrink: 1 }}>
+                        <Body muted>Entrega prevista</Body>
+                        <Body strong>{stamp(end)}</Body>
+                      </View>
+                    </View>
+                    <View
+                      style={{
+                        height: 1,
+                        backgroundColor: t.border,
+                        marginVertical: 10,
+                      }}
+                    />
+                  </>
+                )}
+                {lines.map((l, i) => (
+                  <View key={l.id || i}>
+                    {readonly && i > 0 && (
+                      <View
+                        style={{
+                          height: 1,
+                          backgroundColor: t.border,
+                          marginVertical: 6,
+                        }}
+                      />
+                    )}
+                    <View style={{ ...row, gap: 8, paddingVertical: 7 }}>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Body strong>{l.nome}</Body>
+                        <Body muted>
+                          {l.quantidade} un.
+                          {!readonly && " × " + money(l.preco)}
+                        </Body>
+                      </View>
+                      {!readonly && (
+                        <Body strong>{money(l.quantidade * l.preco)}</Body>
+                      )}
+                    </View>
+                  </View>
+                ))}
+                {!readonly && (
+                  <View
+                    style={{
+                      ...row,
+                      justifyContent: "space-between",
+                      borderTopWidth: 1,
+                      borderColor: t.border,
+                      paddingTop: 10,
+                      marginTop: 8,
+                    }}
+                  >
+                    <Body>Total ao cliente</Body>
+                    <Text
+                      style={{ fontSize: 20, fontWeight: "700", color: t.text }}
+                    >
+                      {money(total)}
+                    </Text>
+                  </View>
+                )}
+                {!readonly && (
+                  <View style={{ ...row, justifyContent: "space-between" }}>
+                    <Body muted>Lucro estimado</Body>
+                    <Text
+                      style={{
+                        color: (profit?.lucro ?? 0) < 0 ? "#8b2e28" : "#205b32",
+                        fontWeight: "700",
+                      }}
+                    >
+                      {money(profit?.lucro ?? 0)}
+                    </Text>
+                  </View>
+                )}
+              </Card>
+            )}
+            {!readonly && (
+              <Expand title="Para onde vai o dinheiro">
+                <ValueRow
+                  label="Produção e envio"
+                  value={money(preview?.custo ?? 0)}
+                />
+                <ValueRow label="Taxas" value={money(preview?.taxas ?? 0)} />
+              </Expand>
+            )}
+            {!readonly && (
+              <View style={{ gap: 8 }}>
+                <View style={{ ...row, gap: 6 }}>
+                  <Body muted>Observações para o cliente</Body>
+                  <Text
+                    style={{
+                      color: t.primaryText,
+                      backgroundColor: t.accentTint,
+                      borderRadius: 8,
+                      paddingHorizontal: 7,
+                      paddingVertical: 2,
+                      fontSize: 11,
+                    }}
+                  >
+                    Opcional
+                  </Text>
+                </View>
+                <Card>
+                  <Field
+                    optional
+                    editable={!readonly}
+                    label="Observação"
+                    placeholder="Ex.: retirada na loja"
+                    value={form.observacoes}
+                    onChangeText={(v) => field("observacoes", v)}
+                  />
+                </Card>
+              </View>
+            )}
             {!readonly && (
               <>
-              <Card>
-                <Body strong>Enviar proposta</Body>
-                <Button stretch iconNode={<WhatsAppGlyph />} label="Enviar pelo WhatsApp" disabled={busy} onPress={() => outbound("WhatsApp")} />
-                <View style={row}>
-                  <View style={{ flex: 1 }}><Button stretch icon="file-text" label="PDF" variant="secondary" disabled={busy} onPress={() => outbound("PDF")} /></View>
-                  <View style={{ flex: 1 }}><Button stretch icon="envelope" label="E-mail" variant="secondary" disabled={busy} onPress={() => outbound("E-mail")} /></View>
-                </View>
-                <Body muted>Depois de enviar, o app pergunta se deve marcar como enviada.</Body>
-              </Card>
-              <Expand title="Materiais e reposição · uso interno">
-              {preview?.materiais?.materiais.map((m, i) => (
-                <View key={i} style={row}>
-                  <View style={{ width: 20, height: 20, borderWidth: 1, borderRadius: 10, borderColor: t.border, backgroundColor: m.codigoCor || t.accentTint }} />
-                  <View style={{ flex: 1 }}>
-                    <View style={{ ...row, justifyContent: "space-between", gap: 4 }}>
-                      <Body strong>{m.nome}</Body>
-                      <Body strong>{m.necessario + " g" + (m.falta > 0 ? " · faltam " + m.falta + " g" : "")}</Body>
+                <Card>
+                  <Body strong>Enviar proposta</Body>
+                  <Button
+                    stretch
+                    iconNode={<WhatsAppGlyph />}
+                    label="Enviar pelo WhatsApp"
+                    disabled={busy}
+                    onPress={() => outbound("WhatsApp")}
+                  />
+                  <View style={row}>
+                    <View style={{ flex: 1 }}>
+                      <Button
+                        stretch
+                        icon="file-text"
+                        label="PDF"
+                        variant="secondary"
+                        disabled={busy}
+                        onPress={() => outbound("PDF")}
+                      />
                     </View>
-                    <Body>{m.cor}</Body>
+                    <View style={{ flex: 1 }}>
+                      <Button
+                        stretch
+                        icon="envelope"
+                        label="E-mail"
+                        variant="secondary"
+                        disabled={busy}
+                        onPress={() => outbound("E-mail")}
+                      />
+                    </View>
                   </View>
-                </View>
-              ))}
-              {preview?.materiais ? (
-                <ValueRow
-                  label="Reposição"
-                  value={money(preview.materiais.reposicao)}
-                />
-              ) : (
-                <Body muted>
-                  {preview?.aviso || "Sem materiais informados."}
-                </Body>
-              )}
-              </Expand>
+                  <Body muted>
+                    Depois de enviar, o app pergunta se deve marcar como
+                    enviada.
+                  </Body>
+                </Card>
+                <Expand title="Materiais e reposição · uso interno">
+                  {preview?.materiais?.materiais.map((m, i) => (
+                    <View key={i} style={row}>
+                      <View
+                        style={{
+                          width: 20,
+                          height: 20,
+                          borderWidth: 1,
+                          borderRadius: 10,
+                          borderColor: t.border,
+                          backgroundColor: m.codigoCor || t.accentTint,
+                        }}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <View
+                          style={{
+                            ...row,
+                            justifyContent: "space-between",
+                            gap: 4,
+                          }}
+                        >
+                          <Body strong>{m.nome}</Body>
+                          <Body strong>
+                            {m.necessario +
+                              " g" +
+                              (m.falta > 0
+                                ? " · faltam " + m.falta + " g"
+                                : "")}
+                          </Body>
+                        </View>
+                        <Body>{m.cor}</Body>
+                      </View>
+                    </View>
+                  ))}
+                  {preview?.materiais ? (
+                    <ValueRow
+                      label="Reposição"
+                      value={money(preview.materiais.reposicao)}
+                    />
+                  ) : (
+                    <Body muted>
+                      {preview?.aviso || "Sem materiais informados."}
+                    </Body>
+                  )}
+                </Expand>
               </>
             )}
             {!readonly && (
@@ -1062,41 +1642,201 @@ export function BudgetWizard({
             )}
             {readonly && saved && (
               <>
-                {["APROVADO", "PRONTO", "ENTREGUE"].includes(saved.resumo.status) && (
+                {["APROVADO", "PRONTO", "ENTREGUE"].includes(
+                  saved.resumo.status,
+                ) && (
                   <Card>
                     <View style={{ ...row, justifyContent: "space-between" }}>
-                      <Text style={{ color: t.text, fontSize: 18, fontWeight: "700" }}>Produção</Text>
-                      <Body muted>{lines.filter((l) => l.pronto || l.estoque >= l.quantidade).length} de {lines.length} prontas</Body>
+                      <Text
+                        style={{
+                          color: t.text,
+                          fontSize: 18,
+                          fontWeight: "700",
+                        }}
+                      >
+                        Produção
+                      </Text>
+                      <Body muted>
+                        {
+                          lines.filter(
+                            (l) => l.pronto || l.estoque >= l.quantidade,
+                          ).length
+                        }{" "}
+                        de {lines.length} prontas
+                      </Body>
                     </View>
                     {lines.map((l, index) => {
                       const ready = !!l.pronto || l.estoque >= l.quantidade;
-                      return <View key={l.id} style={{ gap: 7, borderTopWidth: index ? 1 : 0, borderColor: t.border, paddingTop: index ? 10 : 0, paddingBottom: 4 }}>
-                        <View style={{ ...row, justifyContent: "space-between", alignItems: "center" }}>
-                          <View style={{ flex: 1 }}><Body strong>{l.nome}</Body><Body muted>{Math.max(0, l.quantidade - l.estoque)} un.</Body></View>
-                          {ready ? <Text style={{ color: t.success, fontWeight: "700" }}>✓ Produzido</Text> : <Button icon="printer" variant="secondary" label="Registrar produção" disabled={busy} onPress={() => confirm("produzir/" + l.id)} />}
+                      return (
+                        <View
+                          key={l.id}
+                          style={{
+                            gap: 7,
+                            borderTopWidth: index ? 1 : 0,
+                            borderColor: t.border,
+                            paddingTop: index ? 10 : 0,
+                            paddingBottom: 4,
+                          }}
+                        >
+                          <View
+                            style={{
+                              ...row,
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
+                            <View style={{ flex: 1 }}>
+                              <Body strong>{l.nome}</Body>
+                              <Body muted>
+                                {Math.max(0, l.quantidade - l.estoque)} un.
+                              </Body>
+                            </View>
+                            {ready ? (
+                              <Text
+                                style={{ color: t.success, fontWeight: "700" }}
+                              >
+                                ✓ Produzido
+                              </Text>
+                            ) : (
+                              <Button
+                                icon="printer"
+                                variant="secondary"
+                                label="Registrar produção"
+                                disabled={busy}
+                                onPress={() => confirm("produzir/" + l.id)}
+                              />
+                            )}
+                          </View>
                         </View>
-                      </View>;
+                      );
                     })}
-                    <Body muted>Quando todas as peças estiverem prontas, o pedido passa para entrega.</Body>
+                    <Body muted>
+                      Quando todas as peças estiverem prontas, o pedido passa
+                      para entrega.
+                    </Body>
                   </Card>
                 )}
                 <Card>
-                  <View style={{ ...row, justifyContent: "space-between" }}><Body strong>Total ao cliente</Body><Text style={{ color: t.text, fontSize: 22, fontWeight: "700" }}>{money(saved.resumo.total)}</Text></View>
-                  <View style={{ ...row, justifyContent: "space-between" }}><Body muted>Lucro estimado</Body><Text style={{ color: (profit?.lucro ?? 0) < 0 ? t.danger : t.success, fontWeight: "700" }}>{money(profit?.lucro ?? 0)}</Text></View>
-                  <Text style={{ alignSelf: "flex-start", color: saved.resumo.pago ? t.success : "#765700", backgroundColor: saved.resumo.pago ? "#E5F3E8" : "#FFF1C2", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, fontSize: 12 }}>{saved.resumo.pago ? "Pagamento efetuado" : "Pagamento pendente"}</Text>
+                  <View style={{ ...row, justifyContent: "space-between" }}>
+                    <Body strong>Total ao cliente</Body>
+                    <Text
+                      style={{ color: t.text, fontSize: 22, fontWeight: "700" }}
+                    >
+                      {money(saved.resumo.total)}
+                    </Text>
+                  </View>
+                  <View style={{ ...row, justifyContent: "space-between" }}>
+                    <Body muted>Lucro estimado</Body>
+                    <Text
+                      style={{
+                        color: (profit?.lucro ?? 0) < 0 ? t.danger : t.success,
+                        fontWeight: "700",
+                      }}
+                    >
+                      {money(profit?.lucro ?? 0)}
+                    </Text>
+                  </View>
+                  <Text
+                    style={{
+                      alignSelf: "flex-start",
+                      color: saved.resumo.pago ? t.success : "#765700",
+                      backgroundColor: saved.resumo.pago
+                        ? "#E5F3E8"
+                        : "#FFF1C2",
+                      borderRadius: 8,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      fontSize: 12,
+                    }}
+                  >
+                    {saved.resumo.pago
+                      ? "Pagamento efetuado"
+                      : "Pagamento pendente"}
+                  </Text>
                 </Card>
                 <Card style={{ gap: 0 }}>
                   <Expand embedded title="Para onde vai o dinheiro">
-                    <ValueRow label="Produção e envio" value={money(preview?.custo ?? 0)} />
-                    <ValueRow label="Taxas" value={money(preview?.taxas ?? 0)} />
+                    <ValueRow
+                      label="Produção e envio"
+                      value={money(preview?.custo ?? 0)}
+                    />
+                    <ValueRow
+                      label="Taxas"
+                      value={money(preview?.taxas ?? 0)}
+                    />
                   </Expand>
                   <Expand embedded separated title="Compartilhar e materiais">
-                    <View><Button stretch iconNode={<WhatsAppGlyph />} label="WhatsApp" onPress={() => outbound("WhatsApp")} /></View>
-                    <View style={row}><View style={{ flex: 1 }}><Button stretch icon="file-text" label="PDF" variant="secondary" onPress={() => outbound("PDF")} /></View><View style={{ flex: 1 }}><Button stretch icon="envelope" label="E-mail" variant="secondary" onPress={() => outbound("E-mail")} /></View></View>
-                    {preview?.materiais?.materiais.map((m, i) => <View key={i} style={row}><View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 1, borderColor: t.border, backgroundColor: m.codigoCor || t.accentTint }} /><View style={{ flex: 1 }}><View style={{ ...row, justifyContent: "space-between", gap: 4 }}><Body strong>{m.nome}</Body><Body strong>{m.necessario + " g" + (m.falta > 0 ? " · faltam " + m.falta + " g" : "")}</Body></View><Body>{m.cor}</Body></View></View>)}
-                    {preview?.materiais && <ValueRow label="Reposição" value={money(preview.materiais.reposicao)} />}
+                    <View>
+                      <Button
+                        stretch
+                        iconNode={<WhatsAppGlyph />}
+                        label="WhatsApp"
+                        onPress={() => outbound("WhatsApp")}
+                      />
+                    </View>
+                    <View style={row}>
+                      <View style={{ flex: 1 }}>
+                        <Button
+                          stretch
+                          icon="file-text"
+                          label="PDF"
+                          variant="secondary"
+                          onPress={() => outbound("PDF")}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Button
+                          stretch
+                          icon="envelope"
+                          label="E-mail"
+                          variant="secondary"
+                          onPress={() => outbound("E-mail")}
+                        />
+                      </View>
+                    </View>
+                    {preview?.materiais?.materiais.map((m, i) => (
+                      <View key={i} style={row}>
+                        <View
+                          style={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: 10,
+                            borderWidth: 1,
+                            borderColor: t.border,
+                            backgroundColor: m.codigoCor || t.accentTint,
+                          }}
+                        />
+                        <View style={{ flex: 1 }}>
+                          <View
+                            style={{
+                              ...row,
+                              justifyContent: "space-between",
+                              gap: 4,
+                            }}
+                          >
+                            <Body strong>{m.nome}</Body>
+                            <Body strong>
+                              {m.necessario +
+                                " g" +
+                                (m.falta > 0
+                                  ? " · faltam " + m.falta + " g"
+                                  : "")}
+                            </Body>
+                          </View>
+                          <Body>{m.cor}</Body>
+                        </View>
+                      </View>
+                    ))}
+                    {preview?.materiais && (
+                      <ValueRow
+                        label="Reposição"
+                        value={money(preview.materiais.reposicao)}
+                      />
+                    )}
                   </Expand>
-                  <Expand embedded separated title="Observação para o cliente"><Body muted>{form.observacoes || "Sem observações."}</Body></Expand>
+                  <Expand embedded separated title="Observação para o cliente">
+                    <Body muted>{form.observacoes || "Sem observações."}</Body>
+                  </Expand>
                 </Card>
               </>
             )}
@@ -1104,20 +1844,73 @@ export function BudgetWizard({
         )}
       </ModuleScreen>
       {readonly && saved && !hidesFooter && (
-        <View style={{ backgroundColor: t.surface, borderTopWidth: 1, borderColor: t.border, paddingHorizontal: 16, paddingVertical: 9 }}>
+        <View
+          style={{
+            backgroundColor: t.surface,
+            borderTopWidth: 1,
+            borderColor: t.border,
+            paddingHorizontal: 16,
+            paddingVertical: 9,
+          }}
+        >
           <View style={{ ...row, alignItems: "stretch" }}>
             <View style={{ flex: 1 }}>
               {saved.resumo.status === "ENVIADO" ? (
-                <Button stretch icon="send" label="Aprovar pedido" disabled={busy} onPress={() => confirm("aprovar")} />
+                <Button
+                  stretch
+                  icon="send"
+                  label="Aprovar pedido"
+                  disabled={busy}
+                  onPress={() => confirm("aprovar")}
+                />
               ) : saved.resumo.status === "PRONTO" ? (
-                <Button stretch icon="box" label="Registrar entrega" disabled={busy} onPress={() => confirm("entregar")} />
+                <Button
+                  stretch
+                  icon="box"
+                  label="Registrar entrega"
+                  disabled={busy}
+                  onPress={() => confirm("entregar")}
+                />
               ) : saved.resumo.status === "ENTREGUE" && !saved.resumo.pago ? (
-                <Button stretch icon="cash-coin" label="Registrar pagamento" disabled={busy} onPress={() => confirm("pagar")} />
+                <Button
+                  stretch
+                  icon="cash-coin"
+                  label="Registrar pagamento"
+                  disabled={busy}
+                  onPress={() => confirm("pagar")}
+                />
               ) : (
-                <Button stretch icon={saved.resumo.pago ? "cash-coin" : "printer"} label={saved.resumo.pago ? "Pagamento efetuado" : saved.resumo.status === "APROVADO" ? "Produção em andamento" : "Proposta cancelada"} variant="secondary" disabled onPress={() => {}} />
+                <Button
+                  stretch
+                  icon={saved.resumo.pago ? "cash-coin" : "printer"}
+                  label={
+                    saved.resumo.pago
+                      ? "Pagamento efetuado"
+                      : saved.resumo.status === "APROVADO"
+                        ? "Produção em andamento"
+                        : "Proposta cancelada"
+                  }
+                  variant="secondary"
+                  disabled
+                  onPress={() => {}}
+                />
               )}
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Mais opções da proposta" onPress={() => setEditingPhase(true)} style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: t.border, backgroundColor: t.surface, borderRadius: 10 }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Mais opções da proposta"
+              onPress={() => setEditingPhase(true)}
+              style={{
+                minWidth: 44,
+                minHeight: 44,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: t.border,
+                backgroundColor: t.surface,
+                borderRadius: 10,
+              }}
+            >
               <Icon name="three-dots" color={t.primaryText} size={18} />
             </Pressable>
           </View>
@@ -1131,9 +1924,18 @@ export function BudgetWizard({
             borderColor: t.border,
           }}
         >
-          <View style={{ ...row, justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 10 }}>
+          <View
+            style={{
+              ...row,
+              justifyContent: "space-between",
+              paddingHorizontal: 16,
+              paddingTop: 10,
+            }}
+          >
             <Body>Total do orçamento</Body>
-            <Text style={{ color: t.text, fontSize: 20, fontWeight: "700" }}>{money(total)}</Text>
+            <Text style={{ color: t.text, fontSize: 20, fontWeight: "700" }}>
+              {money(total)}
+            </Text>
           </View>
           <View
             style={{
@@ -1178,7 +1980,8 @@ export function BudgetWizard({
                   (stage === 3 && priceEdit !== null) ||
                   (stage === 1 && !lines.length) ||
                   (stage === 2 &&
-                    (selectedDateIsPast || !form.turnoInicio ||
+                    (selectedDateIsPast ||
+                      !form.turnoInicio ||
                       !form.turnoFim ||
                       !form.inicioPretendido.slice(11)))
                 }
@@ -1280,7 +2083,11 @@ export function BudgetWizard({
         >
           <Body strong>{lines[priceEdit.i].nome}</Body>
           <Body muted>Preço atual · {money(lines[priceEdit.i].preco)}</Body>
-          <Amount label="Novo preço por unidade (R$)" value={priceEdit.value} change={(v) => editPrice({ i: priceEdit.i, value: v })} />
+          <Amount
+            label="Novo preço por unidade (R$)"
+            value={priceEdit.value}
+            change={(v) => editPrice({ i: priceEdit.i, value: v })}
+          />
           <Button
             label="Cancelar"
             variant="secondary"
@@ -1364,25 +2171,34 @@ export function BudgetWizard({
             />
           }
         >
-          <Body muted>O cliente ficará salvo na sua lista e será vinculado a este orçamento.</Body>
+          <Body muted>
+            O cliente ficará salvo na sua lista e será vinculado a este
+            orçamento.
+          </Body>
           {!!error && <Notice message={error} />}
           <Field
             label="Nome do cliente"
             value={newCustomer.nome}
-            onChangeText={(nome) => setNewCustomer((current) => ({ ...current, nome }))}
+            onChangeText={(nome) =>
+              setNewCustomer((current) => ({ ...current, nome }))
+            }
             placeholder="Nome do cliente"
           />
           <Field
             label="Telefone / WhatsApp"
             value={newCustomer.telefone || ""}
-            onChangeText={(telefone) => setNewCustomer((current) => ({ ...current, telefone }))}
+            onChangeText={(telefone) =>
+              setNewCustomer((current) => ({ ...current, telefone }))
+            }
             keyboardType="phone-pad"
             placeholder="Telefone com DDD"
           />
           <Field
             label="E-mail"
             value={newCustomer.email || ""}
-            onChangeText={(email) => setNewCustomer((current) => ({ ...current, email }))}
+            onChangeText={(email) =>
+              setNewCustomer((current) => ({ ...current, email }))
+            }
             keyboardType="email-address"
             autoCapitalize="none"
             placeholder="cliente@exemplo.com"
@@ -1394,7 +2210,9 @@ export function BudgetWizard({
           title="Opções da proposta"
           close={() => setEditingPhase(false)}
         >
-          {earlier.length > 0 && <Body muted>Voltar para uma fase anterior</Body>}
+          {earlier.length > 0 && (
+            <Body muted>Voltar para uma fase anterior</Body>
+          )}
           {earlier.map(([key, label]) => (
             <Button
               key={key}
@@ -1404,16 +2222,26 @@ export function BudgetWizard({
             />
           ))}
           {saved.resumo.arquivado ? (
-            <Button label="Restaurar proposta" variant="secondary" onPress={() => confirm("restaurar")} />
-          ) : !["ENVIADO", "APROVADO", "PRONTO"].includes(saved.resumo.status) ? (
-            <Button label="Arquivar proposta" variant="secondary" onPress={() => confirm("arquivar")} />
+            <Button
+              label="Restaurar proposta"
+              variant="secondary"
+              onPress={() => confirm("restaurar")}
+            />
+          ) : !["ENVIADO", "APROVADO", "PRONTO"].includes(
+              saved.resumo.status,
+            ) ? (
+            <Button
+              label="Arquivar proposta"
+              variant="secondary"
+              onPress={() => confirm("arquivar")}
+            />
           ) : null}
         </PlanningSheet>
       )}
       {!!confirmation && (
         <PlanningSheet title="Confirmar alteração" close={() => confirm("")}>
           <Body>
-                {confirmation.startsWith("voltar-")
+            {confirmation.startsWith("voltar-")
               ? "Voltar para " +
                 phases.find(([k]) => "voltar-" + k === confirmation)?.[1] +
                 "? " +
@@ -1431,10 +2259,13 @@ export function BudgetWizard({
                         : "As peças continuarão reservadas."))
               : confirmation.startsWith("produzir/")
                 ? "Registrar produção de " +
-                  (lines.find((l) => l.id === confirmation.split("/")[1])?.nome ?? "peça") +
+                  (lines.find((l) => l.id === confirmation.split("/")[1])
+                    ?.nome ?? "peça") +
                   "? " +
                   (expected && expected.slice(0, 16) > localNow().slice(0, 16)
-                    ? "A previsão é " + stamp(expected) + ". Confirme só se a peça já saiu da impressora."
+                    ? "A previsão é " +
+                      stamp(expected) +
+                      ". Confirme só se a peça já saiu da impressora."
                     : "Confirme só se a peça já saiu da impressora.")
                 : (
                     {
@@ -1444,14 +2275,23 @@ export function BudgetWizard({
                       entregar: "Registrar a entrega do pedido?",
                       pagar: "Registrar o pagamento do pedido?",
                       produzir: "Confirmar a produção deste item?",
-                      arquivar: "Arquivar esta proposta? Ela continuará disponível na aba Arquivados.",
+                      arquivar:
+                        "Arquivar esta proposta? Ela continuará disponível na aba Arquivados.",
                       restaurar: "Restaurar esta proposta para a aba Ativos?",
                     } as Record<string, string>
                   )[confirmation.split("/")[0]]}
           </Body>
           {!!error && <Notice message={error} />}
           <Button
-            label={confirmation.startsWith("produzir/") ? "Sim, registrar" : confirmation === "arquivar" ? "Sim, arquivar" : confirmation === "restaurar" ? "Restaurar" : "Sim, continuar"}
+            label={
+              confirmation.startsWith("produzir/")
+                ? "Sim, registrar"
+                : confirmation === "arquivar"
+                  ? "Sim, arquivar"
+                  : confirmation === "restaurar"
+                    ? "Restaurar"
+                    : "Sim, continuar"
+            }
             busy={busy}
             onPress={() =>
               void run(() =>

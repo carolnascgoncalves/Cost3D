@@ -2,10 +2,11 @@ import { pieceCalculation } from "@/features/calculation-route";
 import { router } from "expo-router";
 import { Icon } from "./icon";
 import { useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { components } from "@/api/schema";
 import { useTheme } from "@/theme/provider";
-import { useCachedApiQuery } from "@/hooks/use-cached-api-query";
+import { useApiImage } from "@/hooks/use-api-image";
 import { decimal, reais } from "@/features/format";
 import { openWebsite } from "@/features/website";
 import { Body, Button, Card, Notice } from "./ui";
@@ -58,16 +59,10 @@ export function PiecePhoto({
   medium?: boolean;
 }) {
   const t = useTheme();
-  const photo = useCachedApiQuery<Schemas["FotoCatalogo"]>(
-    row.id && row.placaMiniatura
-      ? "/catalogo/pecas/" +
-          encodeURIComponent(row.id) +
-          "/placas/" +
-          row.placaMiniatura +
-          "/foto"
-      : null,
-  );
-  const [failed, setFailed] = useState(false);
+  const path = row.id && row.placaMiniatura
+    ? "/catalogo/pecas/" + encodeURIComponent(row.id) + "/placas/" + row.placaMiniatura + "/foto/imagem"
+    : null;
+  const photo = useApiImage(path);
   return (
     <View
       style={[
@@ -78,20 +73,19 @@ export function PiecePhoto({
         { backgroundColor: medium ? t.accentTint : t.surface, borderColor: t.border },
       ]}
     >
-      {photo.data?.base64 && !failed ? (
+      {photo.source && !photo.failed ? (
         <Image
           accessibilityLabel={"Foto de " + row.nome}
-          resizeMode="contain"
+          contentFit="contain"
+          cachePolicy="memory-disk"
+          transition={0}
           style={{ width: "100%", height: "100%" }}
-          fadeDuration={0}
-          source={{
-            uri: "data:" + photo.data.tipo + ";base64," + photo.data.base64,
-          }}
-          onError={() => setFailed(true)}
+          source={photo.source}
+          onError={photo.onError}
         />
       ) : large ? (
         <Body muted>
-          {photo.loading ? "Carregando prévia…" : "Prévia indisponível"}
+          {photo.failed ? "Prévia indisponível" : "Carregando prévia…"}
         </Body>
       ) : (
         <Icon name="box" color={t.muted} size={28} />

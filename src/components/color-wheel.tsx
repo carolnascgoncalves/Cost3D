@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Image, View, type GestureResponderEvent } from "react-native";
+import { View, type GestureResponderEvent } from "react-native";
+import { Image } from "expo-image";
 import { Body, Field } from "./ui";
 import { useTheme } from "@/theme/provider";
 
@@ -85,6 +86,9 @@ export function ColorWheel({
         >
           <View pointerEvents="none" style={{ flex: 1 }}>
             <Image
+              cachePolicy="memory-disk"
+              contentFit="fill"
+              transition={0}
               source={require("../../assets/images/color-wheel.png")}
               style={{ width: "100%", height: "100%" }}
             />
@@ -118,8 +122,10 @@ export function ColorWheel({
             }}
           >
             <Image
+              cachePolicy="memory-disk"
+              contentFit="fill"
+              transition={0}
               source={require("../../assets/images/brightness.png")}
-              resizeMode="stretch"
               style={{ width: "100%", height: "100%" }}
             />
           </View>

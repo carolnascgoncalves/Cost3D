@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import { ModuleScreen } from "@/components/module-screen";
 import {
@@ -103,8 +104,10 @@ export default function Sales() {
             >
               <Image
                 accessible={false}
+                cachePolicy="memory-disk"
+                contentFit="contain"
+                transition={0}
                 source={require("../../../assets/images/cost3d-icone-marsala.png")}
-                resizeMode="contain"
                 style={{ width: 84, height: 84, borderRadius: 20 }}
               />
               <Text
