@@ -24,6 +24,7 @@ import {
   layout,
 } from "@/components/ui";
 import { CatalogDetail } from "@/components/catalog-detail";
+import { Icon } from "@/components/icon";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { request } from "@/api/session";
 import { useTheme } from "@/theme/provider";
@@ -169,31 +170,13 @@ function Listings({ category }: { category: Category }) {
   return (
     <ModuleScreen section="Seu catálogo" title={category.label}>
       {!selecting && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 6 }}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 18, borderBottomWidth: 1, borderColor: t.border }}>
           {categories.map((c) => (
-            <Chip
-              key={c.key}
-              label={c.label}
-              selected={category === c}
-              onPress={() => router.setParams({ categoria: c.key })}
-            />
+            <Pressable key={c.key} accessibilityRole="tab" accessibilityState={{ selected: category === c }} onPress={() => router.setParams({ categoria: c.key })} style={{ minHeight: 36, justifyContent: "center", borderBottomWidth: 2, borderColor: category === c ? t.primary : "transparent" }}>
+              <Text style={{ color: category === c ? t.text : t.muted, fontSize: 14, fontWeight: category === c ? "700" : "500" }}>{c.label}</Text>
+            </Pressable>
           ))}
         </ScrollView>
-      )}
-      {mobile && (
-        <ListSearch
-          accessibilityLabel={"Buscar em " + category.label}
-          placeholder={"Buscar em " + category.label.toLowerCase()}
-          value={search}
-          onChangeText={(value) => {
-            setSearch(value);
-            setPage(0);
-          }}
-        />
       )}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         {selecting ? (
@@ -206,6 +189,15 @@ function Listings({ category }: { category: Category }) {
             <View style={{ flex: 1 }}>
               <Body strong>{selected.length} na seleção</Body>
             </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Selecionar cadastros para apagar"
+              hitSlop={8}
+              onPress={() => setSelecting(true)}
+              style={{ width: 34, height: 40, alignItems: "center", justifyContent: "center" }}
+            >
+              <Icon name="three-dots" size={17} color={t.muted} />
+            </Pressable>
             <Button
               variant="danger"
               label="Apagar"
@@ -216,23 +208,19 @@ function Listings({ category }: { category: Category }) {
         ) : (
           <>
             <View style={{ flex: 1 }}>
-              <Button
-                label={"+ " + category.create}
-                onPress={() => {
-                  setCreated(false);
-                  setResult("");
-                  setEditor({ purchase: false });
-                }}
+              <ListSearch
+                accessibilityLabel={"Buscar em " + category.label}
+                placeholder={"Buscar " + category.label.toLowerCase().replace(/s$/, "")}
+                value={search}
+                style={{ minHeight: 40, borderRadius: 10, paddingVertical: 7 }}
+                onChangeText={(value) => { setSearch(value); setPage(0); }}
               />
             </View>
             <Button
-              variant="secondary"
-              label="Selecionar"
-              onPress={() => {
-                setCreated(false);
-                setResult("");
-                setSelecting(true);
-              }}
+              compact
+              label="Nova"
+              iconNode={<Text style={{ color: t.onPrimary, fontSize: 18, lineHeight: 20, fontWeight: "400" }}>+</Text>}
+              onPress={() => { setCreated(false); setResult(""); setEditor({ purchase: false }); }}
             />
           </>
         )}

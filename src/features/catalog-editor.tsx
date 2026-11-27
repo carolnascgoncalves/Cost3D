@@ -20,7 +20,7 @@ import { operationKey } from "./operation-key";
 import { pick3mf } from "./pick-3mf";
 import { PieceImport, importedFields } from "./catalog-file";
 import { useTheme } from "@/theme/provider";
-import { reais } from "./format";
+import { quantity, reais } from "./format";
 type Data = Record<string, string | number | boolean | null>;
 type FieldSpec = [string, string, "text" | "decimal" | "integer", boolean?];
 const fields: Record<CatalogCategory | "compra", FieldSpec[]> = {
@@ -102,6 +102,7 @@ const suggestions = [
   "Casa",
   "Outros",
 ];
+const filamentColors = ["#242424", "#FFFFFF", "#E84B4B", "#FF6B35", "#F2C94C", "#70A83B", "#428ED8", "#8274D8"];
 const names = {
   pecas: "peça",
   filamentos: "filamento",
@@ -346,28 +347,12 @@ function Form({
     if (key === "codigoCor")
       return (
         <View key={key} style={{ gap: 8 }}>
-          <Body strong>Escolha a cor</Body>
-          <View style={layout.row}>
-            <View
-              style={{
-                width: 46,
-                height: 42,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: t.border,
-                backgroundColor: /^#[0-9a-f]{6}$/i.test(values[key])
-                  ? values[key]
-                  : t.surface,
-              }}
-            />
-            <Button
-              label="Escolher cor"
-              variant="secondary"
-              onPress={() => setColors(!colors)}
-            />
+          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+            {filamentColors.map((color) => <Pressable key={color} accessibilityRole="radio" accessibilityState={{ checked: values[key].toUpperCase() === color }} accessibilityLabel={"Selecionar cor " + color} onPress={() => update(key, color)} style={{ width: 31, height: 31, borderRadius: 9, backgroundColor: color, borderWidth: values[key].toUpperCase() === color ? 2 : 1, borderColor: values[key].toUpperCase() === color ? t.primary : t.border }} />)}
+            <Button compact label="Outra cor" variant="ghost" onPress={() => setColors(!colors)} />
           </View>
           {colors && (
-            <Card>
+            <Card style={{ padding: 10 }}>
               <ColorWheel
                 value={values[key]}
                 onChange={(v) => update(key, v)}
@@ -503,7 +488,59 @@ function Form({
             }}
           />
         )}
-        {specs
+        {purchase ? (
+          <>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: typeof original.codigoCor === "string" && original.codigoCor ? original.codigoCor : t.accentTint, borderWidth: 1, borderColor: t.border }} />
+              <Body strong>{original.nome}{original.cor ? " · " + original.cor : ""}</Body>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 2 }}>
+              <Body strong>Quantidade de rolos</Body>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                <Button compact variant="secondary" label="−" disabled={Number(values.unidadesCompra) <= 1} onPress={() => update("unidadesCompra", String(Math.max(1, Number(values.unidadesCompra) - 1)))} />
+                <Text style={{ color: t.text, fontSize: 15, fontWeight: "700", minWidth: 18, textAlign: "center" }}>{values.unidadesCompra || "1"}</Text>
+                <Button compact variant="secondary" label="+" onPress={() => update("unidadesCompra", String(Math.min(10000, Number(values.unidadesCompra || 1) + 1)))} />
+              </View>
+            </View>
+            <View style={{ flexDirection: "row", gap: 9 }}>
+              <View style={{ flex: 1 }}>{field(specs.find((f) => f[0] === "pesoRoloGramas")!)}</View>
+              <View style={{ flex: 1 }}>{field(specs.find((f) => f[0] === "precoRolo")!)}</View>
+            </View>
+            {(() => {
+              const grams = Number(values.gramasCompradas.replace(",", ".")) || Number(values.pesoRoloGramas.replace(",", ".")) * (Number(values.unidadesCompra) || 1);
+              const current = Number(original.estoqueGramas) || 0;
+              return <Card style={{ gap: 8, backgroundColor: t.accentTint }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}><Body muted>Total pago</Body><Body strong>{reais(String((Number(values.precoRolo.replace(",", ".")) || 0) * (Number(values.unidadesCompra) || 1)))}</Body></View>
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}><Body muted>Entra no estoque</Body><Text style={{ color: t.success, fontWeight: "700" }}>+ {quantity(String(grams), "g")}</Text></View>
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}><Body muted>Estoque depois</Body><Body strong>{quantity(String(current + grams), "g")}</Body></View>
+              </Card>;
+            })()}
+            <Pressable accessibilityRole="button" accessibilityState={{ expanded: advanced }} onPress={() => setAdvanced(!advanced)} style={{ alignSelf: "flex-start", paddingVertical: 3 }}>
+              <Text style={{ color: t.primaryText, fontSize: 12, fontWeight: "600" }}>{advanced ? "Ocultar ajuste de peso" : "Ajustar peso total recebido"}</Text>
+            </Pressable>
+            {advanced && field(specs.find((f) => f[0] === "gramasCompradas")!)}
+          </>
+        ) : category === "pecas" ? (
+          <>
+            <View style={{ gap: 11 }}>{field(specs.find((f) => f[0] === "nome")!)}{field(specs.find((f) => f[0] === "categoria")!)}</View>
+            <View style={{ flexDirection: "row", gap: 9 }}>
+              <View style={{ flex: 1 }}>{field(specs.find((f) => f[0] === "quantidadeFilamentoGramas")!)}</View>
+              <View style={{ flex: 1 }}>{field(specs.find((f) => f[0] === "tempoImpressaoMinutos")!)}</View>
+            </View>
+          </>
+        ) : category === "filamentos" ? (
+          <>
+            {field(specs.find((f) => f[0] === "nome")!)}
+            {field(specs.find((f) => f[0] === "cor")!)}
+            {field(specs.find((f) => f[0] === "codigoCor")!)}
+            {field(specs.find((f) => f[0] === "marca")!)}
+            <View style={{ flexDirection: "row", gap: 9 }}>
+              <View style={{ flex: 1 }}>{field(specs.find((f) => f[0] === "pesoRoloGramas")!)}</View>
+              <View style={{ flex: 1 }}>{field(specs.find((f) => f[0] === "precoRolo")!)}</View>
+            </View>
+            {field(specs.find((f) => f[0] === "estoqueGramas")!)}
+          </>
+        ) : specs
           .filter(
             ([key]) =>
               category !== "impressoras" ||

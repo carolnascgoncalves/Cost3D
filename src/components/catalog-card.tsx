@@ -50,10 +50,12 @@ export function PiecePhoto({
   row,
   large = false,
   compact = false,
+  medium = false,
 }: {
   row: CatalogRow;
   large?: boolean;
   compact?: boolean;
+  medium?: boolean;
 }) {
   const t = useTheme();
   const photo = useApiQuery<Schemas["FotoCatalogo"]>(
@@ -71,6 +73,7 @@ export function PiecePhoto({
       style={[
         s.photo,
         compact && { width: 32, height: 32, borderRadius: 8 },
+        medium && { width: 54, height: 54, borderRadius: 11 },
         large && { width: "100%", height: 190, borderWidth: 0 },
         { backgroundColor: t.surface, borderColor: t.border },
       ]}
@@ -164,8 +167,6 @@ export function CatalogCard({
 }) {
   const t = useTheme();
   const [error, setError] = useState("");
-  const id = row.id && encodeURIComponent(row.id);
-  const path = "/" + catalogPaths[category];
   const filament = category === "filamentos";
   const printer = category === "impressoras";
   const level = stockLevel(row);
@@ -174,193 +175,57 @@ export function CatalogCard({
     : level && level.percent <= 64
       ? "#916424"
       : t.success;
-  function open(path: string) {
-    setError("");
-    void openWebsite(path).catch(() =>
-      setError("Não foi possível abrir o site."),
-    );
-  }
-  function action(name: "eye" | "pencil", label: string, onPress: () => void) {
-    return (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={label + " " + row.nome}
-        onPress={onPress}
-        style={({ pressed }) => [
-          s.action,
-          { borderColor: t.border, opacity: pressed ? 0.65 : 1 },
-        ]}
-      >
-        <Icon name={name} size={20} color={t.primaryText} />
-      </Pressable>
-    );
-  }
+  const openDetails = () => onDetails?.();
+  const overflow = (
+    <Pressable accessibilityRole="button" accessibilityLabel={"Editar " + row.nome} onPress={() => onEdit()} hitSlop={8} style={{ width: 30, height: 34, alignItems: "center", justifyContent: "center" }}>
+      <Icon name="three-dots" size={18} color={t.muted} />
+    </Pressable>
+  );
+  const name = (subtitle?: string) => (
+    <Pressable accessibilityRole="button" accessibilityLabel={"Ver detalhes de " + row.nome} onPress={openDetails} style={{ flex: 1, minWidth: 0, gap: 2 }}>
+      <Text numberOfLines={2} style={{ color: t.text, fontSize: 15, fontWeight: "700" }}>{row.nome}</Text>
+      {!!subtitle && <Text numberOfLines={1} style={{ color: t.muted, fontSize: 12 }}>{subtitle}</Text>}
+    </Pressable>
+  );
   return (
-    <Card style={{ gap: 16, padding: 16 }}>
-      {category === "pecas" ? (
-        <>
-          {onDetails ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={"Ver detalhes de " + row.nome}
-              onPress={onDetails}
-            >
-              <PieceIdentity row={row} />
-            </Pressable>
-          ) : (
-            <PieceIdentity row={row} />
-          )}
-          <Metric
-            label="Último preço sugerido"
-            value={row.preco != null ? reais(row.preco) : "Ainda não calculado"}
-          />
-          <Metric
-            label="Filamento"
-            value={row.gramas != null ? decimal(row.gramas, 2) + " g" : "—"}
-          />
-          <Metric
-            label="Impressão"
-            value={row.minutos != null ? row.minutos + " min" : "—"}
-          />
-        </>
-      ) : (
-        <>
-          <View style={s.identity}>
-            <View
-              style={[
-                s.symbol,
-                {
-                  borderColor: t.border,
-                  backgroundColor:
-                    filament && row.codigoCor ? row.codigoCor : t.accentTint,
-                },
-              ]}
-            >
-              {(!filament || !row.codigoCor) && (
-                <Icon
-                  name={printer ? "printer" : filament ? "palette" : "box"}
-                  color={t.primaryText}
-                />
-              )}
-            </View>
-            <View style={s.identityText}>
-              {!filament && (
-                <Text
-                  style={{
-                    fontSize: 11,
-                    letterSpacing: 1.2,
-                    color: t.muted,
-                    fontWeight: "700",
-                  }}
-                >
-                  {printer ? "IMPRESSORA" : "EMBALAGEM"}
-                </Text>
-              )}
-              <Text style={[s.name, { color: t.text }]}>{row.nome}</Text>
-              <Body muted>
-                {filament
-                  ? [row.marca, row.cor].filter(Boolean).join(" · ")
-                  : printer
-                    ? row.modelo
-                    : "Usada em " + (row.usos ?? 0) + " cálculo(s)"}
-              </Body>
-            </View>
-          </View>
-          {filament ? (
-            <>
-              <Metric
-                label="Estoque disponível"
-                value={
-                  row.estoque == null
-                    ? "—"
-                    : decimal(row.estoque, 2) +
-                      " g" +
-                      (level
-                        ? " · " + level.rolls + " rolo(s) equivalentes"
-                        : "")
-                }
-              />
-              {level && (
-                <View style={{ gap: 8 }}>
-                  <View style={s.identity}>
-                    <View
-                      accessibilityRole="progressbar"
-                      accessibilityLabel="Estoque disponível"
-                      accessibilityValue={{
-                        now: level.percent,
-                        min: 0,
-                        max: 100,
-                      }}
-                      style={[s.track, { backgroundColor: t.accentTint }]}
-                    >
-                      <View
-                        style={{
-                          width: `${level.percent}%`,
-                          height: "100%",
-                          backgroundColor: stockColor,
-                        }}
-                      />
-                    </View>
-                    <Text style={{ color: stockColor, fontWeight: "700" }}>
-                      {level.percent}%
-                    </Text>
-                  </View>
-                  {level.low && (
-                    <View
-                      style={[
-                        s.warning,
-                        { backgroundColor: t.dangerBackground },
-                      ]}
-                    >
-                      <Icon name="warning" size={15} color={t.danger} />
-                      <Text style={{ color: t.danger, fontWeight: "700" }}>
-                        Repor estoque
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
-              <Metric label="Preço do rolo" value={reais(row.precoRolo)} />
-            </>
-          ) : printer ? (
-            <>
-              <Metric
-                label="Potência média informada"
-                value={row.watts != null ? decimal(row.watts, 2) + " W" : "—"}
-              />
-              <Metric
-                label="Aquecimento"
-                value={row.aquecimento != null ? row.aquecimento + " min" : "—"}
-              />
-            </>
-          ) : (
-            <Metric label="Custo unitário" value={reais(row.custo)} />
-          )}
-        </>
-      )}
-      {!!id && (
-        <View style={s.actions}>
-          {category === "pecas" && (
-            <Button
-              label="Calcular"
-              onPress={() => router.push(pieceCalculation(row))}
-            />
-          )}
-          {action(
-            "eye",
-            "Ver detalhes de",
-            onDetails ?? (() => open(path + "/detalhes/" + id)),
-          )}
-          {action("pencil", "Editar", () => onEdit())}
-          {filament && (
-            <Button
-              variant="secondary"
-              label="Registrar compra"
-              onPress={() => onEdit(true)}
-            />
-          )}
+    <Card style={{ gap: 10, padding: 11 }}>
+      {category === "pecas" ? <>
+        <View style={s.identity}>
+          <Pressable onPress={openDetails}><PiecePhoto row={row} medium /></Pressable>
+          {name(row.categoria)}{overflow}
         </View>
-      )}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+          <Text style={{ color: t.muted, fontSize: 12 }}>Filamento <Text style={{ color: t.text, fontWeight: "600" }}>{row.gramas != null ? decimal(row.gramas, 1) + " g" : "—"}</Text></Text>
+          <Text style={{ color: t.muted, fontSize: 12 }}>Tempo <Text style={{ color: t.text, fontWeight: "600" }}>{row.minutos != null ? (row.minutos >= 60 ? Math.floor(row.minutos / 60) + " h " + (row.minutos % 60 ? row.minutos % 60 + " min" : "") : row.minutos + " min") : "—"}</Text></Text>
+          <Text style={{ color: t.muted, fontSize: 12 }}>Preço sugerido <Text style={{ color: t.text, fontWeight: "700" }}>{row.preco != null ? reais(row.preco) : "—"}</Text></Text>
+        </View>
+        <Button label="Calcular preço" variant="secondary" onPress={() => router.push(pieceCalculation(row))} />
+      </> : filament ? <>
+        <View style={s.identity}>
+          <Pressable onPress={openDetails} style={[s.symbol, { width: 44, height: 44, borderRadius: 11, backgroundColor: row.codigoCor || t.accentTint, borderColor: t.border }]} />
+          {name(row.cor)}
+          {level && <Text style={{ color: level.low ? t.danger : t.success, backgroundColor: level.low ? t.dangerBackground : t.accentTint, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, fontSize: 11, fontWeight: "600" }}>{level.low ? "Repor" : "Em dia"}</Text>}
+          {overflow}
+        </View>
+        <Pressable onPress={openDetails} style={{ gap: 7 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={{ color: t.text, fontSize: 13, fontWeight: "600" }}>{row.estoque == null ? "—" : decimal(row.estoque, 0) + " g de " + decimal(row.pesoRolo, 0) + " g"}</Text>
+            {level && <Text style={{ color: level.low ? t.danger : t.success, fontSize: 12, fontWeight: "700" }}>{level.percent}%</Text>}
+          </View>
+          {level && <View accessibilityRole="progressbar" accessibilityValue={{ now: level.percent, min: 0, max: 100 }} style={{ height: 6, borderRadius: 8, overflow: "hidden", backgroundColor: t.accentTint }}><View style={{ width: `${level.percent}%`, height: "100%", backgroundColor: stockColor }} /></View>}
+        </Pressable>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+          <Text style={{ color: t.muted, fontSize: 12 }}>{reais(row.precoRolo)} / rolo</Text>
+          <Button label="Registrar compra" icon="bag-plus" variant="secondary" compact onPress={() => onEdit(true)} />
+        </View>
+      </> : <>
+        <View style={s.identity}>
+          <Pressable onPress={openDetails} style={[s.symbol, { backgroundColor: t.accentTint, borderColor: t.border }]}><Icon name={printer ? "printer" : "box"} color={t.primaryText} size={20} /></Pressable>
+          {name(printer ? row.modelo : undefined)}{overflow}
+        </View>
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}><Body muted>{printer ? "Potência média" : "Custo por unidade"}</Body><Body strong>{printer ? (row.watts ? decimal(row.watts) + " W" : "—") : reais(row.custo)}</Body></View>
+        {printer && <Body muted>{"Aquecimento " + (row.aquecimento ?? 0) + " min"}</Body>}
+      </>}
       {!!error && <Notice message={error} />}
     </Card>
   );
