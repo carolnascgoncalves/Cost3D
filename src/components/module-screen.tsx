@@ -1,6 +1,6 @@
 import { FormScrollView } from "@/components/form-scroll";
 import { useFocusEffect, router, type Href } from "expo-router";
-import { useCallback, useState, type PropsWithChildren } from "react";
+import { useCallback, useState, type PropsWithChildren, type ReactNode } from "react";
 import {
   BackHandler,
   Pressable,
@@ -35,11 +35,13 @@ export function SiteButton({ label, site }: { label: string; site: string }) {
 export function ModuleHeader({
   section,
   title,
+  titleAccessory,
   onBack,
   lightHeader,
 }: {
   section: string;
   title: string;
+  titleAccessory?: ReactNode;
   onBack?: () => void;
   lightHeader?: boolean;
 }) {
@@ -66,16 +68,21 @@ export function ModuleHeader({
       >
         {onBack ? "‹ " + section : section.toUpperCase()}
       </Text>
-      <Text
-        accessibilityRole="header"
-        style={{
-          color: t.pageText,
-          fontSize: wide ? 34 : 24,
-          fontWeight: "700",
-        }}
-      >
-        {title}
-      </Text>
+      <View style={titleAccessory ? { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 } : undefined}>
+        <Text
+          accessibilityRole="header"
+          numberOfLines={titleAccessory ? 1 : undefined}
+          style={{
+            color: t.pageText,
+            fontSize: wide ? 34 : 24,
+            fontWeight: "700",
+            flex: titleAccessory ? 1 : undefined,
+          }}
+        >
+          {title}
+        </Text>
+        {titleAccessory}
+      </View>
     </View>
   );
 }
@@ -83,6 +90,7 @@ export function ModuleHeader({
 export function ModuleScreen({
   section,
   title,
+  titleAccessory,
   children,
   onBack,
   lightHeader,
@@ -92,6 +100,7 @@ export function ModuleScreen({
 }: PropsWithChildren<{
   section: string;
   title: string;
+  titleAccessory?: ReactNode;
   onBack?: () => void;
   lightHeader?: boolean;
   fillContent?: boolean;
@@ -117,6 +126,7 @@ export function ModuleScreen({
       <ModuleHeader
         section={section}
         title={title}
+        titleAccessory={titleAccessory}
         onBack={onBack}
         lightHeader={lightHeader}
       />

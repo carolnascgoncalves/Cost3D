@@ -903,6 +903,13 @@ export function CalculationHistory() {
     "/calculos?pagina=" + page + "&busca=" + encodeURIComponent(search) + "&status=" + status,
   );
   const dateToday = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const dateYesterday = new Date(new Date(dateToday + "T12:00:00Z").getTime() - 86400000).toISOString().slice(0, 10);
+  const dateHeading = (day: string) => {
+    if (day === "sem-data") return "Sem data";
+    const [, month, date] = day.split("-");
+    const monthLabel = new Date(Date.UTC(2020, Number(month) - 1, 1)).toLocaleDateString("pt-BR", { month: "short", timeZone: "UTC" }).replace(".", "");
+    return `${day === dateToday ? "Hoje · " : day === dateYesterday ? "Ontem · " : ""}${Number(date)} ${monthLabel}`;
+  };
   const historyGroups: { day: string; items: HistoryItem[] }[] = [];
   for (const item of q.data?.itens ?? []) {
     const day = item.dataCalculo?.slice(0, 10) ?? "sem-data";
@@ -941,18 +948,25 @@ export function CalculationHistory() {
         <>
           {historyGroups.map((group) => (
             <View key={group.day} style={{ gap: 6 }}>
-              <Body muted>{group.day === dateToday ? "Hoje" : group.day === "sem-data" ? "Sem data" : group.day.split("-").reverse().join("/")}</Body>
+              <Body muted>{dateHeading(group.day)}</Body>
               <Card style={{ gap: 0, paddingVertical: 0 }}>
                 {group.items.map((item, index) => (
                   <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={"Abrir cálculo de " + item.nomePeca} onPress={() => router.setParams({ modo: "detalhe", id: item.id, busca: search, pagina: String(page), status })} style={{ minHeight: 68, paddingVertical: 8, flexDirection: "row", alignItems: "center", gap: 10, borderTopWidth: index ? 1 : 0, borderColor: t.border }}>
                     <CalculationPhoto id={item.id} name={item.nomePeca} size={40} />
                     <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
                       <Body strong>{item.nomePeca}</Body>
-                      <Body muted>{item.unidades ?? 1} un.</Body>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <Body muted>{item.unidades ?? 1} un.</Body>
+                        {status === "ESTOQUE" && item.produzido && (
+                          <Text style={{ color: "#765700", backgroundColor: "#FFF1C2", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, fontSize: 11 }}>
+                            {Math.max(0, (item.unidades ?? 1) - (item.unidadesVendidas ?? 0))} em estoque
+                          </Text>
+                        )}
+                      </View>
                     </View>
                     <View style={{ alignItems: "flex-end", gap: 3 }}>
                       <Body strong>{money(item.precoVendaPlataforma ?? item.precoSugerido)}</Body>
-                      <Text style={{ color: item.vendido ? t.primary : item.produzido ? t.success : t.muted, fontSize: 11 }}>{item.vendido ? "Vendido" : item.produzido ? "Em estoque" : "Só cálculo"}</Text>
+                      <Text style={{ color: item.vendido ? t.primary : item.produzido ? t.success : t.muted, backgroundColor: item.vendido ? t.selectionTint : item.produzido ? t.success + "14" : t.accentTint, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3, fontSize: 11 }}>{item.vendido ? "Vendido" : item.produzido ? "Em estoque" : "Cálculo"}</Text>
                     </View>
                   </Pressable>
                 ))}

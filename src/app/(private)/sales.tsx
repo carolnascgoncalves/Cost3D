@@ -22,6 +22,20 @@ const groups = [
   ["ESTOQUE", "Em estoque"],
   ["VENDIDOS", "Vendidas"],
 ] as const;
+function platformName(value?: string) {
+  if (!value || value === "NENHUMA") return "Sem plataforma";
+  const names: Record<string, string> = {
+    MERCADO_LIVRE: "Mercado Livre",
+    SHOPEE: "Shopee",
+    AMAZON: "Amazon",
+    TIKTOK: "TikTok",
+    TIKTOK_SHOP: "TikTok Shop",
+    INSTAGRAM: "Instagram",
+    FACEBOOK: "Facebook",
+    ETSY: "Etsy",
+  };
+  return names[value] ?? value.toLocaleLowerCase("pt-BR").split("_").map((part) => part.charAt(0).toLocaleUpperCase("pt-BR") + part.slice(1)).join(" ");
+}
 export default function Sales() {
   const t = useTheme(),
     [id, select] = useState(""),
@@ -138,15 +152,15 @@ export default function Sales() {
                       <View style={{ flex: 1 }}><Body strong>{l.nome}</Body></View>
                       <Icon name="chevron-right" color={t.muted} size={13} />
                     </View>
-                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                      <Body muted>{!l.plataforma || l.plataforma === "NENHUMA" ? "Sem plataforma" : l.plataforma.replaceAll("_", " ")}</Body>
-                      <Body strong>Venda {reais(l.preco)}</Body>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <Text style={{ color: t.muted, backgroundColor: t.accentTint, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, fontSize: 12 }}>{platformName(l.plataforma)}</Text>
+                      <Text style={{ color: t.muted, fontSize: 12 }}>Venda <Text style={{ color: t.text, fontWeight: "700" }}>{reais(l.preco)}</Text></Text>
                     </View>
                   </View>
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
                   <Body muted>{group === "ESTOQUE" ? `Disponível ${l.disponiveis ?? 0}` : group === "VENDIDOS" ? `${l.vendidas ?? 0} un. vendidas` : `${l.unidades ?? 1} un. para produzir`}</Body>
-                  {!!l.reservadas ? <Text numberOfLines={1} adjustsFontSizeToFit style={{ maxWidth: "100%", color: t.text, backgroundColor: t.accentTint, borderRadius: 10, paddingHorizontal: 9, paddingVertical: 3, fontSize: 12 }}>{l.reservadas} reservadas para pedidos</Text> : <Body muted>Reservadas 0</Body>}
+                  {!!l.reservadas ? <Text numberOfLines={1} adjustsFontSizeToFit style={{ maxWidth: "100%", color: "#765700", backgroundColor: "#FFF1C2", borderRadius: 10, paddingHorizontal: 9, paddingVertical: 3, fontSize: 12 }}>{l.reservadas} reservadas para pedidos</Text> : <Body muted>Reservadas 0</Body>}
                 </View>
               </Pressable>
               <Button

@@ -2,11 +2,13 @@ import { Image, Pressable, Text, View } from "react-native";
 import { Body, Card } from "@/components/ui";
 import { Icon, type IconName } from "@/components/icon";
 import { useTheme } from "@/theme/provider";
+import type { Theme } from "@/theme/colors";
 import { reais } from "./format";
 export type Summary = {
   id: string;
   codigo: string;
   titulo: string;
+  pecasResumo?: string;
   cliente?: string;
   contato?: string;
   email?: string;
@@ -89,6 +91,14 @@ export type Detail = {
   aviso?: string;
 };
 export const money = (n: number) => reais(Number(n || 0).toFixed(2));
+export function statusBadge(status: string, paid: boolean, t: Theme) {
+  if (paid) return { fg: t.success, bg: "#E5F3E8" };
+  if (status === "ENVIADO") return { fg: "#285B91", bg: "#E4F0FF" };
+  if (status === "APROVADO") return { fg: "#765700", bg: "#FFF1C2" };
+  if (status === "PRONTO") return { fg: t.success, bg: "#E5F3E8" };
+  if (status === "CANCELADO") return { fg: t.danger, bg: t.dangerBackground };
+  return { fg: t.primaryText, bg: t.accentTint };
+}
 export const row = {
   flexDirection: "row" as const,
   alignItems: "center" as const,
@@ -106,17 +116,18 @@ export function PieceMark() {
     />
   );
 }
-export function Avatar({ name }: { name?: string }) {
+export function Avatar({ name, size = 28 }: { name?: string; size?: number }) {
   const t = useTheme();
   return (
     <Text
       style={{
         backgroundColor: t.primary,
         color: t.onPrimary,
-        width: 28,
-        lineHeight: 28,
+        width: size,
+        height: size,
+        lineHeight: size,
         textAlign: "center",
-        borderRadius: 14,
+        borderRadius: size / 2,
         overflow: "hidden",
         fontWeight: "700",
       }}
@@ -223,11 +234,7 @@ export function Steps({ step }: { step: number }) {
               justifyContent: "center",
             }}
           >
-            {i < step ? (
-              <Text style={{ color: t.onPrimary }}>✓</Text>
-            ) : (
-              <Icon name={icon} size={18} color={t.text} />
-            )}
+            <Text style={{ color: i < step ? t.onPrimary : t.text, fontWeight: i === step ? "700" : "500", fontSize: 14 }}>{i < step ? "✓" : i + 1}</Text>
           </View>
           <Text
             style={{

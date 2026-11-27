@@ -99,11 +99,16 @@ export default function OtherSales() {
       </View>
       {Boolean(summary.data?.semCusto) && <Body muted>Vendas sem custo cadastrado ficam fora do lucro calculado.</Body>}
       <ListSearch accessibilityLabel="Buscar vendas registradas" placeholder="Buscar produto nas vendas" value={saleSearch} onChangeText={v => { setSaleSearch(v); setSalePage(0); }} />
-      {sales.loading ? <ActivityIndicator /> : sales.error ? <Notice message={sales.error} onRetry={sales.retry} /> : sales.data?.itens.map(v => <Card key={v.id}>
+      {sales.loading ? <ActivityIndicator /> : sales.error ? <Notice message={sales.error} onRetry={sales.retry} /> : sales.data?.itens.map(v => v.ativas > 0 ? <Card key={v.id}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}><View style={{ flex: 1 }}><Body strong>{v.nome}</Body><Body muted>{new Date(v.data + "T12:00:00").toLocaleDateString("pt-BR")} · {v.quantidade} {v.quantidade === 1 ? "unidade" : "unidades"}</Body></View><Body strong>{cash(v.receita)}</Body></View>
         <View style={{ flexDirection: "row", gap: 24 }}><View><Body muted>Unitário</Body><Body strong>{cash(v.precoUnitario)}</Body></View><View><Body muted>Lucro</Body><Text style={{ color: v.lucro == null ? t.muted : v.lucro < 0 ? t.danger : t.success, fontWeight: "700" }}>{cash(v.lucro)}</Text></View></View>
         <Body muted>{v.nomeEmbalagem || "Sem embalagem"}</Body>
         {v.ativas > 0 ? <Pressable accessibilityRole="button" disabled={busy} onPress={() => setCancelTarget(v)} style={{ minHeight: 44, justifyContent: "center", alignSelf: "flex-start", paddingHorizontal: 8, opacity: busy ? 0.5 : 1 }}><Text style={{ color: t.danger, fontWeight: "600" }}>Cancelar venda</Text></Pressable> : <Body muted>Cancelada</Body>}
+      </Card> : <Card key={v.id} style={{ opacity: 0.62, paddingVertical: 12 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <View style={{ flex: 1 }}><Body strong>{v.nome}</Body><Body muted>{new Date(v.data + "T12:00:00").toLocaleDateString("pt-BR")} · {v.quantidade} {v.quantidade === 1 ? "unidade" : "unidades"}</Body></View>
+          <Text style={{ color: t.muted, backgroundColor: t.accentTint, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, fontSize: 12 }}>Cancelada</Text>
+        </View>
       </Card>)}
       {(sales.data?.total ?? 0) > 20 && <Pagination page={salePage} total={sales.data!.total} size={20} onPage={setSalePage} />}
     </View>}

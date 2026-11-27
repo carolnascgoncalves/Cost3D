@@ -122,14 +122,18 @@ export function Button({
   busy,
   variant = "primary",
   icon,
+  iconNode,
   stretch,
+  compact,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   busy?: boolean;
   icon?: IconName;
+  iconNode?: ReactNode;
   stretch?: boolean;
+  compact?: boolean;
   variant?: "primary" | "secondary" | "ghost" | "danger";
 }) {
   const t = useTheme();
@@ -147,8 +151,9 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
+        compact && { minHeight: 38, paddingVertical: 7, paddingHorizontal: 14 },
         stretch && { flexGrow: 1 },
-        icon && { flexDirection: "row", gap: 6, paddingHorizontal: 10 },
+        !!(icon || iconNode) && { flexDirection: "row", gap: 6, paddingHorizontal: 10 },
         {
           backgroundColor:
             variant === "primary"
@@ -168,7 +173,8 @@ export function Button({
         },
       ]}
     >
-      {!busy && icon && <Icon name={icon} size={16} color={color} />}
+      {!busy && iconNode}
+      {!busy && icon && !iconNode && <Icon name={icon} size={16} color={color} />}
       {busy ? (
         <ActivityIndicator color={color} />
       ) : (
