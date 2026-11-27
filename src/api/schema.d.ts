@@ -384,6 +384,7 @@ export interface components {
       categorias?: Array<components["schemas"]["VendasCategoria"]>;
       lucroPlataformas?: string;
       variacaoLucro?: string;
+      ritmoProducao?: Array<components["schemas"]["PontoProducao"]>;
     };
     EstoquePainel: {
       nome?: string;
@@ -392,6 +393,7 @@ export interface components {
       cor?: string;
     };
     PontoLucro: { data?: string; valor?: string };
+    PontoProducao: { data?: string; unidades?: number };
     VendasCategoria: { nome?: string; unidades?: number };
     VendasPlataforma: {
       nome?: string;

@@ -4304,6 +4304,12 @@
           },
           "variacaoLucro": {
             "type": "string"
+          },
+          "ritmoProducao": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PontoProducao"
+            }
           }
         }
       },
@@ -4334,6 +4340,13 @@
           "valor": {
             "type": "string"
           }
+        }
+      },
+      "PontoProducao": {
+        "type": "object",
+        "properties": {
+          "data": { "type": "string" },
+          "unidades": { "type": "integer", "format": "int64" }
         }
       },
       "VendasCategoria": {

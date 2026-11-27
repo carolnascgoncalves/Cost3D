@@ -1,4 +1,4 @@
-import { Icon } from "@/components/icon";
+import { Icon, IconWarmup } from "@/components/icon";
 import { BudgetKeyboard } from "@/components/budget-keyboard";
 import { SessionLoading } from "@/components/brand-logo";
 import { useEffect, useRef, useState } from "react";
@@ -228,6 +228,7 @@ function Shell({
     });
   return (
     <SafeAreaView style={[s.page, { backgroundColor: t.background }]}>
+      <IconWarmup />
       <StatusBar style={luminance(t.background) < 0.2 ? "light" : "dark"} />
       <View
         style={[s.shell, wide && { flexDirection: "row" }]}

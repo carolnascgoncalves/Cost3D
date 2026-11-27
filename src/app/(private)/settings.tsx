@@ -12,7 +12,6 @@ import {
   Card,
   Field,
   Notice,
-  OptionalBadge,
 } from "@/components/ui";
 import { useTheme } from "@/theme/provider";
 import { EnergyReference } from "@/features/settings-energy";
@@ -21,12 +20,12 @@ type Config = components["schemas"]["ConfiguracaoRequest"];
 const groups = [
   ["preco", "Preço e lucro", "cash-coin"],
   ["energia", "Energia", "lightning-charge"],
-  ["embalagem", "Embalagem", "box"],
-  ["formulario", "Formulário avançado", "gear"],
-  ["purga", "Purga de filamento", "palette"],
   ["mao", "Mão de obra", "clock-history"],
-  ["depreciacao", "Depreciação", "printer"],
   ["falhas", "Falhas e desperdício", "warning"],
+  ["purga", "Purga de filamento", "palette"],
+  ["embalagem", "Custo fixo de embalagem", "box"],
+  ["formulario", "Formulário avançado", "gear"],
+  ["depreciacao", "Depreciação", "printer"],
 ] as const satisfies readonly (readonly [string, string, IconName])[];
 type Section = (typeof groups)[number][0];
 const numericFields = {
@@ -63,9 +62,13 @@ const effects: Record<Flag, string> = {
 };
 const sections: [string, Section[]][] = [
   ["Preço", ["preco"]],
-  ["Custos da impressão", ["energia", "mao", "depreciacao", "purga", "falhas"]],
+  ["Custos da impressão", ["energia", "mao", "falhas", "purga", "depreciacao"]],
   ["Venda e embalagem", ["embalagem", "formulario"]],
 ];
+const hubFlags: Partial<Record<Section, Flag>> = {
+  depreciacao: "depreciacaoAtivada",
+  formulario: "formularioAvancado",
+};
 const currency = (n?: number) =>
   (n ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const numericKeys = Object.keys(numericFields) as Num[];
@@ -153,7 +156,6 @@ function SettingsForm({
             }}
           >
             <Body strong>{label}</Body>
-            {label.startsWith("Incluir ") && <OptionalBadge />}
           </View>
           <Body muted>{effects[key]}</Body>
         </View>
@@ -252,6 +254,28 @@ function SettingsForm({
       setBusy(false);
     }
   }
+  async function toggleHubFlag(key: Flag) {
+    if (lock.current) return;
+    lock.current = true;
+    setError("");
+    setSaved(false);
+    const next = { ...persisted, [key]: !persisted[key] };
+    setConfig(next);
+    try {
+      const result = await request<Config>("/configuracao", {
+        method: "PUT",
+        body: JSON.stringify(next),
+      });
+      setConfig(result);
+      setValues(strings(result));
+      setPersisted(result);
+    } catch (e) {
+      setConfig(persisted);
+      setError(e instanceof Error ? e.message : "Não foi possível atualizar a configuração.");
+    } finally {
+      lock.current = false;
+    }
+  }
   function content(k: Section) {
     switch (k) {
       case "preco":
@@ -286,6 +310,7 @@ function SettingsForm({
           <>
             {field("tarifaEnergiaKwh")}
             <EnergyReference apply={(v) => update("tarifaEnergiaKwh", v)} />
+            <Card style={{ backgroundColor: t.accentTint }}><Body muted>Uma hora numa impressora de 95 W gasta cerca de {currency((config.tarifaEnergiaKwh ?? 0) * 0.095)} de energia.</Body></Card>
           </>
         );
       case "embalagem":
@@ -318,6 +343,7 @@ function SettingsForm({
               Use a média indicada pelo fatiador. Informe 0 para impressões sem
               purga.
             </Body>
+            <Card style={{ backgroundColor: t.accentTint }}><Body muted>{Number(values.purgaGramasPorImpressao.replace(",", ".")) > 0 ? `${values.purgaGramasPorImpressao} g extras de filamento são somados por impressão.` : "Sem purga: nenhum custo extra de filamento por impressão."}</Body></Card>
           </>
         );
       case "mao":
@@ -381,8 +407,8 @@ function SettingsForm({
       : "Desligada",
     energia: currency(config.tarifaEnergiaKwh) + " por kWh",
     embalagem: config.embalagemFixa
-      ? currency(config.custoEmbalagemFixa) + " por unidade"
-      : "Escolher a cada cálculo",
+      ? "Ligado · " + currency(config.custoEmbalagemFixa) + " por unidade"
+      : "Desligado · escolher em cada cálculo",
     formulario: config.formularioAvancado
       ? "Ligado · taxas detalhadas"
       : "Desligado · venda simples",
@@ -443,28 +469,31 @@ function SettingsForm({
                 <Card style={{ gap: 0, paddingVertical: 2 }}>
                   {keys.map((key, index) => {
                     const [, label, icon] = groups.find(([k]) => key === k)!;
+                    const directFlag = hubFlags[key];
                     return (
-                      <Pressable
+                      <View
                         key={key}
-                        accessibilityRole="button"
-                        onPress={() => {
-                          changed();
-                          setSection(key);
-                        }}
                         style={{
                           flexDirection: "row",
                           alignItems: "center",
                           gap: 12,
-                          paddingVertical: 10,
+                          minHeight: 58,
+                          paddingVertical: 7,
                           borderColor: t.border,
                           borderTopWidth: index ? 1 : 0,
                         }}
                       >
+                        <Pressable
+                          accessibilityRole={directFlag ? undefined : "button"}
+                          disabled={!!directFlag || busy}
+                          onPress={() => { changed(); setSection(key); }}
+                          style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}
+                        >
                         <View
                           style={{
                             padding: 9,
                             borderRadius: 10,
-                            backgroundColor: t.accentTint,
+                            backgroundColor: t.selectionTint,
                           }}
                         >
                           <Icon name={icon} color={t.primaryText} />
@@ -473,8 +502,10 @@ function SettingsForm({
                           <Body strong>{label}</Body>
                           <Body muted>{summaries[key]}</Body>
                         </View>
-                        <Icon name="chevron-right" size={14} color={t.muted} />
-                      </Pressable>
+                        {!directFlag && <Icon name="chevron-right" size={14} color={t.muted} />}
+                        </Pressable>
+                        {directFlag && <Switch accessibilityLabel={label} value={!!config[directFlag]} trackColor={{ true: t.primary, false: "#aba5b5" }} ios_backgroundColor="#aba5b5" thumbColor="#ffffff" onValueChange={() => void toggleHubFlag(directFlag)} />}
+                      </View>
                     );
                   })}
                 </Card>

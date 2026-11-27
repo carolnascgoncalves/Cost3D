@@ -1,5 +1,4 @@
 import { Fragment, useMemo, useState } from "react";
-import { router } from "expo-router";
 import {
   Pressable,
   StyleSheet,
@@ -24,6 +23,25 @@ const platformTones: Record<string, string> = {
   "--dashboard-sem-plataforma": "#ccc4d8",
 };
 const tone = (key?: string) => platformTones[key ?? ""] ?? "#9184a5";
+
+function mixColor(a: string, b: string, weight: number) {
+  const left = [1, 3, 5].map((index) => parseInt(a.slice(index, index + 2), 16));
+  const right = [1, 3, 5].map((index) => parseInt(b.slice(index, index + 2), 16));
+  return "#" + left.map((value, index) => Math.round(value * (1 - weight) + right[index] * weight).toString(16).padStart(2, "0")).join("");
+}
+
+function categoryColor(name: string) {
+  let hash = 0;
+  for (const char of name.toLocaleLowerCase("pt-BR")) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  const hue = hash % 360;
+  const saturation = 0.52;
+  const lightness = 0.8;
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const second = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const base = hue < 60 ? [chroma, second, 0] : hue < 120 ? [second, chroma, 0] : hue < 180 ? [0, chroma, second] : hue < 240 ? [0, second, chroma] : hue < 300 ? [second, 0, chroma] : [chroma, 0, second];
+  const offset = lightness - chroma / 2;
+  return "#" + base.map((value) => Math.round((value + offset) * 255).toString(16).padStart(2, "0")).join("");
+}
 
 function Caption({ children }: { children: React.ReactNode }) {
   const t = useTheme();
@@ -93,8 +111,8 @@ export function PlatformChart({ data }: { data: Panel }) {
   let cursor = 0;
   return (
     <Card>
-      <Body strong>Vendas 3D por plataforma</Body>
-      <Caption>Lucro das impressões 3D por canal</Caption>
+      <Body strong>Lucro por plataforma</Body>
+      <Caption>Vendas 3D</Caption>
       {rows.length ? (
         <>
           <View
@@ -198,38 +216,19 @@ export function FilamentStock({ items }: { items: Schema["EstoquePainel"][] }) {
   const size = 52;
   return (
     <Card>
-      <Pressable
-        accessibilityRole="link"
-        accessibilityLabel="Abrir catálogo de filamentos"
-        onPress={() =>
-          router.push({
-            pathname: "/catalog",
-            params: { categoria: "filamentos" },
-          })
-        }
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          minHeight: 44,
-        }}
-      >
-        <View style={{ flex: 1, gap: 3 }}>
-          <Body strong>Estoque de filamentos</Body>
-          <Caption>Saldo disponível em cada rolo</Caption>
-        </View>
-        <Text style={{ fontSize: 20, color: t.primaryText }}>↗</Text>
-      </Pressable>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 28 }}>
+        <Body strong>Estoque de filamentos</Body>
+        <Caption>Saldo por rolo</Caption>
+      </View>
       {items.length ? (
         <View
           onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
           style={{ flexDirection: "row", flexWrap: "wrap", rowGap: 14 }}
         >
           {items.map((f, i) => {
-            const n = Math.max(0, Math.min(100, f.restante ?? 0)),
-              angle = n * 3.6;
+            const n = Math.max(0, Math.min(100, f.restante ?? 0));
             const color = n <= 34 ? "#c54c44" : n <= 64 ? "#d5a130" : "#648b70";
-            const saldo = decimal(f.gramas, 2) + " g restantes";
+            const saldo = decimal(f.gramas, 2) + " g";
             return (
               <View
                 key={i}
@@ -249,28 +248,21 @@ export function FilamentStock({ items }: { items: Schema["EstoquePainel"][] }) {
                     width: size,
                     height: size,
                     borderRadius: size / 2,
-                    backgroundColor: n === 100 ? color : t.accentTint,
+                    backgroundColor: t.accentTint,
                     alignItems: "center",
                     justifyContent: "center",
                     marginBottom: 2,
                   }}
                 >
-                  {n > 0 && n < 100 && (
-                    <Sector
-                      diameter={size}
-                      start={0}
-                      angle={Math.min(180, angle)}
-                      color={color}
-                    />
-                  )}
-                  {angle > 180 && n < 100 && (
-                    <Sector
-                      diameter={size}
-                      start={180}
-                      angle={angle - 180}
-                      color={color}
-                    />
-                  )}
+                  {Array.from({ length: 60 }, (_, segment) => {
+                    const active = n === 0 ? segment === 0 : segment < Math.ceil(n * 0.6);
+                    if (!active) return null;
+                    const theta = (segment / 60) * Math.PI * 2 - Math.PI / 2;
+                    const dot = 7;
+                    const center = size / 2;
+                    const radius = center - dot / 2;
+                    return <View key={segment} style={{ position: "absolute", left: center + Math.cos(theta) * radius - dot / 2, top: center + Math.sin(theta) * radius - dot / 2, width: dot, height: dot, borderRadius: dot / 2, backgroundColor: color }} />;
+                  })}
                   <View
                     style={{
                       width: 34,
@@ -324,64 +316,31 @@ export function FilamentStock({ items }: { items: Schema["EstoquePainel"][] }) {
 }
 
 export function ProductionFlow({ data }: { data: Panel }) {
+  const [flowWidth, setFlowWidth] = useState(0);
   const t = useTheme(),
     values = [data.calculadas ?? 0, data.produzidas ?? 0, data.vendidas ?? 0];
-  const colors = ["#534378", "#cdc6e3", "#8174bc"],
-    labels = ["Calculados", "Produzidos", "Vendidos"];
+  const colors = [mixColor(t.primary, "#FFFFFF", 0.66), mixColor(t.primary, "#FFFFFF", 0.3), t.primary],
+    labels = ["calculados", "produzidos", "vendidos"];
   const pending = Math.max(0, values[1] - values[2]);
   return (
     <Card>
       <Body strong>Fluxo de produção</Body>
       <Caption>Impressões 3D calculadas no período</Caption>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "flex-start",
-          marginVertical: 5,
-        }}
-      >
-        {values.map((v, i) => (
-          <Fragment key={i}>
-            {i > 0 && (
-              <View style={{ alignItems: "center", paddingTop: 4 }}>
-                <Caption>→</Caption>
-                <Caption>
-                  {values[i - 1]
-                    ? Math.round((v * 100) / values[i - 1]) + "%"
-                    : "—"}
-                </Caption>
-              </View>
-            )}
-            <View style={{ flex: 1, alignItems: "center", gap: 5 }}>
-              <View
-                style={{
-                  minWidth: 44,
-                  height: 44,
-                  paddingHorizontal: 6,
-                  borderRadius: 22,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: colors[i],
-                }}
-              >
-                <Text style={{ color: readable(colors[i]), fontWeight: "700" }}>
-                  {v}
-                </Text>
-              </View>
-              <Caption>{labels[i]}</Caption>
-            </View>
-          </Fragment>
-        ))}
+      <View onLayout={(event) => setFlowWidth(event.nativeEvent.layout.width)} style={{ alignItems: "center", gap: 0, paddingTop: 5 }}>
+        {values.map((value, index) => {
+          const outer = [1, 0.82, 0.64][index];
+          const inner = [0.82, 0.64, 0.5][index];
+          const side = flowWidth ? Math.max(1, (flowWidth * outer * (outer - inner)) / (2 * outer)) : 0;
+          const color = colors[index];
+          return <View key={labels[index]} style={{ width: `${outer * 100}%`, height: 46, flexDirection: "row", alignItems: "stretch", justifyContent: "center" }}>
+            {flowWidth > 0 && <View style={{ width: 0, height: 0, alignSelf: "flex-start", borderBottomWidth: 46, borderBottomColor: color, borderRightWidth: side, borderRightColor: "transparent" }} />}
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: color }}><Text style={{ color: readable(color), fontSize: 21, fontWeight: "700", lineHeight: 24 }}>{value}</Text><Text style={{ color: readable(color), fontSize: 12 }}>{labels[index]}</Text></View>
+            {flowWidth > 0 && <View style={{ width: 0, height: 0, alignSelf: "flex-start", borderBottomWidth: 46, borderBottomColor: color, borderLeftWidth: side, borderLeftColor: "transparent" }} />}
+          </View>;
+        })}
       </View>
-      <View
-        style={{ backgroundColor: t.accentTint, borderRadius: 7, padding: 9 }}
-      >
-        <Text style={{ color: t.text, fontSize: 13 }}>
-          {pending === 1
-            ? "1 produzida ainda sem venda"
-            : pending + " produzidas ainda sem venda"}
-        </Text>
-      </View>
+      <View style={{ position: "absolute", right: 13, top: 89, gap: 37 }}><Text style={{ color: t.text, backgroundColor: t.border, borderRadius: 16, overflow: "hidden", paddingHorizontal: 9, paddingVertical: 5, fontSize: 11, fontWeight: "700" }}>{values[0] ? Math.round(values[1] * 100 / values[0]) : 0}%</Text><Text style={{ color: t.text, backgroundColor: t.border, borderRadius: 16, overflow: "hidden", paddingHorizontal: 9, paddingVertical: 5, fontSize: 11, fontWeight: "700" }}>{values[1] ? Math.round(values[2] * 100 / values[1]) : 0}%</Text></View>
+      <Caption>{pending === 1 ? "1 produzida ainda sem venda" : `${pending} produzidas ainda sem venda`}</Caption>
     </Card>
   );
 }
@@ -398,98 +357,85 @@ export function CategoryChart({
 }: {
   items: Schema["VendasCategoria"][];
 }) {
-  const t = useTheme(),
-    max = Math.max(1, ...items.map((v) => v.unidades ?? 0));
-  const tick = tickStep(max, true),
-    columns = Math.ceil(max / tick),
-    end = columns * tick;
+  const t = useTheme();
+  const sorted = [...items].sort((a, b) => (b.unidades ?? 0) - (a.unidades ?? 0));
+  const total = sorted.reduce((sum, row) => sum + (row.unidades ?? 0), 0);
   return (
     <Card>
-      <Body strong>Vendas por categoria</Body>
-      <Caption>Unidades vendidas no período</Caption>
-      {items.length ? (
-        <View>
-          {items.map((c, i) => (
-            <View key={i} style={styles.row}>
-              <Text
-                style={{
-                  width: "31%",
-                  textAlign: "right",
-                  fontSize: 12,
-                  color: t.muted,
-                }}
-              >
-                {c.nome}
-              </Text>
-              <View
-                style={{
-                  flex: 1,
-                  height: 34,
-                  justifyContent: "center",
-                  borderRightWidth: 1,
-                  borderColor: t.border,
-                }}
-              >
-                <View
-                  style={[StyleSheet.absoluteFill, { flexDirection: "row" }]}
-                >
-                  {Array.from({ length: columns }, (_, j) => (
-                    <View
-                      key={j}
-                      style={{
-                        flex: 1,
-                        borderLeftWidth: 1,
-                        borderColor: t.border,
-                      }}
-                    />
-                  ))}
-                </View>
-                <View
-                  style={{
-                    height: 19,
-                    width: `${(100 * (c.unidades ?? 0)) / end}%`,
-                    backgroundColor: "#8174bc",
-                    borderTopRightRadius: 5,
-                    borderBottomRightRadius: 5,
-                  }}
-                />
-              </View>
-              <Text style={{ minWidth: 22, color: t.text, fontSize: 12 }}>
-                {c.unidades}
-              </Text>
-            </View>
-          ))}
-          <View style={styles.row}>
-            <View style={{ width: "31%" }} />
-            <View
-              style={{
-                flex: 1,
-                flexDirection: "row",
-                justifyContent: "space-between",
-              }}
-            >
-              {Array.from({ length: columns + 1 }, (_, i) => (
-                <Caption key={i}>{i * tick}</Caption>
-              ))}
-            </View>
-            <View style={{ minWidth: 22 }} />
-          </View>
-        </View>
-      ) : (
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><Body strong>Vendas por categoria</Body><Caption>{total} unidades</Caption></View>
+      {sorted.length ? <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 3, marginTop: 2 }}>{sorted.map((row, index) => {
+        const color = categoryColor(row.nome ?? String(index));
+        const ink = readable(color);
+        return <View key={row.nome ?? index} style={{ flexGrow: index < 2 ? 2 : 1, flexBasis: index < 2 ? "46%" : "29%", height: 76, borderRadius: 9, padding: 9, justifyContent: "space-between", backgroundColor: color }}><Text numberOfLines={1} style={{ color: ink, fontSize: 12 }}>{row.nome}</Text><Text style={{ color: ink, fontSize: 20, fontWeight: "700" }}>{row.unidades}</Text></View>;
+      })}</View> : (
         <Body muted>Nenhuma unidade vendida no período.</Body>
       )}
     </Card>
   );
 }
 
+type ProductionPoint = { data?: string; unidades?: number };
+export function ProductionRhythm({ points, period }: { points: ProductionPoint[]; period: string }) {
+  const t = useTheme();
+  const days = period === "30" ? 30 : period === "90" ? 90 : 84;
+  const today = new Date();
+  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const first = new Date(end);
+  first.setDate(first.getDate() - days + 1);
+  first.setDate(first.getDate() - first.getDay());
+  const totalCells = Math.ceil((days + end.getDay() + 1) / 7) * 7;
+  const counts = new Map(points.map(point => [point.data ?? "", point.unidades ?? 0]));
+  const cells = Array.from({ length: totalCells }, (_, index) => {
+    const date = new Date(first);
+    date.setDate(first.getDate() + index);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    return { key, day: date.getDate(), month: date.getMonth() === end.getMonth(), value: counts.get(key) ?? 0, current: date.getTime() === end.getTime() };
+  });
+  const maximum = Math.max(1, ...cells.map(cell => cell.value));
+  const colors = [t.surface, t.accentTint, mixColor(t.primary, "#FFFFFF", 0.28), t.primary];
+  return <Card>
+    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><Body strong>Ritmo de produção</Body><Caption>Impressões por dia</Caption></View>
+    {period === "tudo" && <Caption>Últimas 12 semanas</Caption>}
+    <View style={{ flexDirection: "row", gap: 4 }}>{["D", "S", "T", "Q", "Q", "S", "S"].map((day, index) => <Text key={index} style={{ flex: 1, textAlign: "center", color: t.muted, fontSize: 10 }}>{day}</Text>)}</View>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 3 }}>{cells.map(cell => {
+      const level = cell.value === 0 ? 0 : cell.value / maximum < 0.34 ? 1 : cell.value / maximum < 0.68 ? 2 : 3;
+      return <View key={cell.key} accessible accessibilityLabel={cell.key + ", " + cell.value + " impressões"} style={{ width: "13.6%", flexGrow: 1, height: 36, borderRadius: 6, backgroundColor: colors[level], borderWidth: cell.current ? 1.5 : 1, borderColor: cell.current ? t.text : t.border, opacity: cell.month ? 1 : 0.55, alignItems: "center", justifyContent: "center" }}><Text style={{ color: readable(colors[level]), fontSize: 10 }}>{cell.day}</Text></View>;
+    })}</View>
+  </Card>;
+}
+
+export function ExtraCostProgress({ items }: { items: Schema["CustoResumo"][] }) {
+  const t = useTheme();
+  const target = items.reduce((sum, item) => sum + Number(item.meta ?? 0), 0);
+  const recovered = items.reduce((sum, item) => sum + Number(item.recuperado ?? 0), 0);
+  const ratio = target > 0 ? Math.min(100, Math.max(0, recovered * 100 / target)) : 0;
+  const gaugeDots = Array.from({ length: 72 }, (_, index) => {
+    const angle = Math.PI + (Math.PI * index) / 71;
+    const dot = 7;
+    const cx = 100;
+    const cy = 90;
+    const radius = 72;
+    return { index, left: cx + Math.cos(angle) * radius - dot / 2, top: cy + Math.sin(angle) * radius - dot / 2, done: (index / 71) * 100 <= ratio };
+  });
+  return <Card>
+    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><Body strong>Custos extras</Body><Caption>Meta recuperada</Caption></View>
+    {target > 0 ? <View style={{ alignItems: "center", height: 112, marginTop: 5 }}>
+      {gaugeDots.map(dot => <View key={dot.index} style={{ position: "absolute", left: dot.left, top: dot.top, width: 7, height: 7, borderRadius: 4, backgroundColor: dot.done ? t.success : t.border }} />)}
+      <View style={{ position: "absolute", top: 39, alignItems: "center", gap: 1 }}><Text style={{ color: t.primaryText, fontSize: 28, fontWeight: "700" }}>{Math.round(ratio)}%</Text><Caption>{reais(recovered.toFixed(2))} de {reais(target.toFixed(2))}</Caption></View>
+    </View> : <Body muted>Nenhuma meta de custo cadastrada.</Body>}
+  </Card>;
+}
+
 export function ProfitChart({
   points,
   monthly,
   change,
+  title = "Lucro líquido estimado",
 }: {
   points: Schema["PontoLucro"][];
   monthly: boolean;
   change?: string;
+  title?: string;
 }) {
   const t = useTheme(),
     [width, setWidth] = useState(0),
@@ -546,7 +492,7 @@ export function ProfitChart({
   }, [dx, values]);
   return (
     <Card>
-      <Body strong>Lucro líquido estimado</Body>
+      <Body strong>{title}</Body>
       <Caption>
         {selected == null
           ? "Lucro por " + (monthly ? "mês" : "dia") + " no período selecionado"

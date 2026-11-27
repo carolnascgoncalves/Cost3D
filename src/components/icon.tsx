@@ -1,4 +1,4 @@
-import { Image } from "react-native";
+import { Image, View } from "react-native";
 const icons = {
   send: require("../../assets/images/catalogo/send.png"),
   copy: require("../../assets/images/catalogo/copy.png"),
@@ -58,6 +58,26 @@ export function Icon({
       source={icons[name]}
       style={{ width: size, height: size, tintColor: color }}
     />
+  );
+}
+/** Keeps the app's small raster icon set decoded between route changes. */
+export function IconWarmup() {
+  return (
+    <View
+      accessible={false}
+      pointerEvents="none"
+      style={{ position: "absolute", width: 1, height: 1, opacity: 0 }}
+    >
+      {Object.values(icons).map((source, index) => (
+        <Image
+          key={index}
+          accessible={false}
+          fadeDuration={0}
+          source={source}
+          style={{ position: "absolute", width: 1, height: 1 }}
+        />
+      ))}
+    </View>
   );
 }
 export type IconName = keyof typeof icons;
