@@ -133,10 +133,19 @@ function Shell({
       setFocusPending(false);
       setTyping(false);
     });
+    const willHide = Platform.OS === "ios"
+      ? Keyboard.addListener("keyboardWillHide", () => {
+          beforeKeyboard.current = null;
+          if (focusTimer.current) clearTimeout(focusTimer.current);
+          setFocusPending(false);
+          setTyping(false);
+        })
+      : undefined;
     return () => {
       if (focusTimer.current) clearTimeout(focusTimer.current);
       show.remove();
       hide.remove();
+      willHide?.remove();
     };
   }, []);
   // adjustResize can shrink the window before Android emits keyboardDidShow.

@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
   Linking,
+  Modal,
   Pressable,
   Text,
   View,
@@ -51,6 +52,7 @@ export default function CustomerDetail() {
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [success, setSuccess] = useState("");
   function fill(customer: Customer) {
     setForm({
@@ -250,6 +252,7 @@ export default function CustomerDetail() {
               <Field
                 optional
                 label="Observações"
+                placeholder="Ex.: prefere contato pelo WhatsApp"
                 value={form.observacoes}
                 maxLength={500}
                 editable={!busy && !conflict}
@@ -294,7 +297,7 @@ export default function CustomerDetail() {
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
                   <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: t.accentTint, alignItems: "center", justifyContent: "center" }}><Text style={{ color: t.primaryText, fontSize: 22, fontWeight: "700" }}>{query.data?.nome?.slice(0,1).toUpperCase()}</Text></View>
                   <View style={{ flex: 1, minWidth: 0, gap: 2 }}><Text style={{ color: t.text, fontSize: 20, fontWeight: "700" }}>{query.data?.nome}</Text><Body muted>{orcamentos ? `${orcamentos} ${orcamentos === "1" ? "orçamento" : "orçamentos"} · ${emAndamento || "0"} em andamento` : query.data?.arquivado ? "Cliente arquivado" : "Contato e histórico de orçamentos"}</Body></View>
-                  <Pressable accessibilityRole="button" accessibilityLabel={query.data?.arquivado ? "Restaurar cliente" : "Arquivar cliente"} onPress={() => setConfirm(true)} hitSlop={8}><Text style={{ color: t.muted, fontSize: 21, paddingHorizontal: 4 }}>⋮</Text></Pressable>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Ações do cliente" onPress={() => setActionsOpen(true)} hitSlop={8}><Text style={{ color: t.muted, fontSize: 21, paddingHorizontal: 4 }}>⋮</Text></Pressable>
                 </View>
                 <View style={{ flexDirection: "row", gap: 8 }}><View style={{ flex: 1 }}><Button stretch label="Novo orçamento" icon="file-text" onPress={() => router.push({ pathname: "/budgets", params: { id: "new" } })} /></View><Button compact variant="secondary" label="Editar" disabled={busy} onPress={() => { setEditing(true); setSuccess(""); }} /></View>
                 <Card style={{ gap: 0, paddingVertical: 2, paddingHorizontal: 12 }}>
@@ -303,31 +306,6 @@ export default function CustomerDetail() {
                   <View style={{ minHeight: 40, flexDirection: "row", alignItems: "center", gap: 10 }}><Icon name="file-text" color={t.muted} size={16} /><Text style={{ color: t.muted, fontSize: 13 }}>{query.data?.observacoes || "Sem observações"}</Text></View>
                 </Card>
               </>
-              {confirm && (
-                <Card>
-                  <Body>
-                    {query.data?.arquivado
-                      ? "Restaurar este cliente para a lista de ativos?"
-                      : "Arquivar este cliente? Seus dados e orçamentos serão mantidos."}
-                  </Body>
-                  <View style={layout.row}>
-                    <Button
-                      label={
-                        query.data?.arquivado ? "Restaurar" : "Arquivar"
-                      }
-                      variant={query.data?.arquivado ? "primary" : "danger"}
-                      busy={busy}
-                      onPress={() => void archive()}
-                    />
-                    <Button
-                      label="Cancelar"
-                      variant="ghost"
-                      disabled={busy}
-                      onPress={() => setConfirm(false)}
-                    />
-                  </View>
-                </Card>
-              )}
               {query.data?.id === id && <CustomerBudgets key={id} id={id} />}
             </>
           )}
@@ -335,6 +313,26 @@ export default function CustomerDetail() {
       )}
     </Frame>
     {mobile && editing && !hidesFooter && <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderColor: t.border, backgroundColor: t.surface }}><View style={{ flex: 1 }}><Button stretch variant="secondary" label="Cancelar" disabled={busy} onPress={() => { if (isNew) router.navigate("/customers"); else { setEditing(false); setError(""); setConflict(false); if (query.data) fill(query.data); } }} /></View><View style={{ flex: 1 }}><Button stretch label="Salvar" busy={busy} disabled={conflict} onPress={() => void save()} /></View></View>}
+    <Modal visible={actionsOpen} transparent animationType="fade" onRequestClose={() => setActionsOpen(false)}>
+      <View style={{ flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#24183580" }}>
+        <Pressable onPress={() => setActionsOpen(false)} style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0 }} />
+        <Card style={{ gap: 10 }}>
+          <Body strong>{query.data?.nome}</Body>
+          <Button stretch variant="secondary" label={query.data?.arquivado ? "Restaurar cliente" : "Arquivar cliente"} onPress={() => { setActionsOpen(false); setConfirm(true); }} />
+          <Button stretch variant="ghost" label="Fechar" onPress={() => setActionsOpen(false)} />
+        </Card>
+      </View>
+    </Modal>
+    <Modal visible={confirm} transparent animationType="fade" onRequestClose={() => setConfirm(false)}>
+      <View style={{ flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#24183580" }}>
+        <Pressable onPress={() => setConfirm(false)} style={{ position: "absolute", top: 0, bottom: 0, left: 0, right: 0 }} />
+        <Card style={{ gap: 10 }}>
+          <Body>{query.data?.arquivado ? "Restaurar este cliente para a lista de ativos?" : "Arquivar este cliente? Seus dados e orçamentos serão mantidos."}</Body>
+          <Button stretch label={query.data?.arquivado ? "Restaurar" : "Sim, arquivar"} variant={query.data?.arquivado ? "primary" : "danger"} busy={busy} onPress={() => void archive()} />
+          <Button stretch label="Voltar" variant="secondary" disabled={busy} onPress={() => setConfirm(false)} />
+        </Card>
+      </View>
+    </Modal>
     </View>
   );
 }

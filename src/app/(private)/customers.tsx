@@ -115,7 +115,7 @@ export default function Customers() {
           ))}
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <ListSearch style={{ minHeight: 40, borderRadius: 9 }} accessibilityLabel="Buscar clientes" placeholder="Nome, telefone ou e-mail" value={filter.busca} onChangeText={(busca) => setCustomers({ ...filter, busca, pagina: 0 })} />
+          <View style={{ flex: 1, minWidth: 0 }}><ListSearch style={{ minHeight: 40, borderRadius: 9 }} accessibilityLabel="Buscar clientes" placeholder="Nome, telefone ou e-mail" value={filter.busca} onChangeText={(busca) => setCustomers({ ...filter, busca, pagina: 0 })} /></View>
           {!filter.arquivados && <Button compact label="+ Novo" onPress={() => router.push({ pathname: "/customers/[id]", params: { id: "new" } })} />}
         </View>
       </View>
@@ -221,27 +221,20 @@ function CustomerItem({
               {customer?.nome?.slice(0, 1).toUpperCase()}
             </Text>
           </View>
-          <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
-            <Text style={{ color: t.text, fontWeight: "700", fontSize: 17 }}>
-              {customer?.nome}
-            </Text>
-            <Text numberOfLines={1} style={{ color: t.muted, fontSize: 12 }}>{phone(customer?.telefone)} · {item.orcamentos ?? 0} {item.orcamentos === 1 ? "orçamento" : "orçamentos"}</Text>
+          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+              <Text numberOfLines={1} style={{ flex: 1, minWidth: 0, color: t.text, fontWeight: "700", fontSize: 15 }}>
+                {customer?.nome}
+              </Text>
+              {!!item.emAndamento && (
+                <Text numberOfLines={1} style={{ color: "#844900", backgroundColor: "#fff0d7", paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6, fontSize: 10, flexShrink: 0 }}>
+                  {item.emAndamento} em andamento{item.emAndamento === 1 ? "" : "s"}
+                </Text>
+              )}
+            </View>
+            <Text numberOfLines={1} style={{ color: t.muted, fontSize: 11 }}>{phone(customer?.telefone)} · {item.orcamentos ?? 0} {item.orcamentos === 1 ? "orçamento" : "orçamentos"}</Text>
           </View>
         </View>
-          {!!item.emAndamento && (
-            <Text
-              style={{
-                color: "#844900",
-                backgroundColor: "#fff0d7",
-                paddingHorizontal: 9,
-                paddingVertical: 5,
-                borderRadius: 6,
-                fontSize: 12,
-              }}
-            >
-              {item.emAndamento} em andamento
-            </Text>
-          )}
         <Text style={{ color: t.primaryText, fontSize: 18 }}>›</Text>
     </Pressable>
   );

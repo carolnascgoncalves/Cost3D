@@ -93,9 +93,11 @@ export type Detail = {
 export const money = (n: number) => reais(Number(n || 0).toFixed(2));
 export function statusBadge(status: string, paid: boolean, t: Theme) {
   if (paid) return { fg: t.success, bg: "#E5F3E8" };
+  if (status === "RASCUNHO") return { fg: t.muted, bg: t.accentTint };
   if (status === "ENVIADO") return { fg: "#285B91", bg: "#E4F0FF" };
-  if (status === "APROVADO") return { fg: "#765700", bg: "#FFF1C2" };
+  if (status === "APROVADO" || status === "PRODUZINDO") return { fg: "#765700", bg: "#FFF1C2" };
   if (status === "PRONTO") return { fg: t.success, bg: "#E5F3E8" };
+  if (status === "ENTREGUE") return { fg: "#27663F", bg: "#DFF2E5" };
   if (status === "CANCELADO") return { fg: t.danger, bg: t.dangerBackground };
   return { fg: t.primaryText, bg: t.accentTint };
 }
