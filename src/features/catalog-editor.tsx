@@ -1,7 +1,7 @@
 import { SearchEmpty } from "@/components/ui";
 import { ColorWheel } from "@/components/color-wheel";
-import { useRef, useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Keyboard, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { ModuleScreen } from "@/components/module-screen";
 import {
   Body,
@@ -102,7 +102,7 @@ const suggestions = [
   "Casa",
   "Outros",
 ];
-const filamentColors = ["#242424", "#FFFFFF", "#E84B4B", "#FF6B35", "#F2C94C", "#70A83B", "#428ED8", "#8274D8"];
+const filamentColors = ["#242424", "#FFFFFF", "#E84B4B", "#FF6B35", "#F2C94C", "#70A83B"];
 const names = {
   pecas: "peça",
   filamentos: "filamento",
@@ -150,8 +150,15 @@ function Form({
   const t = useTheme();
   const [advanced, setAdvanced] = useState(false),
     [colors, setColors] = useState(false),
+    [keyboardVisible, setKeyboardVisible] = useState(Platform.OS !== "web" && Keyboard.isVisible()),
     [focused, setFocused] = useState(""),
     [reference, setReference] = useState("");
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const show = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
   const models = useApiQuery<{ nome: string; potenciaMediaPLA: number }[]>(
     category === "impressoras" ? "/catalogo/impressoras/modelos" : null,
   );
@@ -347,10 +354,10 @@ function Form({
     if (key === "codigoCor")
       return (
         <View key={key} style={{ gap: 8 }}>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-            {filamentColors.map((color) => <Pressable key={color} accessibilityRole="radio" accessibilityState={{ checked: values[key].toUpperCase() === color }} accessibilityLabel={"Selecionar cor " + color} onPress={() => update(key, color)} style={{ width: 31, height: 31, borderRadius: 9, backgroundColor: color, borderWidth: values[key].toUpperCase() === color ? 2 : 1, borderColor: values[key].toUpperCase() === color ? t.primary : t.border }} />)}
-            <Button compact label="Outra cor" variant="ghost" onPress={() => setColors(!colors)} />
-          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            {filamentColors.map((color) => <Pressable key={color} accessibilityRole="radio" accessibilityState={{ checked: values[key].toUpperCase() === color }} accessibilityLabel={"Selecionar cor " + color} onPress={() => update(key, color)} style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: color, borderWidth: values[key].toUpperCase() === color ? 2 : 1, borderColor: values[key].toUpperCase() === color ? t.primary : t.border }} />)}
+            <Button compact label="Outra cor" variant="secondary" onPress={() => setColors(!colors)} />
+          </ScrollView>
           {colors && (
             <Card style={{ padding: 10 }}>
               <ColorWheel
@@ -446,13 +453,6 @@ function Form({
       </View>
     );
   }
-  const printerExtras = [
-    "vidaUtilHoras",
-    "horasMensaisUso",
-    "depreciacaoPorHora",
-    "valorCompra",
-    "tempoAquecimentoMinutos",
-  ];
   return (
     <View style={{ flex: 1 }}>
       <ModuleScreen
@@ -509,8 +509,8 @@ function Form({
             {(() => {
               const grams = Number(values.gramasCompradas.replace(",", ".")) || Number(values.pesoRoloGramas.replace(",", ".")) * (Number(values.unidadesCompra) || 1);
               const current = Number(original.estoqueGramas) || 0;
-              return <Card style={{ gap: 8, backgroundColor: t.accentTint }}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}><Body muted>Total pago</Body><Body strong>{reais(String((Number(values.precoRolo.replace(",", ".")) || 0) * (Number(values.unidadesCompra) || 1)))}</Body></View>
+              return <Card style={{ gap: 8, backgroundColor: t.surface }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><Body muted>Total pago</Body><Text style={{ color: t.text, fontSize: 20, fontWeight: "700" }}>{reais(String((Number(values.precoRolo.replace(",", ".")) || 0) * (Number(values.unidadesCompra) || 1)))}</Text></View>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}><Body muted>Entra no estoque</Body><Text style={{ color: t.success, fontWeight: "700" }}>+ {quantity(String(grams), "g")}</Text></View>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}><Body muted>Estoque depois</Body><Body strong>{quantity(String(current + grams), "g")}</Body></View>
               </Card>;
@@ -540,45 +540,19 @@ function Form({
             </View>
             {field(specs.find((f) => f[0] === "estoqueGramas")!)}
           </>
-        ) : specs
-          .filter(
-            ([key]) =>
-              category !== "impressoras" ||
-              (!printerExtras.includes(key) &&
-                (key !== "potenciaWatts" ||
-                  !!id ||
-                  !selectedModel ||
-                  !values.potenciaWatts)),
-          )
-          .map(field)}
+        ) : category === "impressoras" ? (
+          <>
+            {field(specs.find((f) => f[0] === "nome")!)}
+            {field(specs.find((f) => f[0] === "modelo")!)}
+            <View style={{ flexDirection: "row", gap: 9 }}>
+              <View style={{ flex: 1 }}>{field(specs.find((f) => f[0] === "potenciaWatts")!)}</View>
+              <View style={{ flex: 1 }}>{field(specs.find((f) => f[0] === "tempoAquecimentoMinutos")!)}</View>
+            </View>
+            <Body muted>{selectedModel && values.potenciaWatts ? "Potência média em PLA · " + values.potenciaWatts + " W" : "Escolha um modelo sugerido ou informe a potência do seu equipamento."}</Body>
+          </>
+        ) : specs.map(field)}
         {category === "impressoras" && (
           <>
-            {selectedModel && values.potenciaWatts ? (
-              <View
-                style={{
-                  alignSelf: "flex-start",
-                  paddingHorizontal: 12,
-                  paddingVertical: 9,
-                  borderRadius: 8,
-                  backgroundColor: t.accentTint,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "600",
-                    color: t.primaryText,
-                  }}
-                >
-                  Potência média em PLA · {values.potenciaWatts} W
-                </Text>
-              </View>
-            ) : (
-              <Body muted>
-                Escolha um modelo sugerido ou informe a potência do seu modelo.
-              </Body>
-            )}
-            {field(specs.find((f) => f[0] === "tempoAquecimentoMinutos")!)}
             <Card>
               <Pressable
                 accessibilityRole="button"
@@ -636,7 +610,7 @@ function Form({
           </>
         )}
       </ModuleScreen>
-      <View
+      {!(Platform.OS !== "web" && keyboardVisible) && <View
         style={{
           padding: 12,
           backgroundColor: t.surface,
@@ -664,7 +638,7 @@ function Form({
             />
           </View>
         </View>
-      </View>
+      </View>}
     </View>
   );
 }

@@ -1,8 +1,9 @@
 import { TextInput, View, type TextInputProps } from "react-native";
+import type { StyleProp, TextStyle } from "react-native";
 import { Icon } from "./icon";
 import { useTheme } from "@/theme/provider";
 
-export function ListSearch(props: TextInputProps) {
+export function ListSearch({ style, ...props }: TextInputProps) {
   const t = useTheme();
   return (
     <View style={{ justifyContent: "center" }}>
@@ -10,7 +11,7 @@ export function ListSearch(props: TextInputProps) {
       returnKeyType="search"
       maxLength={150}
       placeholderTextColor={t.muted}
-      style={{
+      style={[{
         borderWidth: 1,
         borderColor: t.border,
         backgroundColor: t.surface,
@@ -19,7 +20,7 @@ export function ListSearch(props: TextInputProps) {
         paddingLeft: 40,
         paddingRight: 12,
         minHeight: 44,
-      }}
+      }, style as StyleProp<TextStyle>]}
       {...props}
     />
     <View pointerEvents="none" style={{ position: "absolute", left: 13 }}>

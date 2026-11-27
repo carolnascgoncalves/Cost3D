@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Image, Modal, Pressable, ScrollView, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { OptionalBadge, Body, Button, Card, ValueRow } from "@/components/ui";
 import type { components } from "@/api/schema";
 import { useTheme } from "@/theme/provider";
@@ -95,53 +95,23 @@ export function PieceImport({
   return (
     <>
       <Card>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <View style={{ flex: 1 }}>
-            <Body strong>✓ Arquivo lido</Body>
-            <Body muted>{file.nomeArquivo}</Body>
+        <View style={{ padding: 10, borderRadius: 10, backgroundColor: t.success + "14", flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={{ color: t.success, fontSize: 14, fontWeight: "700" }}>✓ Arquivo lido</Text>
+            <Text numberOfLines={1} style={{ color: t.success, fontSize: 12 }}>{file.nomeArquivo}</Text>
           </View>
-          <Button
-            label="Trocar"
-            variant="secondary"
-            disabled={busy}
-            onPress={choose}
-          />
+          <Button label="Trocar" variant="secondary" disabled={busy} onPress={choose} />
         </View>
-      </Card>
-      <Card>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Ver dados do arquivo"
           onPress={() => setDetails(true)}
-          style={{ alignItems: "center", gap: 5 }}
+          style={{ minHeight: 36, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, paddingTop: 3 }}
         >
-          {plate?.imagemPreviewDataUri && (
-            <Image
-              source={{ uri: plate.imagemPreviewDataUri }}
-              style={{ width: "100%", height: 100 }}
-              resizeMode="contain"
-            />
-          )}
-          {plate && (
-            <Body strong>
-              Placa {plate.numero} de {d?.numeroPlacas}
-            </Body>
-          )}
-          {plate && (
-            <Body muted>
-              {[
-                plate.tempoSegundos != null
-                  ? Math.ceil(plate.tempoSegundos / 60) + " min"
-                  : null,
-                plate.pesoGramas != null
-                  ? decimal(String(plate.pesoGramas), 2) + " g"
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </Body>
-          )}
-          <Body>Dados do arquivo ›</Body>
+          <Text numberOfLines={2} style={{ flex: 1, color: t.text, fontSize: 12 }}>
+            {plate ? ["Placa " + plate.numero + " de " + d?.numeroPlacas, plate.tempoSegundos != null ? Math.ceil(plate.tempoSegundos / 60) + " min" : null, plate.pesoGramas != null ? decimal(String(plate.pesoGramas), 2) + " g" : null, plate.filamentos?.[0]?.material || names[0]].filter(Boolean).join(" · ") : "Confira os dados extraídos do arquivo"}
+          </Text>
+          <Text style={{ color: t.primaryText, fontSize: 12, fontWeight: "600" }}>Ver dados ›</Text>
         </Pressable>
         {plates.length > 1 && (
           <View

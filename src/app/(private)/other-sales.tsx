@@ -95,7 +95,7 @@ export default function OtherSales() {
     </View> : <View style={{ gap: 12 }}>
       <View style={layout.row}>
         <Card style={{ flex: 1, gap: 2, backgroundColor: t.accentTint }}><Body muted>Receita</Body><Text style={{ color: t.text, fontSize: 18, fontWeight: "700" }}>{cash(summary.data?.receita)}</Text></Card>
-        <Card style={{ flex: 1, gap: 2, backgroundColor: t.accentTint }}><Body muted>Lucro</Body><Text style={{ color: t.success, fontSize: 18, fontWeight: "700" }}>{cash(summary.data?.lucro)}</Text></Card>
+        <Card style={{ flex: 1, gap: 2, backgroundColor: t.surface }}><Body muted>Lucro</Body><Text style={{ color: t.success, fontSize: 18, fontWeight: "700" }}>{cash(summary.data?.lucro)}</Text></Card>
       </View>
       {Boolean(summary.data?.semCusto) && <Body muted>Vendas sem custo cadastrado ficam fora do lucro calculado.</Body>}
       <ListSearch accessibilityLabel="Buscar vendas registradas" placeholder="Buscar produto nas vendas" value={saleSearch} onChangeText={v => { setSaleSearch(v); setSalePage(0); }} />

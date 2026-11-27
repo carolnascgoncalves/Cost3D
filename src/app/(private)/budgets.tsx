@@ -71,7 +71,7 @@ export default function Budgets() {
         title="Orçamentos e pedidos"
         onBack={() => router.navigate("/more")}
       >
-        <Card style={{ gap: 2, padding: 16, backgroundColor: t.accentTint }}>
+        <Card style={{ gap: 2, padding: 16, backgroundColor: t.surface }}>
           <Body muted>A receber</Body>
           <Text style={{ color: t.text, fontSize: 26, lineHeight: 30, fontWeight: "700" }}>{q.data ? money(q.data.receber) : "—"}</Text>
           <View style={{ ...row, flexWrap: "wrap", marginTop: 3 }}>

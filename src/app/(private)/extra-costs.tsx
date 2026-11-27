@@ -64,7 +64,7 @@ function CostCard({ cost: c, open }: { cost: Cost; open?: () => void }) {
           height: 6,
           borderRadius: 3,
           overflow: "hidden",
-          backgroundColor: t.accentTint,
+          backgroundColor: t.border,
         }}
       >
         <View

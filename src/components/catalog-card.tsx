@@ -73,9 +73,9 @@ export function PiecePhoto({
       style={[
         s.photo,
         compact && { width: 32, height: 32, borderRadius: 8 },
-        medium && { width: 54, height: 54, borderRadius: 11 },
+        medium && { width: 54, height: 54, borderRadius: 11, backgroundColor: t.accentTint },
         large && { width: "100%", height: 190, borderWidth: 0 },
-        { backgroundColor: t.surface, borderColor: t.border },
+        { backgroundColor: medium ? t.accentTint : t.surface, borderColor: t.border },
       ]}
     >
       {photo.data?.base64 && !failed ? (
@@ -107,7 +107,7 @@ export function MaterialChips({
   return materiais?.length ? (
     <View style={s.chips}>
       {materiais.map((m, index) => (
-        <View key={index} style={[s.material, { borderColor: t.border }]}>
+        <View key={index} style={[s.material, { borderColor: t.border, backgroundColor: t.surface }]}>
           {!!m.corHex && (
             <View
               style={[
@@ -177,7 +177,7 @@ export function CatalogCard({
       : t.success;
   const openDetails = () => onDetails?.();
   const overflow = (
-    <Pressable accessibilityRole="button" accessibilityLabel={"Editar " + row.nome} onPress={() => onEdit()} hitSlop={8} style={{ width: 30, height: 34, alignItems: "center", justifyContent: "center" }}>
+    <Pressable accessibilityRole="button" accessibilityLabel={"Editar " + row.nome} onPress={() => onEdit()} hitSlop={10} style={({ pressed }) => ({ width: 40, height: 42, alignItems: "center", justifyContent: "center", zIndex: 2, elevation: 2, opacity: pressed ? 0.55 : 1 })}>
       <Icon name="three-dots" size={18} color={t.muted} />
     </Pressable>
   );
@@ -192,7 +192,17 @@ export function CatalogCard({
       {category === "pecas" ? <>
         <View style={s.identity}>
           <Pressable onPress={openDetails}><PiecePhoto row={row} medium /></Pressable>
-          {name(row.categoria)}{overflow}
+          <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+            <Text numberOfLines={2} style={{ color: t.text, fontSize: 15, fontWeight: "700" }}>{row.nome}</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
+              {!!row.categoria && <Text numberOfLines={1} style={{ color: t.muted, backgroundColor: t.accentTint, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2, fontSize: 11 }}>{row.categoria}</Text>}
+              {row.materiais?.slice(0, 2).map((material, index) => <View key={index} style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: t.surface, borderColor: t.border, borderWidth: 1, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 }}>
+                {!!material.corHex && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: material.corHex, borderWidth: 1, borderColor: t.border }} />}
+                <Text numberOfLines={1} style={{ color: t.text, fontSize: 11 }}>{material.material || "Filamento"}</Text>
+              </View>)}
+            </View>
+          </View>
+          {overflow}
         </View>
         <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
           <Text style={{ color: t.muted, fontSize: 12 }}>Filamento <Text style={{ color: t.text, fontWeight: "600" }}>{row.gramas != null ? decimal(row.gramas, 1) + " g" : "—"}</Text></Text>
@@ -204,7 +214,7 @@ export function CatalogCard({
         <View style={s.identity}>
           <Pressable onPress={openDetails} style={[s.symbol, { width: 44, height: 44, borderRadius: 11, backgroundColor: row.codigoCor || t.accentTint, borderColor: t.border }]} />
           {name(row.cor)}
-          {level && <Text style={{ color: level.low ? t.danger : t.success, backgroundColor: level.low ? t.dangerBackground : t.accentTint, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, fontSize: 11, fontWeight: "600" }}>{level.low ? "Repor" : "Em dia"}</Text>}
+          {level && <Text style={{ color: level.low ? t.danger : t.success, backgroundColor: t.surface, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, fontSize: 11, fontWeight: "600" }}>{level.low ? "Repor" : "Em dia"}</Text>}
           {overflow}
         </View>
         <Pressable onPress={openDetails} style={{ gap: 7 }}>
@@ -212,7 +222,7 @@ export function CatalogCard({
             <Text style={{ color: t.text, fontSize: 13, fontWeight: "600" }}>{row.estoque == null ? "—" : decimal(row.estoque, 0) + " g de " + decimal(row.pesoRolo, 0) + " g"}</Text>
             {level && <Text style={{ color: level.low ? t.danger : t.success, fontSize: 12, fontWeight: "700" }}>{level.percent}%</Text>}
           </View>
-          {level && <View accessibilityRole="progressbar" accessibilityValue={{ now: level.percent, min: 0, max: 100 }} style={{ height: 6, borderRadius: 8, overflow: "hidden", backgroundColor: t.accentTint }}><View style={{ width: `${level.percent}%`, height: "100%", backgroundColor: stockColor }} /></View>}
+          {level && <View accessibilityRole="progressbar" accessibilityValue={{ now: level.percent, min: 0, max: 100 }} style={{ height: 6, borderRadius: 8, overflow: "hidden", backgroundColor: t.border }}><View style={{ width: `${level.percent}%`, height: "100%", backgroundColor: stockColor }} /></View>}
         </Pressable>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
           <Text style={{ color: t.muted, fontSize: 12 }}>{reais(row.precoRolo)} / rolo</Text>

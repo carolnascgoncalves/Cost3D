@@ -39,8 +39,8 @@ function PieceFile({ row, onEdit }: { row: CatalogRow; onEdit: () => void }) {
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}><View style={{ flex: 1 }}><Body muted>Arquivo 3D importado</Body><Body strong>{file.nomeArquivo}</Body><Body muted>{[file.modeloImpressora, file.fatiador, file.numeroPlacas != null ? file.numeroPlacas + (file.numeroPlacas === 1 ? " placa" : " placas") : undefined].filter(Boolean).join(" · ")}</Body></View><Pressable accessibilityRole="button" onPress={onEdit} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}><Icon name="arrow-repeat" size={14} color={t.primaryText} /><Text style={{ color: t.primaryText, fontSize: 12 }}>Trocar</Text></Pressable></View>
     </Card>
     {!!row.materiais?.length && <Card style={{ gap: 8 }}><Body strong>Materiais e cores</Body>{file.placas?.length ? file.placas.map((plate) => <View key={plate.numero} style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
-      {plate.temImagem ? <PiecePhoto row={{ id: row.id, nome: row.nome + " · placa " + plate.numero, placaMiniatura: plate.numero }} compact /> : <View style={{ width: 40, height: 40, borderRadius: 9, backgroundColor: t.accentTint, alignItems: "center", justifyContent: "center" }}><Icon name="collection" color={t.muted} size={18} /></View>}
-      <View style={{ flex: 1 }}><Body strong>{"Placa " + plate.numero}</Body><Body muted>{[(plate.tempoSegundos != null ? Math.round(plate.tempoSegundos / 60) + " min" : null), (plate.pesoGramas != null ? decimal(String(plate.pesoGramas), 1) + " g" : null)].filter(Boolean).join(" · ")}</Body><MaterialChips materiais={plate.materiais} /></View>
+      {plate.temImagem ? <PiecePhoto row={{ id: row.id, nome: row.nome + " · placa " + plate.numero, placaMiniatura: plate.numero }} medium /> : <View style={{ width: 64, height: 64, borderRadius: 11, backgroundColor: t.accentTint, alignItems: "center", justifyContent: "center" }}><Icon name="collection" color={t.muted} size={22} /></View>}
+      <View style={{ flex: 1, gap: 3 }}><Body strong>{"Placa " + plate.numero}</Body><View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 14, rowGap: 2 }}>{plate.tempoSegundos != null && <Body muted>{Math.round(plate.tempoSegundos / 60) + " min"}</Body>}{plate.pesoGramas != null && <Body muted>{decimal(String(plate.pesoGramas), 1) + " g"}</Body>}</View><MaterialChips materiais={plate.materiais} /></View>
     </View>) : <MaterialChips materiais={row.materiais} />}<Body muted>ⓘ Tempo e consumo podem ser ajustados durante o cálculo.</Body></Card>}
   </>;
 }
@@ -78,7 +78,7 @@ export function CatalogDetail({ onEdit, category, row, onBack }: { onEdit: (purc
     </>}
     {filament && <>
       <View style={{ flexDirection: "row", gap: 8 }}><View style={{ flex: 1 }}><Action icon="bag-plus" label="Registrar compra" onPress={() => onEdit(true)} /></View><Action icon="pencil" label="Editar" onPress={() => onEdit()} /></View>
-      <Card style={{ gap: 7, backgroundColor: t.accentTint, borderColor: t.accentTint }}>
+      <Card style={{ gap: 7, backgroundColor: t.surface }}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}><Body muted>Estoque disponível</Body>{level?.low && <Text style={{ color: t.danger, backgroundColor: t.dangerBackground, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3, fontSize: 11, fontWeight: "600" }}>Repor</Text>}</View>
         <Text style={{ color: level?.low ? t.danger : t.text, fontSize: 22, fontWeight: "700" }}>{quantity(row.estoque, "g")}</Text>
         <View accessibilityRole="progressbar" accessibilityValue={{ now: level?.percent ?? 0, min: 0, max: 100 }} style={{ height: 7, borderRadius: 8, overflow: "hidden", backgroundColor: t.border }}><View style={{ height: "100%", width: `${level?.percent ?? 0}%`, backgroundColor: level?.low ? t.danger : t.success }} /></View>
