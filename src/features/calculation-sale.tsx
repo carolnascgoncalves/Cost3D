@@ -105,11 +105,13 @@ export function SaleOptions({
   change,
   advanced,
   manualFreight,
+  platformLabel = "Plataforma de venda",
 }: {
   s: SaleForm;
   change: (s: SaleForm) => void;
   advanced: boolean;
   manualFreight: boolean;
+  platformLabel?: string;
 }) {
   function choices(
     label: string,
@@ -119,7 +121,7 @@ export function SaleOptions({
   ) {
     return (
       <View style={{ gap: 6 }}>
-        <Body muted>{label}</Body>
+        {!!label && <Body muted>{label}</Body>}
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
           {Object.entries(values).map(([v, text]) => (
             <Chip
@@ -160,7 +162,7 @@ export function SaleOptions({
   }
   return (
     <View style={{ gap: 12 }}>
-      {choices("Plataforma de venda", channels, s.channel, (v) =>
+      {choices(platformLabel, channels, s.channel, (v) =>
         change({
           ...initialSale,
           tax: s.tax,

@@ -49,7 +49,7 @@ export function CatalogDetail({ onEdit, category, row, onBack }: { onEdit: (purc
   const t = useTheme();
   const [error, setError] = useState("");
   const id = encodeURIComponent(row.id ?? ""), path = "/" + catalogPaths[category];
-  const piece = category === "pecas", filament = category === "filamentos", printer = category === "impressoras";
+  const piece = category === "pecas", filament = category === "filamentos", printer = category === "impressoras", packageItem = category === "embalagens";
   const costs = useApiQuery<Schemas["CustosImpressora"]>(printer && id ? "/catalogo/impressoras/" + id + "/custos" : null);
   const c = costs.data, level = filament ? stockLevel(row) : undefined;
   useFocusEffect(useCallback(() => {
@@ -61,13 +61,14 @@ export function CatalogDetail({ onEdit, category, row, onBack }: { onEdit: (purc
     {filament && row.codigoCor ? null : <Icon name={printer ? "printer" : "box"} size={24} color={t.primaryText} />}
   </View>;
   return <Screen>
-    <Pressable accessibilityRole="button" onPress={onBack} style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 2 }}><Icon name="arrow-left" size={14} color={t.primaryText} /><Text style={{ color: t.primaryText, fontSize: 13 }}>{piece ? "Peças" : printer ? "Impressoras" : "Filamentos"}</Text></Pressable>
+    <Pressable accessibilityRole="button" onPress={onBack} style={{ alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 2 }}><Icon name="arrow-left" size={14} color={t.primaryText} /><Text style={{ color: t.primaryText, fontSize: 13 }}>{piece ? "Peças" : printer ? "Impressoras" : packageItem ? "Embalagens" : "Filamentos"}</Text></Pressable>
     <View style={{ flexDirection: "row", alignItems: "center", gap: 11 }}>
       {symbol}
       <View style={{ flex: 1, minWidth: 0, gap: 3 }}><Text style={{ color: t.text, fontSize: 20, fontWeight: "700" }}>{row.nome}</Text>
         {piece && !!row.categoria && <Text style={{ alignSelf: "flex-start", overflow: "hidden", color: t.primaryText, backgroundColor: t.accentTint, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3, fontSize: 11, fontWeight: "600" }}>{row.categoria}</Text>}
         {filament && <Text style={{ color: t.muted, fontSize: 12 }}>{row.cor}</Text>}
         {printer && <Text style={{ color: t.muted, fontSize: 12 }}>{row.modelo}</Text>}
+        {packageItem && <Text style={{ color: t.muted, fontSize: 12 }}>{row.usos ? `Usada em ${row.usos} cálculos` : "Ainda não usada"}</Text>}
       </View>
     </View>
     {piece && <>
@@ -99,6 +100,14 @@ export function CatalogDetail({ onEdit, category, row, onBack }: { onEdit: (purc
         {c.registros?.map((g) => <View key={g.id} style={{ borderTopWidth: 1, borderColor: t.border, paddingTop: 7, flexDirection: "row", justifyContent: "space-between" }}><View style={{ flex: 1 }}><Body strong>{g.descricao}</Body><Body muted>{g.data?.split("-").reverse().join("/")}</Body></View><Body strong>{reais(g.valor)}</Body></View>)}
         <Action icon="bag-plus" label="Registrar manutenção" onPress={() => open(path + "/detalhes/" + id)} />
       </Card>}
+    </>}
+    {packageItem && <>
+      <Action icon="pencil" label="Editar embalagem" onPress={() => onEdit()} />
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <Metric icon="cash-coin" label="Custo por unidade" value={reais(row.custo)} />
+        <Metric icon="box" label="Aplicação" value="Por peça calculada" />
+      </View>
+      <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 6 }}><Icon name="info-circle" size={15} color={t.primaryText} /><View style={{ flex: 1 }}><Body muted>Mudar o custo não altera cálculos já salvos.</Body></View></View>
     </>}
     {!!error && <Notice message={error} />}
   </Screen>;

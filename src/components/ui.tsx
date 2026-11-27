@@ -125,6 +125,7 @@ export function Button({
   iconNode,
   stretch,
   compact,
+  stopPropagation = false,
 }: {
   label: string;
   onPress: () => void;
@@ -134,6 +135,7 @@ export function Button({
   iconNode?: ReactNode;
   stretch?: boolean;
   compact?: boolean;
+  stopPropagation?: boolean;
   variant?: "primary" | "secondary" | "ghost" | "danger";
 }) {
   const t = useTheme();
@@ -148,7 +150,10 @@ export function Button({
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled || busy, busy }}
       disabled={disabled || busy}
-      onPress={onPress}
+      onPress={(event) => {
+        if (stopPropagation) event.stopPropagation();
+        onPress();
+      }}
       style={({ pressed }) => [
         styles.button,
         compact && { minHeight: 38, paddingVertical: 7, paddingHorizontal: 14 },
@@ -219,6 +224,7 @@ export function Field({
   labelColor,
   labelAction,
   trailing,
+  revealOnFocus = true,
   style,
   ...props
 }: TextInputProps & {
@@ -227,6 +233,7 @@ export function Field({
   labelColor?: string;
   labelAction?: ReactNode;
   trailing?: ReactNode;
+  revealOnFocus?: boolean;
 }) {
   const t = useTheme();
 
@@ -310,7 +317,7 @@ export function Field({
           onFocus={(e) => {
             onFieldFocus();
             setFocused(true);
-            if (input.current) reveal(input.current);
+            if (revealOnFocus && input.current) reveal(input.current);
             props.onFocus?.(e);
           }}
           onBlur={(e) => {

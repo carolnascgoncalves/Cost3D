@@ -28,6 +28,7 @@ import { Icon } from "@/components/icon";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { request } from "@/api/session";
 import { useTheme } from "@/theme/provider";
+import { clearCachedApiQuery } from "@/hooks/use-cached-api-query";
 import { decimal, quantity, reais } from "@/features/format";
 import {
   CatalogCard,
@@ -154,11 +155,12 @@ function Listings({ category }: { category: Category }) {
           }
           setEditor(undefined);
           setPiece(undefined);
+          if (category.key === "pecas" && editor.id) clearCachedApiQuery(`/catalogo/pecas/${encodeURIComponent(editor.id)}/placas/`);
           q.retry();
         }}
       />
     );
-  if (mobile && piece)
+  if (piece)
     return (
       <CatalogDetail
         onEdit={(purchase) => edit(piece, purchase)}
@@ -315,7 +317,18 @@ function Listings({ category }: { category: Category }) {
               />
             </Card>
           )}
-          {visible.map((row) =>
+          {category.key === "embalagens" && !selecting && visible.length ? (
+            <Card style={{ paddingVertical: 0, gap: 0 }}>
+              {visible.map((row, index) => (
+                <Pressable key={row.id} accessibilityRole="button" accessibilityLabel={`Ver detalhes de ${row.nome}`} onPress={() => setPiece(row)} style={{ minHeight: 64, flexDirection: "row", alignItems: "center", gap: 10, borderBottomWidth: index === visible.length - 1 ? 0 : 1, borderColor: t.border }}>
+                  <View style={{ width: 40, height: 40, borderRadius: 11, backgroundColor: t.accentTint, alignItems: "center", justifyContent: "center" }}><Icon name="box" size={19} color={t.primaryText} /></View>
+                  <View style={{ flex: 1, minWidth: 0, gap: 2 }}><Body strong>{row.nome}</Body><Body muted>{row.usos ? `Usada em ${row.usos} cálculos` : "Ainda não usada"}</Body></View>
+                  <View style={{ alignItems: "flex-end", gap: 1 }}><Body strong>{reais(row.custo)}</Body><Text style={{ color: t.muted, fontSize: 11 }}>por unidade</Text></View>
+                  <Icon name="chevron-right" size={15} color={t.muted} />
+                </Pressable>
+              ))}
+            </Card>
+          ) : visible.map((row) =>
             selecting ? (
               <Pressable
                 key={row.id}

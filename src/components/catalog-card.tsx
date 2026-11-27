@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import type { components } from "@/api/schema";
 import { useTheme } from "@/theme/provider";
-import { useApiQuery } from "@/hooks/use-api-query";
+import { useCachedApiQuery } from "@/hooks/use-cached-api-query";
 import { decimal, reais } from "@/features/format";
 import { openWebsite } from "@/features/website";
 import { Body, Button, Card, Notice } from "./ui";
@@ -58,7 +58,7 @@ export function PiecePhoto({
   medium?: boolean;
 }) {
   const t = useTheme();
-  const photo = useApiQuery<Schemas["FotoCatalogo"]>(
+  const photo = useCachedApiQuery<Schemas["FotoCatalogo"]>(
     row.id && row.placaMiniatura
       ? "/catalogo/pecas/" +
           encodeURIComponent(row.id) +
@@ -83,6 +83,7 @@ export function PiecePhoto({
           accessibilityLabel={"Foto de " + row.nome}
           resizeMode="contain"
           style={{ width: "100%", height: "100%" }}
+          fadeDuration={0}
           source={{
             uri: "data:" + photo.data.tipo + ";base64," + photo.data.base64,
           }}
@@ -176,11 +177,6 @@ export function CatalogCard({
       ? "#916424"
       : t.success;
   const openDetails = () => onDetails?.();
-  const overflow = (
-    <Pressable accessibilityRole="button" accessibilityLabel={"Editar " + row.nome} onPress={() => onEdit()} hitSlop={10} style={({ pressed }) => ({ width: 40, height: 42, alignItems: "center", justifyContent: "center", zIndex: 2, elevation: 2, opacity: pressed ? 0.55 : 1 })}>
-      <Icon name="three-dots" size={18} color={t.muted} />
-    </Pressable>
-  );
   const name = (subtitle?: string) => (
     <Pressable accessibilityRole="button" accessibilityLabel={"Ver detalhes de " + row.nome} onPress={openDetails} style={{ flex: 1, minWidth: 0, gap: 2 }}>
       <Text numberOfLines={2} style={{ color: t.text, fontSize: 15, fontWeight: "700" }}>{row.nome}</Text>
@@ -188,6 +184,7 @@ export function CatalogCard({
     </Pressable>
   );
   return (
+    <Pressable accessibilityRole="button" accessibilityLabel={"Ver detalhes de " + row.nome} onPress={openDetails}>
     <Card style={{ gap: 10, padding: 11 }}>
       {category === "pecas" ? <>
         <View style={s.identity}>
@@ -202,20 +199,18 @@ export function CatalogCard({
               </View>)}
             </View>
           </View>
-          {overflow}
         </View>
         <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
           <Text style={{ color: t.muted, fontSize: 12 }}>Filamento <Text style={{ color: t.text, fontWeight: "600" }}>{row.gramas != null ? decimal(row.gramas, 1) + " g" : "—"}</Text></Text>
           <Text style={{ color: t.muted, fontSize: 12 }}>Tempo <Text style={{ color: t.text, fontWeight: "600" }}>{row.minutos != null ? (row.minutos >= 60 ? Math.floor(row.minutos / 60) + " h " + (row.minutos % 60 ? row.minutos % 60 + " min" : "") : row.minutos + " min") : "—"}</Text></Text>
           <Text style={{ color: t.muted, fontSize: 12 }}>Preço sugerido <Text style={{ color: t.text, fontWeight: "700" }}>{row.preco != null ? reais(row.preco) : "—"}</Text></Text>
         </View>
-        <Button label="Calcular preço" variant="secondary" onPress={() => router.push(pieceCalculation(row))} />
+        <Button label="Calcular preço" variant="secondary" stopPropagation onPress={() => router.push(pieceCalculation(row))} />
       </> : filament ? <>
         <View style={s.identity}>
           <Pressable onPress={openDetails} style={[s.symbol, { width: 44, height: 44, borderRadius: 11, backgroundColor: row.codigoCor || t.accentTint, borderColor: t.border }]} />
           {name(row.cor)}
           {level && <Text style={{ color: level.low ? t.danger : t.success, backgroundColor: t.surface, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, fontSize: 11, fontWeight: "600" }}>{level.low ? "Repor" : "Em dia"}</Text>}
-          {overflow}
         </View>
         <Pressable onPress={openDetails} style={{ gap: 7 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -226,18 +221,19 @@ export function CatalogCard({
         </Pressable>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
           <Text style={{ color: t.muted, fontSize: 12 }}>{reais(row.precoRolo)} / rolo</Text>
-          <Button label="Registrar compra" icon="bag-plus" variant="secondary" compact onPress={() => onEdit(true)} />
+          <Button label="Registrar compra" icon="bag-plus" variant="secondary" compact stopPropagation onPress={() => onEdit(true)} />
         </View>
       </> : <>
         <View style={s.identity}>
           <Pressable onPress={openDetails} style={[s.symbol, { backgroundColor: t.accentTint, borderColor: t.border }]}><Icon name={printer ? "printer" : "box"} color={t.primaryText} size={20} /></Pressable>
-          {name(printer ? row.modelo : undefined)}{overflow}
+          {name(printer ? row.modelo : undefined)}
         </View>
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}><Body muted>{printer ? "Potência média" : "Custo por unidade"}</Body><Body strong>{printer ? (row.watts ? decimal(row.watts) + " W" : "—") : reais(row.custo)}</Body></View>
         {printer && <Body muted>{"Aquecimento " + (row.aquecimento ?? 0) + " min"}</Body>}
       </>}
       {!!error && <Notice message={error} />}
     </Card>
+    </Pressable>
   );
 }
 const s = StyleSheet.create({

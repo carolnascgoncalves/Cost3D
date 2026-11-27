@@ -44,6 +44,7 @@ import {
 } from "@/components/ui";
 import { ListSearch } from "@/components/list-search";
 import { useApiQuery } from "@/hooks/use-api-query";
+import { useCachedApiQuery } from "@/hooks/use-cached-api-query";
 import { Icon, type IconName } from "@/components/icon";
 import { useTheme } from "@/theme/provider";
 import { decimal, reais } from "./format";
@@ -153,6 +154,18 @@ function SectionTitle({ number, title }: { number: string; title: string }) {
     </View>
   );
 }
+function StepProgress({ stages, current }: { stages: string[]; current: number }) {
+  const t = useTheme();
+  return <View style={{ gap: 4, paddingHorizontal: 3 }}>
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      {stages.map((name, index) => <View key={name} style={{ flex: index === stages.length - 1 ? 0 : 1, flexDirection: "row", alignItems: "center" }}>
+        <View style={{ width: 25, height: 25, borderRadius: 13, borderWidth: index === current ? 2 : 0, borderColor: t.primary, backgroundColor: index < current ? t.primary : index === current ? t.surface : t.accentTint, alignItems: "center", justifyContent: "center" }}><Text style={{ color: index < current ? t.onPrimary : index === current ? t.primaryText : t.muted, fontSize: 12, fontWeight: "600" }}>{index < current ? "✓" : index + 1}</Text></View>
+        {index < stages.length - 1 && <View style={{ flex: 1, height: 2, backgroundColor: index < current ? t.primary : t.border }} />}
+      </View>)}
+    </View>
+    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>{stages.map((name, index) => <Text key={name} style={{ color: index === current ? t.text : t.muted, fontSize: 11, fontWeight: index === current ? "600" : "400", width: `${100 / stages.length}%`, textAlign: index === 0 ? "left" : index === stages.length - 1 ? "right" : "center" }}>{name}</Text>)}</View>
+  </View>;
+}
 function Prices({ cost, price }: { cost?: number; price?: number }) {
   const t = useTheme();
   return (
@@ -211,7 +224,7 @@ export function CalculationPhoto({
   size?: number;
 }) {
   const t = useTheme(),
-    photo = useApiQuery<Schema["FotoCatalogo"]>(
+    photo = useCachedApiQuery<Schema["FotoCatalogo"]>(
       id ? "/calculos/" + encodeURIComponent(id) + "/foto" : null,
     );
   const [failedUri, setFailedUri] = useState("");
@@ -256,6 +269,7 @@ export function CalculationPhoto({
           resizeMode="contain"
           style={{ width: size, height: size }}
           source={{ uri }}
+          fadeDuration={0}
           onError={() => setFailedUri(uri)}
         />
       ) : (
@@ -326,6 +340,19 @@ function CostCards({ result }: { result: Result }) {
     </View>
   );
 }
+function ProductionCostRows({ result }: { result: Result }) {
+  const t = useTheme();
+  const costs = result.custos;
+  if (!costs) return null;
+  const items: [keyof NonNullable<Result["custos"]>, string][] = [
+    ["custoFilamento", "Filamentos"], ["custoLoja", "Custos da loja"],
+    ["custoEmbalagem", "Embalagem"], ["custoMaoObra", "Mão de obra"],
+    ["custoFalha", "Reserva para falhas"], ["custoEnergia", "Energia"],
+    ["custoDepreciacao", "Depreciação"], ["custoManutencao", "Manutenção"],
+    ["custoPurga", "Purga"],
+  ];
+  return <View style={{ gap: 0 }}><View style={{ minHeight: 30, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 6 }}><Body strong>Custos de produção</Body><Body strong>{money(result.custoUnitario)}</Body></View>{items.filter(([key]) => costs[key] != null && (costs[key] !== 0 || key === "custoFilamento" || key === "custoEnergia")).map(([key, label]) => <View key={key} style={{ borderTopWidth: 1, borderColor: t.border, paddingVertical: 5 }}><ValueRow label={label} value={money(costs[key])} /></View>)}</View>;
+}
 function FilamentsUsed({
   result,
   heading = true,
@@ -370,11 +397,12 @@ function FilamentsUsed({
 function Disclosure({
   title,
   children,
-}: React.PropsWithChildren<{ title: string }>) {
+  bare = false,
+  separated = false,
+}: React.PropsWithChildren<{ title: string; bare?: boolean; separated?: boolean }>) {
   const t = useTheme();
   const [open, setOpen] = useState(false);
-  return (
-    <Card style={{ gap: 0 }}>
+  const content = <>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
@@ -384,6 +412,8 @@ function Disclosure({
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
+          borderTopWidth: separated ? 1 : 0,
+          borderColor: t.border,
         }}
       >
         <Body strong>{title}</Body>
@@ -392,8 +422,8 @@ function Disclosure({
         </View>
       </Pressable>
       {open && <View style={{ paddingTop: 8, gap: 10 }}>{children}</View>}
-    </Card>
-  );
+    </>;
+  return bare ? <View>{content}</View> : <Card style={{ gap: 0 }}>{content}</Card>;
 }
 function CalculationResult({
   result,
@@ -422,6 +452,13 @@ function CalculationResult({
         )[result.plataforma] ?? result.plataforma)
       : "Preço sugerido por unidade";
   const profit = result.custos?.lucroLiquido;
+  const count = result.unidades ?? 1;
+  const margin = recommended && profit != null ? Math.round(100 * profit / recommended) : 0;
+  const production = Math.max(0, result.custoUnitario ?? 0), fees = Math.max(0, result.custos?.taxasPlataforma ?? 0), gain = Math.max(0, profit ?? 0);
+  const totalBar = production + fees + gain || 1;
+  const productionColor = t.primary, feeColor = "#F2A72C", profitColor = "#70B843";
+  const marginColor = profit != null && margin >= 15 ? profitColor : profit != null && profit < 0 ? t.danger : feeColor;
+  const marginLabel = profit == null ? "Margem" : profit < 0 ? "Prejuízo" : margin < 15 ? "Margem apertada" : "Boa margem";
   return (
     <View style={{ gap: 10 }}>
       <Body muted>
@@ -453,50 +490,25 @@ function CalculationResult({
       {profit != null && (
         <View
           style={{
-            backgroundColor: profit < 0 ? t.dangerBackground : t.success + "14",
-            borderColor: profit < 0 ? t.danger : t.success,
+            backgroundColor: t.surface,
+            borderColor: t.border,
             borderWidth: 1,
             borderRadius: 14,
             padding: 14,
-            gap: 3,
+            gap: 8,
           }}
         >
-          <Text
-            style={{ color: profit < 0 ? t.danger : t.success, fontSize: 13 }}
-          >
-            Lucro líquido estimado
-          </Text>
-          <Text
-            style={{
-              color: profit < 0 ? t.danger : t.success,
-              fontSize: 25,
-              fontWeight: "700",
-            }}
-          >
-            {money(profit)}
-          </Text>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}><View><Text style={{ color: t.muted, fontSize: 12 }}>Lucro líquido por unidade</Text><Text style={{ color: profit < 0 ? t.danger : profitColor, fontSize: 22, fontWeight: "700" }}>{money(profit)}</Text></View><Text style={{ color: marginColor, backgroundColor: marginColor + "20", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, fontSize: 12, fontWeight: "700" }}>{marginLabel} · {margin}%</Text></View>
+          <View accessibilityRole="progressbar" accessibilityValue={{ now: Math.min(100, Math.round(100 * production / totalBar)), min: 0, max: 100 }} style={{ height: 9, borderRadius: 6, overflow: "hidden", flexDirection: "row", backgroundColor: t.border }}><View style={{ width: `${100 * production / totalBar}%`, backgroundColor: productionColor }} /><View style={{ width: `${100 * fees / totalBar}%`, backgroundColor: feeColor }} /><View style={{ width: `${100 * gain / totalBar}%`, backgroundColor: profitColor }} /></View>
+          {[[productionColor, "Custo de produção", production], [feeColor, "Taxas da plataforma", fees], [profitColor, "Seu lucro", profit]].map(([color, label, amount]) => <View key={String(label)} style={{ minHeight: 20, flexDirection: "row", alignItems: "center", gap: 7 }}><View style={{ width: 9, height: 9, borderRadius: 3, backgroundColor: String(color) }} /><Text style={{ flex: 1, color: t.text, fontSize: 12 }}>{String(label)}</Text><Text style={{ color: t.text, fontSize: 12, fontWeight: "600" }}>{money(Number(amount))}</Text></View>)}
+          <Body muted>Quer mais margem? Ajuste o markup e veja o preço mudar.</Body>
         </View>
       )}
-      <Card style={{ gap: 8 }}>
-        <Body strong>Resumo do lote · {result.unidades ?? 1} un.</Body>
-        <ValueRow
-          label="Receita estimada do lote"
-          value={recommended == null ? "—" : money(recommended * (result.unidades ?? 1))}
-        />
-        <ValueRow
-          label="Lucro líquido estimado do lote"
-          value={profit == null ? "—" : money(profit * (result.unidades ?? 1))}
-        />
-      </Card>
-      <Card>
-        <CostCards result={result} />
-      </Card>
-      <Disclosure
-        title={`Filamentos utilizados (${result.filamentos?.length ?? 0})`}
-      >
-        <FilamentsUsed result={result} heading={false} />
-      </Disclosure>
-      <Disclosure title="Dados da impressão">
+      <Card><ProductionCostRows result={result} /></Card>
+      <Card style={{ gap: 0 }}>
+        <Disclosure bare title={`Resumo do lote · ${count} un.`}><ValueRow label="Receita estimada do lote" value={recommended == null ? "—" : money(recommended * count)} /><ValueRow label="Lucro líquido estimado do lote" value={profit == null ? "—" : money(profit * count)} /></Disclosure>
+        <Disclosure bare separated title={`Filamentos utilizados (${result.filamentos?.length ?? 0})`}><FilamentsUsed result={result} heading={false} /></Disclosure>
+        <Disclosure bare separated title="Dados da impressão">
         <ValueRow label="Impressora" value={printer?.nome || "—"} />
         <ValueRow
           label="Tempo por unidade"
@@ -510,7 +522,8 @@ function CalculationResult({
           label="Embalagem"
           value={pack?.nome || "Conforme configuração da loja"}
         />
-      </Disclosure>
+        </Disclosure>
+      </Card>
     </View>
   );
 }
@@ -1014,7 +1027,7 @@ export function CalculationForm({
   const insets = useSafeAreaInsets();
   const t = useTheme(),
     [step, setStep] = useState(0);
-  const stages = ["Materiais", "Impressão", "Embalagem", "Venda e markup"];
+  const stages = ["Materiais", "Impressão", "Venda"];
   const [piece, setPiece] = useState(initial),
     [printer, setPrinter] = useState<Selection>(),
     [pack, setPack] = useState<Selection>();
@@ -1035,6 +1048,7 @@ export function CalculationForm({
     error?: string;
   }>();
   const [quickKey, setQuickKey] = useState("");
+  const [showQuickDetails, setShowQuickDetails] = useState(false);
   async function loadMaterials(
     refs: CatalogRow["materiais"],
     fallback: string,
@@ -1217,17 +1231,30 @@ export function CalculationForm({
     inputError = e instanceof Error ? e.message : "Confira a plataforma.";
   }
   const reviewing =
-    !quick && step === 3 && !result && !!defaults.data && !!payload;
+    !quick && step === 2 && !result && !!defaults.data && !!payload;
   useEffect(() => {
-    if (!reviewing) return;
+    const quickReady = !!(quick && defaults.data && !materialProblem() &&
+      !!printer?.id && Number.isInteger(numeric(minutes)) && numeric(minutes) > 0 &&
+      Number.isInteger(numeric(units)) && numeric(units) >= 1 && numeric(units) <= 10000 &&
+      Number.isInteger(workMinutes) && (defaults.data.embalagemFixa || !!pack?.id) &&
+      (defaults.data.markupFixo || !!markup.trim()));
+    if (!reviewing && !quickReady) return;
     let active = true;
+    if (quickReady) {
+      setResult(undefined);
+      setShowQuickDetails(false);
+      setQuickKey(payload);
+    }
     const timer = setTimeout(() => {
       request<Result>("/calculos/previa", { method: "POST", body: payload })
         .then((value) => {
-          if (active) setReview({ key: payload, value });
+          if (active) {
+            if (quickReady) setResult(value);
+            else setReview({ key: payload, value });
+          }
         })
         .catch((e) => {
-          if (active)
+          if (active && !quickReady) {
             setReview({
               key: payload,
               manualFreight: e instanceof ApiError && e.code === "frete_manual",
@@ -1236,13 +1263,16 @@ export function CalculationForm({
                   ? e.message
                   : "Não foi possível calcular a prévia.",
             });
+          } else if (active) {
+            setError(e instanceof Error ? e.message : "Não foi possível atualizar o preço.");
+          }
         });
-    }, 400);
+        }, 350);
     return () => {
       active = false;
       clearTimeout(timer);
     };
-  }, [payload, reviewing]);
+  }, [payload, reviewing, quick, defaults.data, printer?.id, minutes, units, workMinutes, pack?.id, markup]);
   const summary = review?.key === payload ? review : undefined;
   function materialProblem() {
     const index = materials.findIndex(
@@ -1274,7 +1304,7 @@ export function CalculationForm({
         !Number.isInteger(workMinutes))
     )
       problem = "Escolha a impressora e confira os tempos em minutos.";
-    if (step === 2 && !defaults.data?.embalagemFixa && !pack)
+    if (step === 1 && !defaults.data?.embalagemFixa && !pack)
       problem = "Selecione a embalagem.";
     setError(problem);
     if (!problem) setStep(step + 1);
@@ -1282,6 +1312,10 @@ export function CalculationForm({
   async function submit(save: boolean) {
     if (lock.current) return;
     setError("");
+    if (!defaults.data?.markupFixo && !markup.trim()) {
+      setError("Escolha ou informe um markup para continuar.");
+      return;
+    }
     const missingMaterial = materialProblem();
     if (missingMaterial) {
       setError(missingMaterial);
@@ -1323,9 +1357,9 @@ export function CalculationForm({
       if (quick) {
         setResult(undefined);
         setQuickKey(payload);
+        setShowQuickDetails(false);
       }
-      setResult(
-        await request<Result>(save ? "/calculos" : "/calculos/previa", {
+      const calculated = await request<Result>(save ? "/calculos" : "/calculos/previa", {
           method: "POST",
           body: JSON.stringify(
             save
@@ -1338,8 +1372,9 @@ export function CalculationForm({
                 }
               : input,
           ),
-        }),
-      );
+        });
+      setResult(calculated);
+      if (quick) setShowQuickDetails(false);
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
         setReview(undefined);
@@ -1365,6 +1400,7 @@ export function CalculationForm({
     <View style={{ flex: 1 }}>
       <ModuleScreen
         lightHeader
+        automaticallyAdjustKeyboardInsets={false}
         section="Calcular"
         title={
           result && !quick
@@ -1372,7 +1408,7 @@ export function CalculationForm({
               ? "Cálculo salvo"
               : "Resultado do cálculo"
             : quick
-              ? "Consultar sem salvar"
+              ? "Consultar"
               : "Calcular e salvar"
         }
         onBack={menu}
@@ -1383,14 +1419,17 @@ export function CalculationForm({
           <Notice message={defaults.error} onRetry={defaults.retry} />
         ) : result && !quick ? (
           result.id ? (
-            <Card>
-              <CalculationIdentity id={result.id} name={result.nome} large />
-              <Body muted>{result.unidades} un.</Body>
-              <Button
-                label="Ver meus cálculos"
-                onPress={() => router.setParams({ modo: "historico" })}
-              />
-            </Card>
+            <View style={{ gap: 12, paddingTop: 20 }}>
+              <View style={{ alignSelf: "center", width: 54, height: 54, borderRadius: 27, backgroundColor: t.success + "18", alignItems: "center", justifyContent: "center" }}><Text style={{ color: t.success, fontSize: 30, fontWeight: "700" }}>✓</Text></View>
+              <View style={{ alignItems: "center", gap: 3 }}><Text style={{ color: t.text, fontSize: 22, fontWeight: "700" }}>Cálculo salvo</Text><Body muted>Já está no seu histórico.</Body></View>
+              <Card style={{ gap: 10 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}><CalculationPhoto id={result.id} name={result.nome} size={46} /><View style={{ flex: 1 }}><Body strong>{result.nome}</Body><Body muted>{result.unidades ?? 1} un. · {result.plataforma || "Sem plataforma"}</Body></View></View>
+                <View style={{ flexDirection: "row", gap: 8 }}><View style={{ flex: 1, padding: 10, gap: 2, backgroundColor: t.accentTint, borderColor: t.border, borderWidth: 1, borderRadius: 10 }}><Body muted>Preço</Body><Body strong>{money(result.custos?.precoVendaPlataforma ?? result.precoUnitario)}</Body></View><View style={{ flex: 1, padding: 10, gap: 2, backgroundColor: t.accentTint, borderColor: t.border, borderWidth: 1, borderRadius: 10 }}><Body muted>Lucro</Body><Text style={{ color: t.success, fontWeight: "700" }}>{money(result.custos?.lucroLiquido)}</Text></View></View>
+              </Card>
+              <Button icon="file-text" label="Criar orçamento" variant="secondary" onPress={() => router.push("/(private)/budgets")} />
+              <Button label="Ver meus cálculos" variant="secondary" onPress={() => router.setParams({ modo: "historico" })} />
+              <Button label="Fazer outro cálculo" variant="ghost" onPress={() => { setResult(undefined); setStep(0); }} />
+            </View>
           ) : (
             <CalculationResult
               result={result}
@@ -1401,25 +1440,14 @@ export function CalculationForm({
           )
         ) : (
           <View pointerEvents={busy ? "none" : "auto"} style={{ gap: 12 }}>
+            {quick && <View style={{ alignSelf: "flex-start" }}><Badge>Não será salvo</Badge></View>}
+            {quick && <Card style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={{ width: 42, height: 42, borderRadius: 10, backgroundColor: t.accentTint, alignItems: "center", justifyContent: "center" }}><Icon name="collection" size={19} color={t.primaryText} /></View>
+              <View style={{ flex: 1, minWidth: 0, gap: 2 }}><Body strong>{file?.nome || "Arquivo 3MF"}</Body><Body muted>{file ? `${file.placas} placa(s) · ${minutes || "—"} min · ${decimal(String(file.gramas ?? 0), 1)} g` : "Importe um arquivo ou preencha os dados manualmente."}</Body></View>
+              <Button compact variant="ghost" label={file ? "Trocar" : "Importar"} onPress={() => void importFile()} />
+            </Card>}
             {!quick && (
-              <View style={{ gap: 7 }}>
-                <View style={{ flexDirection: "row", gap: 4 }}>
-                  {stages.map((name, i) => (
-                    <View
-                      key={name}
-                      style={{
-                        flex: 1,
-                        height: 5,
-                        borderRadius: 3,
-                        backgroundColor: i <= step ? t.primary : t.border,
-                      }}
-                    />
-                  ))}
-                </View>
-                <Body muted>
-                  Etapa {step + 1} de 4 · {stages[step]}
-                </Body>
-              </View>
+              <StepProgress stages={stages} current={step} />
             )}
             {(quick || step === 0) && (
               <>
@@ -1437,94 +1465,18 @@ export function CalculationForm({
                           style={{
                             flexDirection: "row",
                             alignItems: "center",
-                        gap: 10,
-                        marginTop: 4,
-                          }}
-                        >
-                          <View
-                            style={{
-                              width: 56,
-                              height: 56,
-                              borderRadius: 10,
-                              overflow: "hidden",
-                              backgroundColor: t.accentTint,
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            {photo ? (
-                              <Image
-                                accessibilityLabel="Foto do cálculo"
-                                source={{
-                                  uri:
-                                    "data:" +
-                                    photo.type +
-                                    ";base64," +
-                                    photo.base64,
-                                }}
-                                resizeMode="cover"
-                                style={{ width: 56, height: 56 }}
-                              />
-                            ) : photoLoading ? (
-                              <ActivityIndicator color={t.primaryText} />
-                            ) : null}
-                          </View>
-                          <View style={{ flex: 1, gap: 4 }}>
-                            <View
-                              style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                gap: 6,
-                                flexWrap: "wrap",
-                              }}
-                            >
-                              <Body strong>Foto do cálculo</Body>
-                              <OptionalBadge />
-                            </View>
-                          </View>
-                          {photo ? (
-                            <View style={{ flexDirection: "row", gap: 6 }}>
-                              <Button
-                                variant="secondary"
-                                label="Trocar"
-                                disabled={photoLoading}
-                                onPress={() => void choosePhoto()}
-                              />
-                              <Button
-                                variant="danger"
-                                label="Remover"
-                                disabled={photoLoading}
-                                onPress={() => {
-                                  photoRevision.current++;
-                                  setPhoto(null);
-                                }}
-                              />
-                            </View>
-                          ) : (
-                            <Button
-                              variant="secondary"
-                              label="Adicionar foto"
-                              disabled={photoLoading}
-                              onPress={() => void choosePhoto()}
-                            />
-                          )}
-                        </View>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
                             justifyContent: "space-between",
                             borderTopWidth: 1,
                             borderColor: t.border,
                             paddingTop: 10,
                           }}
                         >
-                          <Body strong>Quantidade de unidades</Body>
+                          <Body strong>Quantidade</Body>
                           <View
                             style={{
                               flexDirection: "row",
                               alignItems: "center",
-                              gap: 12,
+                              gap: 8,
                             }}
                           >
                             <Pressable
@@ -1537,11 +1489,11 @@ export function CalculationForm({
                                 )
                               }
                               style={{
-                                width: 42,
-                                height: 42,
+                                width: 34,
+                                height: 34,
                                 borderWidth: 1,
                                 borderColor: t.border,
-                                borderRadius: 11,
+                                borderRadius: 9,
                                 alignItems: "center",
                                 justifyContent: "center",
                                 opacity: Number(units) <= 1 ? 0.5 : 1,
@@ -1576,11 +1528,11 @@ export function CalculationForm({
                                 )
                               }
                               style={{
-                                width: 42,
-                                height: 42,
+                                width: 34,
+                                height: 34,
                                 borderWidth: 1,
                                 borderColor: t.border,
-                                borderRadius: 11,
+                                borderRadius: 9,
                                 alignItems: "center",
                                 justifyContent: "center",
                                 opacity: Number(units) >= 10000 ? 0.5 : 1,
@@ -1594,44 +1546,20 @@ export function CalculationForm({
                             </Pressable>
                           </View>
                         </View>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                          {photo ? <Image accessibilityLabel="Foto do cálculo" source={{ uri: "data:" + photo.type + ";base64," + photo.base64 }} resizeMode="cover" fadeDuration={0} style={{ width: 44, height: 44, borderRadius: 9 }} /> : null}
+                          <Pressable accessibilityRole="button" disabled={photoLoading} onPress={() => void choosePhoto()} style={{ flexDirection: "row", alignItems: "center", gap: 5, opacity: photoLoading ? 0.6 : 1 }}>
+                            {photoLoading ? <ActivityIndicator size="small" color={t.primaryText} /> : <Icon name="copy" size={14} color={t.primaryText} />}
+                            <Text style={{ color: t.primaryText, fontSize: 13 }}>{photo ? "Trocar foto" : "Adicionar foto"} <Text style={{ color: t.muted }}>(opcional)</Text></Text>
+                          </Pressable>
+                          {photo && <Pressable accessibilityRole="button" accessibilityLabel="Remover foto" onPress={() => { photoRevision.current++; setPhoto(null); }}><Text style={{ color: t.danger, fontSize: 12 }}>Remover</Text></Pressable>}
+                        </View>
                       </>
                     )}
                   </Card>
                 )}
-                <Card>
-                  {quick && <SectionTitle number="01" title="Materiais" />}
-                  {quick && (
-                    <>
-                      <Button
-                        variant="secondary"
-                        label={file ? "Trocar arquivo" : "Escolher arquivo 3MF"}
-                        onPress={() => void importFile()}
-                      />
-                      {file && (
-                        <>
-                          {file.imagemPreviewDataUri && (
-                            <Image
-                              accessibilityLabel="Prévia da peça importada"
-                              source={{ uri: file.imagemPreviewDataUri }}
-                              resizeMode="contain"
-                              style={{
-                                width: "100%",
-                                height: 110,
-                                borderRadius: 8,
-                              }}
-                            />
-                          )}
-                          <Body strong>{file.nome}</Body>
-                          <Body muted>
-                            {file.placas} placa(s)
-                            {file.completo
-                              ? ""
-                              : " · Confira o tempo e o consumo do fatiamento."}
-                          </Body>
-                        </>
-                      )}
-                    </>
-                  )}
+                <Card style={quick ? undefined : { padding: 0, borderWidth: 0, backgroundColor: "transparent", gap: 12 }}>
+                  {quick && <Body strong>Material</Body>}
                   {materials.map((m, index) => (
                     <View
                       key={m.key}
@@ -1641,42 +1569,13 @@ export function CalculationForm({
                         borderColor: t.border,
                         borderRadius: 10,
                         padding: 12,
+                        backgroundColor: quick ? t.surface : "transparent",
                       }}
                     >
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                          gap: 7,
-                        }}
-                      >
-                        <Body strong>Filamento {index + 1}</Body>
-                        {(m.item?.codigoCor || m.color) && (
-                          <View
-                            accessibilityLabel={
-                              "Cor " + (m.item?.cor || m.name || "do arquivo")
-                            }
-                            style={{
-                              width: 13,
-                              height: 13,
-                              borderRadius: 7,
-                              borderWidth: 1,
-                              borderColor: t.border,
-                              backgroundColor: m.item?.codigoCor || m.color,
-                            }}
-                          />
-                        )}
-                        {m.suggested && <Badge>Sugerido pelo arquivo</Badge>}
+                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                        <Body strong>Filamento</Body>
+                        {(m.name || m.color || m.item?.cor) && <Text numberOfLines={1} style={{ color: t.muted, fontSize: 11, flexShrink: 1, textAlign: "right" }}>No arquivo: {[m.item?.cor || (m.color && !m.color.startsWith("#") ? m.color : undefined), m.name].filter(Boolean).join(" · ")}</Text>}
                       </View>
-                      {m.name || m.color ? (
-                        <Body muted>
-                          No arquivo:{" "}
-                          {[m.name, m.color?.toUpperCase()]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </Body>
-                      ) : null}
                       <Picker
                         label="Filamento"
                         category="filamentos"
@@ -1686,19 +1585,17 @@ export function CalculationForm({
                           update(m.key, { item, suggested: false });
                         }}
                       />
-                      <Field
-                        label={
-                          quick && file
-                            ? "Consumo por arquivo (g)"
-                            : "Consumo por unidade (g)"
-                        }
-                        keyboardType="decimal-pad"
-                        value={m.grams}
-                        onChangeText={(grams) => update(m.key, { grams })}
-                      />
+                      {quick && index === 0 ? (
+                        <View style={{ flexDirection: "row", gap: 9 }}>
+                          <View style={{ flex: 1 }}><Field label="Consumo (g)" keyboardType="decimal-pad" revealOnFocus={false} value={m.grams} onChangeText={(grams) => update(m.key, { grams })} /></View>
+                          <View style={{ flex: 1 }}><Field label="Unidades" keyboardType="number-pad" revealOnFocus={false} value={units} onChangeText={setUnits} /></View>
+                        </View>
+                      ) : <Field label={quick ? "Consumo (g)" : "Consumo por unidade (g)"} keyboardType="decimal-pad" revealOnFocus={false} value={m.grams} onChangeText={(grams) => update(m.key, { grams })} />}
+                      {m.item?.estoque != null && Number.isFinite(numeric(m.grams)) && Number(m.item.estoque) >= numeric(m.grams) * (Number(units) || 1) ? <Text style={{ color: t.success, fontSize: 12 }}>✓ Sobram {decimal(String(Number(m.item.estoque) - numeric(m.grams) * (Number(units) || 1)), 1)} g depois desta peça</Text> : null}
                       {materials.length > 1 && (
                         <Button
                           variant="ghost"
+                          compact
                           label="Remover filamento"
                           onPress={() =>
                             setMaterials(
@@ -1709,18 +1606,12 @@ export function CalculationForm({
                       )}
                     </View>
                   ))}
-                  {quick && (
-                    <Field
-                      label="Quantidade de unidades"
-                      keyboardType="number-pad"
-                      value={units}
-                      onChangeText={setUnits}
-                    />
-                  )}
                   {materials.length < 100 && (
                     <Button
-                      variant="secondary"
-                      label="Adicionar filamento"
+                      variant="ghost"
+                      compact
+                      label="Adicionar outro filamento"
+                      iconNode={<Text style={{ color: t.primaryText, fontSize: 17, fontWeight: "400" }}>+</Text>}
                       onPress={() =>
                         setMaterials([
                           ...materials,
@@ -1733,8 +1624,9 @@ export function CalculationForm({
               </>
             )}
             {(quick || step === 1) && (
+              <>
               <Card>
-                <SectionTitle number="02" title="Impressão" />
+                {quick ? <Body strong>Impressão e embalagem</Body> : <SectionTitle number="02" title="Impressão" />}
                 <Picker
                   label="Impressora"
                   category="impressoras"
@@ -1753,13 +1645,9 @@ export function CalculationForm({
                   value={minutes}
                   onChangeText={setMinutes}
                 />
-                {!quick && <Body muted>Uma unidade por impressão.</Body>}
                 {defaults.data?.maoObraAtivada &&
                   (defaults.data.maoObraTempoFixo ? (
-                    <ValueRow
-                      label="Trabalho manual fixo por unidade"
-                      value={workMinutes + " min"}
-                    />
+                    <View style={{ minHeight: 28, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}><Body muted>Trabalho manual fixo por unidade</Body><Text style={{ color: t.text, fontSize: 12, fontWeight: "600" }}>{workMinutes} min</Text></View>
                   ) : (
                     <Field
                       label="Trabalho manual por unidade (min)"
@@ -1768,43 +1656,31 @@ export function CalculationForm({
                       onChangeText={setLabor}
                     />
                   ))}
+                {quick && <View style={{ paddingTop: 8, borderTopWidth: 1, borderColor: t.border }}>
+                  {defaults.data?.embalagemFixa ? <><Body strong>Embalagem</Body><Body muted>Embalagem fixa da loja · {money(defaults.data.custoEmbalagemFixa)} por unidade</Body></> : <Picker label="Embalagem" category="embalagens" value={pack} onChange={setPack} />}
+                </View>}
               </Card>
+              {!quick && step === 1 && <Card>
+                {defaults.data?.embalagemFixa ? <>
+                  <Body strong>Embalagem</Body><Body muted>Embalagem fixa da loja · {money(defaults.data.custoEmbalagemFixa)} por unidade</Body>
+                </> : <Picker label="Embalagem" category="embalagens" value={pack} onChange={setPack} />}
+              </Card>}
+              </>
             )}
             {(quick || step === 2) && (
+              <>
+              {!quick && <Card>
+                <Body strong>Onde vai vender?</Body>
+                <SaleOptions
+                  platformLabel=""
+                  manualFreight={!!summary?.manualFreight || !!sale.manual}
+                  s={sale}
+                  change={setSale}
+                  advanced={!!defaults.data?.avancado}
+                />
+              </Card>}
               <Card>
-                {quick && <SectionTitle number="03" title="Embalagem" />}
-                {defaults.data?.embalagemFixa ? (
-                  <>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        flexWrap: "wrap",
-                        gap: 6,
-                      }}
-                    >
-                      <Body strong>Embalagem fixa da loja</Body>
-                      <Badge>Já no cálculo</Badge>
-                    </View>
-                    <ValueRow
-                      label="Custo por unidade"
-                      value={money(defaults.data.custoEmbalagemFixa)}
-                    />
-                  </>
-                ) : (
-                  <Picker
-                    label="Embalagem"
-                    category="embalagens"
-                    value={pack}
-                    onChange={setPack}
-                  />
-                )}
-              </Card>
-            )}
-            {(quick || step === 3) && (
-              <Card>
-                <SectionTitle number="04" title="Venda e markup" />
+                <Body strong>Markup</Body>
                 {defaults.data?.markupFixo ? (
                   <Body muted>
                     Markup fixo da loja · {defaults.data.markup}%
@@ -1823,61 +1699,36 @@ export function CalculationForm({
                         />
                       ))}
                     </View>
-                    <Field
-                      label="Markup (%)"
-                      placeholder={String(defaults.data?.markup ?? 0)}
-                      value={markup}
-                      keyboardType="decimal-pad"
-                      onChangeText={setMarkup}
-                    />
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 9 }}>
+                      <TextInput accessibilityLabel="Markup (%)" placeholder="15" placeholderTextColor={t.muted} value={markup} keyboardType="decimal-pad" returnKeyType="done" onChangeText={setMarkup} style={{ width: 110, minHeight: 40, borderWidth: 1, borderColor: t.border, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8, color: t.text, backgroundColor: t.surface }} />
+                      <Body muted>% sobre o custo</Body>
+                    </View>
                   </>
                 )}
-                {!quick && (
-                  <>
-                    <SaleOptions
-                      manualFreight={!!summary?.manualFreight || !!sale.manual}
-                      s={sale}
-                      change={setSale}
-                      advanced={!!defaults.data?.avancado}
-                    />
+              </Card>
+              {!quick && <Card style={{ backgroundColor: t.accentTint }}>
                     <Body strong>Resumo por unidade</Body>
                     {inputError || summary?.error ? (
                       <Body muted>{inputError || summary?.error}</Body>
                     ) : summary?.value ? (
                       <>
-                        <Prices
-                          cost={summary.value.custoUnitario}
-                          price={
-                            summary.value.custos?.precoVendaPlataforma ??
-                            summary.value.precoUnitario
-                          }
-                        />
-                        <ValueRow
-                          label="Taxas da plataforma"
-                          value={money(summary.value.custos?.taxasPlataforma)}
-                        />
+                        <ValueRow label="Custo de produção" value={money(summary.value.custoUnitario)} />
+                        <ValueRow label={`Taxas ${sale.channel === "SHOPEE" ? "da Shopee" : sale.channel === "NENHUMA" ? "da venda" : "da plataforma"}`} value={money(summary.value.custos?.taxasPlataforma)} />
+                        <View style={{ height: 1, backgroundColor: t.border, marginVertical: 3 }} />
+                        <View style={{ minHeight: 36, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}><Body strong>Preço sugerido</Body><Text style={{ color: t.text, fontSize: 23, fontWeight: "700" }}>{money(summary.value.custos?.precoVendaPlataforma ?? summary.value.precoUnitario)}</Text></View>
                       </>
                     ) : (
                       <ActivityIndicator />
                     )}
-                  </>
-                )}
-              </Card>
+              </Card>}
+              </>
             )}
-            {quick && (
-              <Button
-                label="Consultar preço"
-                busy={busy}
-                disabled={busy}
-                onPress={() => void submit(false)}
-              />
-            )}
-            {quick && quickKey === payload && result && (
+            {quick && showQuickDetails && quickKey === payload && result && (
               <Modal
                 transparent
                 animationType="slide"
                 visible
-                onRequestClose={() => setResult(undefined)}
+                onRequestClose={() => setShowQuickDetails(false)}
               >
                 <View
                   style={{
@@ -1890,7 +1741,7 @@ export function CalculationForm({
                     accessibilityRole="button"
                     accessibilityLabel="Fechar consulta"
                     style={{ flex: 1 }}
-                    onPress={() => setResult(undefined)}
+                    onPress={() => setShowQuickDetails(false)}
                   />
                   <View
                     accessibilityViewIsModal
@@ -1917,7 +1768,7 @@ export function CalculationForm({
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel="Fechar resultado"
-                        onPress={() => setResult(undefined)}
+                        onPress={() => setShowQuickDetails(false)}
                         style={{ padding: 10 }}
                       >
                         <Text style={{ fontSize: 24, color: t.muted }}>×</Text>
@@ -1970,7 +1821,7 @@ export function CalculationForm({
                 label={
                   result
                     ? "Confirmar e salvar"
-                    : step < 3
+                      : step < 2
                       ? "Continuar"
                       : "Ver resultado"
                 }
@@ -1979,7 +1830,7 @@ export function CalculationForm({
                 onPress={
                   result
                     ? () => void submit(true)
-                    : step < 3
+                    : step < 2
                       ? next
                       : () => void submit(false)
                 }
@@ -1987,6 +1838,12 @@ export function CalculationForm({
             </View>
           </View>
         )}
+      {quick && defaults.data && !defaults.loading && (
+        <View style={{ paddingHorizontal: 16, paddingVertical: 10, paddingBottom: Math.max(10, insets.bottom), borderTopWidth: 1, borderColor: t.border, backgroundColor: t.surface, flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <View style={{ flex: 1, minWidth: 0 }}><Body muted>Preço sugerido por unidade</Body><Text style={{ color: t.text, fontSize: 21, fontWeight: "700" }}>{quickKey === payload && result ? money(result.custos?.precoVendaPlataforma ?? result.precoUnitario) : "—"}</Text></View>
+          <View style={{ minWidth: 132 }}><Button label={quickKey === payload && result ? "Ver detalhes" : "Consultar preço"} busy={busy} disabled={busy || !!inputError} onPress={() => { if (quickKey === payload && result) setShowQuickDetails(true); else void submit(false); }} /></View>
+        </View>
+      )}
       {notice && (
         <View
           pointerEvents="none"

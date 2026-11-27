@@ -53,6 +53,7 @@ export function Icon({
   return (
     <Image
       accessible={false}
+      fadeDuration={0}
       resizeMode="contain"
       source={icons[name]}
       style={{ width: size, height: size, tintColor: color }}

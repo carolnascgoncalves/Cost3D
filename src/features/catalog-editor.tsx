@@ -550,6 +550,12 @@ function Form({
             </View>
             <Body muted>{selectedModel && values.potenciaWatts ? "Potência média em PLA · " + values.potenciaWatts + " W" : "Escolha um modelo sugerido ou informe a potência do seu equipamento."}</Body>
           </>
+        ) : category === "embalagens" ? (
+          <>
+            {field(specs.find((f) => f[0] === "nome")!)}
+            {field(specs.find((f) => f[0] === "custoUnitario")!)}
+            <Body muted>Entra nos próximos cálculos como {reais(values.custoUnitario || "0")} por peça.</Body>
+          </>
         ) : specs.map(field)}
         {category === "impressoras" && (
           <>
