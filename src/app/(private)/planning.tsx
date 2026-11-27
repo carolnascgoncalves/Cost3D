@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Body, Button, Card, Chip, Notice, ValueRow } from "@/components/ui";
+import { BudgetKeyboard } from "@/components/budget-keyboard";
 import { ModuleScreen } from "@/components/module-screen";
-import { readable } from "@/theme/colors";
 import { useTheme } from "@/theme/provider";
 import { useApiQuery } from "@/hooks/use-api-query";
 import { LotOperation } from "@/features/lot-operation";
@@ -39,12 +39,12 @@ function Toggle({
       onPress={press}
       style={{
         flex: 1,
-        minHeight: 42,
+        minHeight: 38,
         paddingHorizontal: 8,
         borderRadius: 11,
         borderWidth: 1,
-        borderColor: active ? t.header : t.border,
-        backgroundColor: active ? t.header : t.surface,
+        borderColor: active ? t.border : "transparent",
+        backgroundColor: active ? t.surface : "transparent",
         justifyContent: "center",
         alignItems: "center",
       }}
@@ -52,7 +52,7 @@ function Toggle({
       <Text
         style={{
           fontWeight: "700",
-          color: active ? readable(t.header) : t.text,
+          color: active ? t.text : t.muted,
         }}
       >
         {label}
@@ -83,6 +83,7 @@ export default function Planning() {
   const t = useTheme(),
     [now, setNow] = useState(localNow),
     today = now.slice(0, 10);
+  const { hidesFooter } = useContext(BudgetKeyboard);
   useEffect(() => {
     const timer = setInterval(() => setNow(localNow()), 30000);
     return () => clearInterval(timer);
@@ -180,6 +181,12 @@ export default function Planning() {
         }}
       />
     );
+  const selectedJobs = jobs.filter((j) => overlaps(j, selected)).sort((a, b) => a.inicio.localeCompare(b.inicio));
+  const selectedDuration = selectedJobs.reduce((total, j) => total + Math.max(0, Date.parse(j.fim) - Date.parse(j.inicio)), 0);
+  const durationLabel = (ms: number) => {
+    const minutes = Math.round(ms / 60000), h = Math.floor(minutes / 60), m = minutes % 60;
+    return h ? `${h} h ${String(m).padStart(2, "0")} min` : `${m} min`;
+  };
   return (
     <View style={{ flex: 1 }}>
       <ModuleScreen
@@ -188,7 +195,7 @@ export default function Planning() {
         section="Produção e gestão"
         onBack={() => router.navigate("/more")}
       >
-        <View style={{ flexDirection: "row", gap: 8 }}>
+        <View style={{ flexDirection: "row", padding: 3, borderRadius: 12, backgroundColor: t.accentTint, gap: 3 }}>
           <Toggle label="Na fila" active={!done} press={() => tab(false)} />
           <Toggle label="Concluídos" active={done} press={() => tab(true)} />
         </View>
@@ -205,8 +212,9 @@ export default function Planning() {
             <Chip
               secondary
               icon="file-text"
-              label="Agenda"
+              label="Dia"
               selected={!week}
+              compact
               onPress={() => setWeek(false)}
             />
             <Chip
@@ -214,6 +222,7 @@ export default function Planning() {
               icon="calendar3"
               label="Semana"
               selected={week}
+              compact
               onPress={() => setWeek(true)}
             />
           </View>
@@ -225,12 +234,6 @@ export default function Planning() {
             {shift(7)}
           </View>
         </View>
-        {!done && (
-          <Button
-            label="+ Novo planejamento"
-            onPress={() => create(true)}
-          />
-        )}
         {q.loading ? (
           <ActivityIndicator />
         ) : q.error ? (
@@ -242,6 +245,7 @@ export default function Planning() {
               agenda={q.data}
               days={days}
               today={today}
+              selectedDay={selected}
               done={done}
               open={details}
               selectDay={(d) => {
@@ -323,64 +327,30 @@ export default function Planning() {
                     key={day}
                     style={{ gap: 8, marginTop: index > 0 ? 28 : 0 }}
                   >
-                    <Body strong>
-                      {day === today
-                        ? "Hoje · "
-                        : day === addDays(today, 1)
-                          ? "Amanhã · "
-                          : ""}
-                      {weekday(day)}, {dateLabel(day)}
-                    </Body>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                      <Body strong>{day === today ? "Hoje · " : day === addDays(today, 1) ? "Amanhã · " : ""}{weekday(day)}, {dateLabel(day)}</Body>
+                      {day === selected && !!items.length && <Body muted>{items.length} trabalhos · {durationLabel(selectedDuration)}</Body>}
+                    </View>
                     {!items.length && (
                       <Body muted>Nenhum trabalho neste dia.</Body>
                     )}
-                    {items.map((j) => (
-                      <Card
-                        key={j.id}
-                        style={{
-                          borderLeftWidth: 5,
-                          borderLeftColor: done ? "#42875e" : t.primary,
-                        }}
-                      >
-                        <Pressable
-                          accessibilityRole="button"
-                          onPress={() => details(j)}
-                          style={{ gap: 5 }}
-                        >
-                          <Body strong>{j.nome}</Body>
-                          <Body muted>
-                            {j.impressora} ·{" "}
-                            {j.inicio.slice(0, 10) < day
-                              ? "começou em " + dateLabel(j.inicio)
-                              : clock(j.inicio) +
-                                " → " +
-                                (j.fim.slice(0, 10) !== day
-                                  ? dateLabel(j.fim) + " "
-                                  : "") +
-                                clock(j.fim)}
-                          </Body>
-                          {done ? (
-                            <Status label="Concluído" />
-                          ) : inProgress(j) ? (
-                            <Status
-                              label={
-                                "Imprimindo · pronto " +
-                                dateLabel(j.fim) +
-                                " " +
-                                clock(j.fim)
-                              }
-                            />
-                          ) : null}
-                        </Pressable>
-                        {done && (
-                          <Button
-                            label="Ver lote"
-                            variant="secondary"
-                            onPress={() => operation(j)}
-                          />
-                        )}
-                      </Card>
-                    ))}
+                    {!!items.length && <Card style={{ gap: 0, paddingVertical: 0, paddingHorizontal: 10 }}>
+                      {items.map((j, rowIndex) => {
+                        const begin = day === j.inicio.slice(0, 10) ? clock(j.inicio) : "00:00";
+                        const minutes = Math.max(1, Math.round((Date.parse(j.fim) - Date.parse(j.inicio)) / 60000));
+                        return <Pressable key={j.id} accessibilityRole="button" onPress={() => details(j)} style={{ minHeight: 60, flexDirection: "row", alignItems: "center", gap: 9, paddingVertical: 7, borderBottomWidth: rowIndex === items.length - 1 ? 0 : 1, borderColor: t.border }}>
+                          <View style={{ width: 48, alignItems: "center", gap: 1 }}><Text style={{ color: t.text, fontSize: 13, fontWeight: "700" }}>{begin}</Text><Text style={{ color: t.muted, fontSize: 10 }}>{durationLabel(minutes * 60000)}</Text></View>
+                          <View style={{ width: 2, height: 36, backgroundColor: t.primary }} />
+                          <View style={{ flex: 1, minWidth: 0, gap: 2 }}><Body strong>{j.nome}</Body><View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 5 }}><Body muted>{j.impressora}</Body>{!done && inProgress(j) ? <Status label="Imprimindo" /> : !done && j.inicio > now ? <Status label="Próximo" /> : done ? <Status label="Concluído" /> : null}</View></View>
+                          {done && <Button compact label="Ver lote" variant="secondary" onPress={() => operation(j)} />}
+                        </Pressable>;
+                      })}
+                      {day === selected && !done && items.length > 0 && (() => {
+                        const latest = items.reduce((end, j) => Date.parse(j.fim) > end ? Date.parse(j.fim) : end, Date.parse(day + "T08:00:00"));
+                        const endOfDay = Date.parse(day + "T18:00:00");
+                        return latest < endOfDay ? <View style={{ minHeight: 54, flexDirection: "row", alignItems: "center", gap: 9, paddingVertical: 6 }}><View style={{ width: 48, alignItems: "center", gap: 2 }}><Text style={{ color: t.muted, fontSize: 12 }}>{new Date(latest).toTimeString().slice(0,5)}</Text><Text style={{ color: t.muted, fontSize: 10 }}>até 18:00</Text></View><View style={{ width: 2, height: 34, backgroundColor: t.border }} /><Body muted>Livre · {durationLabel(endOfDay - latest)} disponíveis</Body></View> : null;
+                      })()}
+                    </Card>}
                   </View>
                 ))}
               {!picked && !groups.some((g) => g.items.length) && (
@@ -396,6 +366,7 @@ export default function Planning() {
           ))
         )}
       </ModuleScreen>
+      {!hidesFooter && !done && <View style={{ paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderColor: t.border, backgroundColor: t.surface }}><Button label="+ Novo planejamento" onPress={() => create(true)} /></View>}
       {job && (
         <PlanningSheet title={job.nome} close={() => open(undefined)}>
           <View

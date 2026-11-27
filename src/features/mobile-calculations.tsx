@@ -7,7 +7,7 @@ import {
 } from "./calculation-materials";
 import { pick3mf } from "./pick-3mf";
 import { initialSale, saleInput, SaleOptions } from "./calculation-sale";
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -47,6 +47,7 @@ import { useApiQuery } from "@/hooks/use-api-query";
 import { useCachedApiQuery } from "@/hooks/use-cached-api-query";
 import { Icon, type IconName } from "@/components/icon";
 import { useTheme } from "@/theme/provider";
+import { BudgetKeyboard } from "@/components/budget-keyboard";
 import { decimal, reais } from "./format";
 
 type Schema = components["schemas"];
@@ -105,21 +106,13 @@ function Choice({
             borderRadius: 8,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: t.accentTint,
+            backgroundColor:
+              category === "filamentos" && item?.codigoCor
+                ? item.codigoCor
+                : t.accentTint,
           }}
         >
-          {category === "filamentos" && item?.codigoCor ? (
-            <View
-              style={{
-                width: 20,
-                height: 20,
-                borderRadius: 10,
-                backgroundColor: item.codigoCor,
-                borderWidth: 1,
-                borderColor: t.border,
-              }}
-            />
-          ) : (
+          {!(category === "filamentos" && item?.codigoCor) && (
             <Icon
               name={catalogIcon[category]}
               color={t.primaryText}
@@ -351,7 +344,8 @@ function ProductionCostRows({ result }: { result: Result }) {
     ["custoDepreciacao", "Depreciação"], ["custoManutencao", "Manutenção"],
     ["custoPurga", "Purga"],
   ];
-  return <View style={{ gap: 0 }}><View style={{ minHeight: 30, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 6 }}><Body strong>Custos de produção</Body><Body strong>{money(result.custoUnitario)}</Body></View>{items.filter(([key]) => costs[key] != null && (costs[key] !== 0 || key === "custoFilamento" || key === "custoEnergia")).map(([key, label]) => <View key={key} style={{ borderTopWidth: 1, borderColor: t.border, paddingVertical: 5 }}><ValueRow label={label} value={money(costs[key])} /></View>)}</View>;
+  const visibleItems = items.filter(([key]) => costs[key] != null && (costs[key] !== 0 || key === "custoFilamento" || key === "custoEnergia"));
+  return <View style={{ gap: 0 }}><View style={{ minHeight: 30, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 6 }}><Body strong>Custos de produção</Body><Body strong>{money(result.custoUnitario)}</Body></View>{visibleItems.map(([key, label], index) => <View key={key} style={{ borderTopWidth: index === 0 ? 0 : 1, borderColor: t.border, paddingVertical: 5, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}><Text style={{ flex: 1, color: t.muted, fontSize: 13 }}>{label}</Text><Text style={{ color: t.text, fontSize: 13, fontWeight: "600" }}>{money(costs[key])}</Text></View>)}</View>;
 }
 function FilamentsUsed({
   result,
@@ -418,10 +412,10 @@ function Disclosure({
       >
         <Body strong>{title}</Body>
         <View style={{ transform: [{ rotate: open ? "90deg" : "0deg" }] }}>
-          <Icon name="chevron-right" color={t.primaryText} />
+          <Icon name="chevron-right" size={13} color={t.primaryText} />
         </View>
       </Pressable>
-      {open && <View style={{ paddingTop: 8, gap: 10 }}>{children}</View>}
+      {open && <View style={{ paddingTop: 8, paddingBottom: 10, gap: 10 }}>{children}</View>}
     </>;
   return bare ? <View>{content}</View> : <Card style={{ gap: 0 }}>{content}</Card>;
 }
@@ -456,7 +450,7 @@ function CalculationResult({
   const margin = recommended && profit != null ? Math.round(100 * profit / recommended) : 0;
   const production = Math.max(0, result.custoUnitario ?? 0), fees = Math.max(0, result.custos?.taxasPlataforma ?? 0), gain = Math.max(0, profit ?? 0);
   const totalBar = production + fees + gain || 1;
-  const productionColor = t.primary, feeColor = "#F2A72C", profitColor = "#70B843";
+  const productionColor = t.primary, feeColor = "#D99012", profitColor = "#4E8B28";
   const marginColor = profit != null && margin >= 15 ? profitColor : profit != null && profit < 0 ? t.danger : feeColor;
   const marginLabel = profit == null ? "Margem" : profit < 0 ? "Prejuízo" : margin < 15 ? "Margem apertada" : "Boa margem";
   return (
@@ -505,7 +499,7 @@ function CalculationResult({
         </View>
       )}
       <Card><ProductionCostRows result={result} /></Card>
-      <Card style={{ gap: 0 }}>
+      <Card style={{ gap: 0, paddingVertical: 5, paddingHorizontal: 12 }}>
         <Disclosure bare title={`Resumo do lote · ${count} un.`}><ValueRow label="Receita estimada do lote" value={recommended == null ? "—" : money(recommended * count)} /><ValueRow label="Lucro líquido estimado do lote" value={profit == null ? "—" : money(profit * count)} /></Disclosure>
         <Disclosure bare separated title={`Filamentos utilizados (${result.filamentos?.length ?? 0})`}><FilamentsUsed result={result} heading={false} /></Disclosure>
         <Disclosure bare separated title="Dados da impressão">
@@ -1027,6 +1021,7 @@ export function CalculationForm({
   const insets = useSafeAreaInsets();
   const t = useTheme(),
     [step, setStep] = useState(0);
+  const { hidesFooter } = useContext(BudgetKeyboard);
   const stages = ["Materiais", "Impressão", "Venda"];
   const [piece, setPiece] = useState(initial),
     [printer, setPrinter] = useState<Selection>(),
@@ -1569,12 +1564,12 @@ export function CalculationForm({
                         borderColor: t.border,
                         borderRadius: 10,
                         padding: 12,
-                        backgroundColor: quick ? t.surface : "transparent",
+                        backgroundColor: t.surface,
                       }}
                     >
                       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                         <Body strong>Filamento</Body>
-                        {(m.name || m.color || m.item?.cor) && <Text numberOfLines={1} style={{ color: t.muted, fontSize: 11, flexShrink: 1, textAlign: "right" }}>No arquivo: {[m.item?.cor || (m.color && !m.color.startsWith("#") ? m.color : undefined), m.name].filter(Boolean).join(" · ")}</Text>}
+                        {(m.name || m.color || m.item?.cor) && <View style={{ flexDirection: "row", alignItems: "center", gap: 5, flexShrink: 1 }}><Text style={{ color: t.muted, fontSize: 11 }}>No arquivo:</Text>{(m.color || m.item?.codigoCor) && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: m.color || m.item?.codigoCor, borderWidth: 0.5, borderColor: t.border }} />}<Text numberOfLines={1} style={{ color: t.muted, fontSize: 11, flexShrink: 1 }}>{m.name || m.item?.nome}</Text></View>}
                       </View>
                       <Picker
                         label="Filamento"
@@ -1695,12 +1690,14 @@ export function CalculationForm({
                           key={i}
                           label={String(v).replace(".", ",") + "%"}
                           selected={markup !== "" && numeric(markup) === v}
+                          compact
+                          minWidth={62}
                           onPress={() => setMarkup(String(v))}
                         />
                       ))}
                     </View>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 9 }}>
-                      <TextInput accessibilityLabel="Markup (%)" placeholder="15" placeholderTextColor={t.muted} value={markup} keyboardType="decimal-pad" returnKeyType="done" onChangeText={setMarkup} style={{ width: 110, minHeight: 40, borderWidth: 1, borderColor: t.border, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 8, color: t.text, backgroundColor: t.surface }} />
+                      <View style={{ width: 110 }}><Field label="Markup (%)" placeholder="15" value={markup} keyboardType="decimal-pad" onChangeText={setMarkup} style={{ minHeight: 40 }} /></View>
                       <Body muted>% sobre o custo</Body>
                     </View>
                   </>
@@ -1777,7 +1774,7 @@ export function CalculationForm({
                     <FormScrollView
                       contentContainerStyle={{ paddingVertical: 10 }}
                     >
-                      <Breakdown result={result} />
+                      <CalculationResult result={result} printer={printer} pack={pack} minutes={minutes} />
                     </FormScrollView>
                   </View>
                 </View>
@@ -1786,7 +1783,7 @@ export function CalculationForm({
           </View>
         )}
       </ModuleScreen>
-      {!quick &&
+      {!hidesFooter && !quick &&
         (!result || !result.id) &&
         defaults.data &&
         !defaults.loading &&
@@ -1838,10 +1835,10 @@ export function CalculationForm({
             </View>
           </View>
         )}
-      {quick && defaults.data && !defaults.loading && (
+      {!hidesFooter && quick && defaults.data && !defaults.loading && (
         <View style={{ paddingHorizontal: 16, paddingVertical: 10, paddingBottom: Math.max(10, insets.bottom), borderTopWidth: 1, borderColor: t.border, backgroundColor: t.surface, flexDirection: "row", alignItems: "center", gap: 12 }}>
           <View style={{ flex: 1, minWidth: 0 }}><Body muted>Preço sugerido por unidade</Body><Text style={{ color: t.text, fontSize: 21, fontWeight: "700" }}>{quickKey === payload && result ? money(result.custos?.precoVendaPlataforma ?? result.precoUnitario) : "—"}</Text></View>
-          <View style={{ minWidth: 132 }}><Button label={quickKey === payload && result ? "Ver detalhes" : "Consultar preço"} busy={busy} disabled={busy || !!inputError} onPress={() => { if (quickKey === payload && result) setShowQuickDetails(true); else void submit(false); }} /></View>
+          <View style={{ minWidth: 132 }}><Button label="Ver resultado" disabled={quickKey !== payload || !result || !!inputError} onPress={() => setShowQuickDetails(true)} /></View>
         </View>
       )}
       {notice && (

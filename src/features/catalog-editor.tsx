@@ -1,7 +1,8 @@
 import { SearchEmpty } from "@/components/ui";
 import { ColorWheel } from "@/components/color-wheel";
-import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Keyboard, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { useRef, useState, useContext } from "react";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { BudgetKeyboard } from "@/components/budget-keyboard";
 import { ModuleScreen } from "@/components/module-screen";
 import {
   Body,
@@ -148,17 +149,11 @@ function Form({
   onBack,
 }: Props & { path: string; original: Data }) {
   const t = useTheme();
+  const { hidesFooter } = useContext(BudgetKeyboard);
   const [advanced, setAdvanced] = useState(false),
     [colors, setColors] = useState(false),
-    [keyboardVisible, setKeyboardVisible] = useState(Platform.OS !== "web" && Keyboard.isVisible()),
     [focused, setFocused] = useState(""),
     [reference, setReference] = useState("");
-  useEffect(() => {
-    if (Platform.OS === "web") return;
-    const show = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
-    const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
-    return () => { show.remove(); hide.remove(); };
-  }, []);
   const models = useApiQuery<{ nome: string; potenciaMediaPLA: number }[]>(
     category === "impressoras" ? "/catalogo/impressoras/modelos" : null,
   );
@@ -616,7 +611,7 @@ function Form({
           </>
         )}
       </ModuleScreen>
-      {!(Platform.OS !== "web" && keyboardVisible) && <View
+      {!hidesFooter && <View
         style={{
           padding: 12,
           backgroundColor: t.surface,

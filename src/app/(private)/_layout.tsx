@@ -116,16 +116,25 @@ function Shell({
   const [busy, setBusy] = useState(false);
   const [exitError, setExitError] = useState("");
   const [typing, setTyping] = useState(Keyboard.isVisible());
+  const [focusPending, setFocusPending] = useState(false);
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const beforeKeyboard = useRef<typeof viewport | null>(null);
+  const focusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     setTyping(Keyboard.isVisible());
-    const show = Keyboard.addListener("keyboardDidShow", () => setTyping(true));
+    const show = Keyboard.addListener("keyboardDidShow", () => {
+      if (focusTimer.current) clearTimeout(focusTimer.current);
+      setFocusPending(false);
+      setTyping(true);
+    });
     const hide = Keyboard.addListener("keyboardDidHide", () => {
       beforeKeyboard.current = null;
+      if (focusTimer.current) clearTimeout(focusTimer.current);
+      setFocusPending(false);
       setTyping(false);
     });
     return () => {
+      if (focusTimer.current) clearTimeout(focusTimer.current);
       show.remove();
       hide.remove();
     };
@@ -133,15 +142,16 @@ function Shell({
   // adjustResize can shrink the window before Android emits keyboardDidShow.
   const previous = beforeKeyboard.current;
   const hidesFooter =
-    budget &&
-    Platform.OS === "android" &&
-    (typing ||
+    !wide && Platform.OS !== "web" &&
+    (typing || focusPending || (Platform.OS === "android" &&
       (previous?.width === viewport.width &&
-        previous.height > viewport.height + 100));
+        previous.height > viewport.height + 100)));
   function onFieldFocus() {
-    if (budget && Platform.OS === "android" && !Keyboard.isVisible()) {
-      beforeKeyboard.current = viewport;
-    }
+    if (Platform.OS === "web" || Keyboard.isVisible()) return;
+    if (Platform.OS === "android") beforeKeyboard.current = viewport;
+    setFocusPending(true);
+    if (focusTimer.current) clearTimeout(focusTimer.current);
+    focusTimer.current = setTimeout(() => setFocusPending(false), 700);
   }
   const navigation = items
     .filter(
@@ -292,7 +302,7 @@ function Shell({
               <Slot />
             </BudgetKeyboard.Provider>
           </View>
-          {!wide && (budget ? !hidesFooter : !typing) && (
+          {!wide && !hidesFooter && (
             <View
               style={[
                 s.bottom,

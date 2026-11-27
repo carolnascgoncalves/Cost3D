@@ -118,6 +118,8 @@ export function SaleOptions({
     values: Record<string, string>,
     value: string,
     set: (v: string) => void,
+    compact = false,
+    minWidth?: number,
   ) {
     return (
       <View style={{ gap: 6 }}>
@@ -128,6 +130,8 @@ export function SaleOptions({
               key={v}
               label={text}
               selected={value === v}
+              compact={compact}
+              minWidth={minWidth}
               onPress={() => set(v)}
             />
           ))}
@@ -158,6 +162,8 @@ export function SaleOptions({
       { sim: "Sim", nao: "Não" },
       s[key] ? "sim" : "nao",
       (v) => change({ ...s, [key]: v === "sim" }),
+      false,
+      76,
     );
   }
   return (
@@ -169,6 +175,7 @@ export function SaleOptions({
           shipping: s.shipping,
           channel: v as Channel,
         }),
+        true,
       )}
       {advanced && (
         <>

@@ -429,12 +429,16 @@ export function Chip({
   label,
   selected,
   secondary = false,
+  compact = false,
+  minWidth,
   icon,
   onPress,
 }: {
   label: string;
   selected: boolean;
   secondary?: boolean;
+  compact?: boolean;
+  minWidth?: number;
   icon?: IconName;
   onPress: () => void;
 }) {
@@ -454,14 +458,15 @@ export function Chip({
       hitSlop={secondary ? { top: 4, bottom: 4 } : undefined}
       onPress={onPress}
       style={({ pressed }) => ({
-        minHeight: secondary ? 34 : 44,
+        minHeight: secondary ? 34 : compact ? 38 : 44,
+        minWidth,
         justifyContent: "center",
         alignItems: "center",
         flexDirection: "row",
         gap: 5,
         borderRadius: secondary ? 9 : 24,
         paddingHorizontal: mobile ? 10 : 16,
-        paddingVertical: secondary ? 5 : 10,
+        paddingVertical: secondary ? 5 : compact ? 7 : 10,
         borderWidth: 1,
         borderColor: selected
           ? secondary

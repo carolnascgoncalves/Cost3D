@@ -1,7 +1,8 @@
 import { router } from "expo-router";
-import { useState, useRef } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { useContext, useState, useRef } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { ModuleScreen } from "@/components/module-screen";
+import { BudgetKeyboard } from "@/components/budget-keyboard";
 import {
   Body,
   Button,
@@ -38,27 +39,27 @@ function summary(c: Cost) {
     return c.valor?.toLocaleString("pt-BR") + "% por unidade";
   return money(c.valor) + " por unidade";
 }
-function CostCard({ cost: c, open }: { cost: Cost; open?: () => void }) {
+function CostCard({ cost: c, open, menuOpen = false, onMenu, onToggle }: { cost: Cost; open?: () => void; menuOpen?: boolean; onMenu?: () => void; onToggle?: () => void }) {
   const t = useTheme();
   const percent = c.meta
     ? Math.max(0, Math.min(100, (100 * (c.recuperado ?? 0)) / c.meta))
     : 0;
-  return (
-    <Card>
+  const content = (
+    <Card style={{ gap: 8 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <Text
-          style={{ flex: 1, fontSize: 17, fontWeight: "700", color: t.text }}
+          style={{ flex: 1, fontSize: 16, fontWeight: "700", color: t.text }}
         >
           {c.descricao}
         </Text>
-        <Text style={{ color: c.ativo ? t.success : t.muted }}>
+        <Text style={{ color: c.ativo ? t.success : t.muted, backgroundColor: c.ativo ? t.success + "18" : t.accentTint, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, fontSize: 11, fontWeight: "600" }}>
           {c.ativo ? "Ativo" : "Pausado"}
         </Text>
+        {open && <Pressable accessibilityRole="button" accessibilityLabel="Ações do custo" hitSlop={8} onPress={(event) => { event.stopPropagation(); onMenu?.(); }}><Text style={{ color: t.muted, fontSize: 20, paddingHorizontal: 2 }}>⋮</Text></Pressable>}
       </View>
       <Body muted>
         {summary(c)} · Desde {c.inicio?.split("-").reverse().join("/")}
       </Body>
-      <ValueRow label="Meta" value={money(c.meta)} />
       <View
         style={{
           height: 6,
@@ -75,21 +76,22 @@ function CostCard({ cost: c, open }: { cost: Cost; open?: () => void }) {
           }}
         />
       </View>
-      <ValueRow label="Recuperado nas vendas" value={money(c.recuperado)} />
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }}><Text style={{ color: t.text, fontSize: 12, fontWeight: "600" }}>{money(c.recuperado)} recuperados</Text><Text style={{ color: t.muted, fontSize: 12 }}>{Math.round(percent)}% de {money(c.meta)}</Text></View>
       <ValueRow label="Falta cobrir" value={money(c.restante)} />
       {!!c.excedente && (
         <ValueRow label="Acima da meta" value={money(c.excedente)} />
       )}
-      {open && (
-        <Button variant="secondary" label="Ver detalhes" onPress={open} />
-      )}
+      {!c.ativo && onToggle && <Pressable accessibilityRole="button" disabled={menuOpen} onPress={(event) => { event.stopPropagation(); onToggle(); }} style={{ alignSelf: "flex-start", paddingVertical: 3 }}><Text style={{ color: t.primaryText, fontSize: 12 }}>▷ Retomar</Text></Pressable>}
+      {menuOpen && <View style={{ flexDirection: "row", gap: 8, borderTopWidth: 1, borderColor: t.border, paddingTop: 8 }}><Button compact stretch label="Detalhes" variant="secondary" onPress={open || (() => {})} /><Button compact stretch label={c.ativo ? "Pausar" : "Retomar"} variant="secondary" disabled={!onToggle} onPress={onToggle || (() => {})} /></View>}
     </Card>
   );
+  return open ? <Pressable accessibilityRole="button" onPress={open}>{content}</Pressable> : content;
 }
 export default function ExtraCosts() {
   const [screen, setScreen] = useState<"list" | "new" | "detail">("list"),
     [id, setId] = useState(""),
-    [page, setPage] = useState(0);
+    [page, setPage] = useState(0),
+    [menuId, setMenuId] = useState("");
   const list = useApiQuery<Cost[]>(screen === "list" ? base : null, true);
   const detail = useApiQuery<S["CustoDetalhe"]>(
     screen === "detail" ? base + "/" + id + "?pagina=" + page : null,
@@ -132,6 +134,22 @@ export default function ExtraCosts() {
       setBusy(false);
     }
   }
+  async function toggleListCost(cost: Cost) {
+    if (lock.current || !cost.id) return;
+    lock.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      await request(base + "/" + encodeURIComponent(cost.id) + "/estado?ativo=" + !cost.ativo, { method: "PUT" });
+      setMenuId("");
+      list.retry();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Não foi possível alterar o custo.");
+    } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  }
   if (screen === "new") return <NewCost onBack={back} onCreated={open} />;
   const q = screen === "list" ? list : detail;
   return (
@@ -139,18 +157,11 @@ export default function ExtraCosts() {
       key={screen}
       section={screen === "list" ? "Mais" : "Custos extras"}
       title={screen === "list" ? "Custos extras" : "Detalhes do custo"}
+      titleAccessory={screen === "list" ? <Button compact label="+ Novo" onPress={() => { setError(""); setScreen("new"); }} /> : undefined}
       onBack={back}
     >
       {!!error && <Notice message={error} />}
-      {screen === "list" && (
-        <Button
-          label="+ Novo custo"
-          onPress={() => {
-            setError("");
-            setScreen("new");
-          }}
-        />
-      )}
+      {screen === "list" && <Body muted>Despesas que entram no preço das peças até a meta ser recuperada.</Body>}
       {q.error ? (
         <Notice message={q.error} onRetry={q.retry} />
       ) : q.loading ? (
@@ -158,7 +169,7 @@ export default function ExtraCosts() {
       ) : screen === "list" ? (
         list.data?.length ? (
           list.data.map((c) => (
-            <CostCard key={c.id} cost={c} open={() => open(c.id!)} />
+            <CostCard key={c.id} cost={c} open={() => open(c.id!)} menuOpen={menuId === c.id} onMenu={() => setMenuId(menuId === c.id ? "" : c.id!)} onToggle={() => void toggleListCost(c)} />
           ))
         ) : (
           <Empty
@@ -231,6 +242,8 @@ function NewCost({
   onBack: () => void;
   onCreated: (id: string) => void;
 }) {
+  const t = useTheme();
+  const { hidesFooter } = useContext(BudgetKeyboard);
   const [description, setDescription] = useState(""),
     [date, setDate] = useState(() =>
       new Intl.DateTimeFormat("pt-BR", {
@@ -305,7 +318,14 @@ function NewCost({
       setBusy(false);
     }
   }
+  const metaValue = amount(target), unitValue = amount(value), plannedUnits = Number(units);
+  const preview = mode === "VALOR_UNIDADE"
+    ? metaValue > 0 && unitValue > 0 ? `A meta é recuperada depois de aproximadamente ${Math.ceil(metaValue / unitValue)} unidades vendidas, com ${money(unitValue)} por unidade.` : "Preencha a meta e o valor para ver quanto falta vender."
+    : mode === "PERCENTUAL"
+      ? metaValue > 0 && unitValue > 0 ? `${unitValue}% será aplicado ao custo base de cada peça até as vendas recuperarem a meta de ${money(metaValue)}.` : "Preencha a meta e o percentual para ver como o custo será aplicado."
+      : metaValue > 0 && Number.isInteger(plannedUnits) && plannedUnits > 0 ? `${money(metaValue)} ÷ ${plannedUnits} unidades = ${money(metaValue / plannedUnits)} por unidade neste período.` : "Preencha a meta e as unidades previstas para ver o rateio mensal.";
   return (
+    <View style={{ flex: 1 }}>
     <ModuleScreen
       section="Custos extras"
       title="Novo custo"
@@ -313,40 +333,26 @@ function NewCost({
         if (!busy) onBack();
       }}
     >
-      <Card>
+      <View style={{ gap: 12 }}>
         <Field
           label="Descrição"
+          placeholder="Ex.: Impressora nova"
           maxLength={150}
           value={description}
           onChangeText={setDescription}
         />
-        <Field
-          label="Início"
-          placeholder="dd/mm/aaaa"
-          maxLength={10}
-          value={date}
-          onChangeText={setDate}
-        />
-        <Field
-          label="Meta a recuperar (R$)"
-          keyboardType="decimal-pad"
-          value={target}
-          onChangeText={setTarget}
-        />
+        <View style={{ flexDirection: "row", gap: 9 }}>
+          <View style={{ flex: 1 }}><Field label="Início" placeholder="27/11/2026" maxLength={10} value={date} onChangeText={setDate} /></View>
+          <View style={{ flex: 1 }}><Field label="Meta a recuperar (R$)" placeholder="1.500,00" keyboardType="decimal-pad" value={target} onChangeText={setTarget} /></View>
+        </View>
         <Body strong>Como distribuir o custo</Body>
-        <View style={layout.row}>
-          {(Object.keys(modes) as Mode[]).map((m) => (
-            <Chip
-              key={m}
-              label={modes[m]}
-              selected={m === mode}
-              onPress={() => setMode(m)}
-            />
-          ))}
+        <View style={{ flexDirection: "row", padding: 3, borderRadius: 11, backgroundColor: t.accentTint, gap: 3 }}>
+          {(Object.keys(modes) as Mode[]).map((m) => <Pressable key={m} accessibilityRole="button" accessibilityState={{ selected: m === mode }} onPress={() => setMode(m)} style={{ flex: 1, minHeight: 38, alignItems: "center", justifyContent: "center", borderRadius: 8, borderWidth: mode === m ? 1 : 0, borderColor: t.border, backgroundColor: mode === m ? t.surface : "transparent", paddingHorizontal: 4 }}><Text style={{ color: t.text, fontSize: 11, fontWeight: mode === m ? "700" : "500", textAlign: "center" }}>{m === "VALOR_UNIDADE" ? "Por unidade" : modes[m]}</Text></Pressable>)}
         </View>
         {mode === "RATEIO_MENSAL" ? (
           <Field
             label="Unidades previstas no mês"
+            placeholder="300"
             keyboardType="number-pad"
             value={units}
             onChangeText={setUnits}
@@ -358,19 +364,17 @@ function NewCost({
                 ? "Percentual sobre o custo (%)"
                 : "Valor por unidade (R$)"
             }
+            placeholder={mode === "PERCENTUAL" ? "10" : "5,00"}
             keyboardType="decimal-pad"
             value={value}
             onChangeText={setValue}
           />
         )}
+        <View style={{ backgroundColor: t.accentTint, padding: 11, borderRadius: 10 }}><Body muted>{preview}</Body></View>
         {!!error && <Notice message={error} />}
-        <Button
-          label="Salvar custo"
-          busy={busy}
-          disabled={busy}
-          onPress={() => void save()}
-        />
-      </Card>
+      </View>
     </ModuleScreen>
+    {!hidesFooter && <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderColor: t.border, backgroundColor: t.surface }}><View style={{ flex: 1 }}><Button stretch variant="secondary" label="Cancelar" disabled={busy} onPress={onBack} /></View><View style={{ flex: 1 }}><Button stretch label="Salvar custo" busy={busy} disabled={busy} onPress={() => void save()} /></View></View>}
+    </View>
   );
 }
